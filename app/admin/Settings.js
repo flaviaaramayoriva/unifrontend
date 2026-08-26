@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext'; // Asegúrate que la ruta sea correcta
 import { ACCENT_PRESETS } from '../../utils/colorUtils'; // Asegúrate que la ruta sea correcta
 
-const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';
 const TOKEN_KEY = 'adminAuthToken'; 
 
 const getTokenAsync = async () => {

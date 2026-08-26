@@ -18,7 +18,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {

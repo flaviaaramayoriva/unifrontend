@@ -8,7 +8,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { io } from 'socket.io-client';
 
-const BACKEND_URL = 'unibackend-production-a0f8.up.railway.app';
+const BACKEND_URL = 'https://unibackend-production-a0f8.up.railway.app';';
 
 const ROL_CONFIG = {
   admin:     { color: '#FF6B35', label: 'Admin',     icono: 'A' },

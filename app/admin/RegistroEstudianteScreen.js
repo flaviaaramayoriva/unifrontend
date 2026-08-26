@@ -21,7 +21,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';
 
 const CARRERA_A_FACULTAD = {
   '2': '3', '3': '4', '1': '5', '4': '2', '5': '2', '6': '2', '7': '2', 

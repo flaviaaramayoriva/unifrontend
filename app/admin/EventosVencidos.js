@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';const TOKEN_KEY = 'adminAuthToken';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
   primary: '#E95A0C',

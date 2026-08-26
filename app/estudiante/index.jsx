@@ -12,7 +12,7 @@ const COLORS = {
   // ... (todo tu código de colores)
 };
 
-const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';
 // ... (todo el resto del código)
 
 const HomeEstudianteScreen = () => {

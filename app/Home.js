@@ -17,7 +17,7 @@ import {
   Animated,
 } from 'react-native';
 
-const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';
 const windowWidth = Dimensions.get('window').width;
 const CAROUSEL_ITEM_WIDTH = windowWidth * 0.80;
 const ITEM_MARGIN = 8;

@@ -20,7 +20,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import axios from 'axios';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';
 const CrearUsuarioDaf = () => {
   const router = useRouter();
   const role = 'daf';
