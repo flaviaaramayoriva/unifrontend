@@ -164,7 +164,6 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
   const quickActions = [
     { id: 'usuarios', title: 'Usuarios', icon: 'people-outline', color: COLORS.primary, action: '/admin/UsuariosDaf' },
     { id: 'aprobados', title: 'Aprobados', icon: 'checkmark-circle-outline', color: COLORS.success, action: '/admin/EventosAprobados' },
-    { id: 'settings', title: 'Ajustes', icon: 'settings-outline', color: COLORS.secondary, action: '/admin/Settings' },
   ];
 
   return (
