@@ -260,30 +260,46 @@ const EditEventScreen = () => {
 
     if (mode === 'reprogramar') {
   // Reprogramación: confirmación simple y redirección directa a pendientes
-  Alert.alert(
-    '✓ Reprogramado',
-    'El evento ha sido reprogramado exitosamente.',
-    [{ text: 'OK', onPress: () => router.replace('/admin/EventosPendientes') }]
-  );
+  if (Platform.OS === 'web') {
+    window.alert('✓ El evento ha sido reprogramado exitosamente.');
+    router.replace('/admin/EventosPendientes');
+  } else {
+    Alert.alert(
+      '✓ Reprogramado',
+      'El evento ha sido reprogramado exitosamente.',
+      [{ text: 'OK', onPress: () => router.replace('/admin/EventosPendientes') }]
+    );
+  }
 } else {
   // Edición normal: mantenemos la opción de elegir a dónde ir
-  Alert.alert(
-    '✓ Actualizado',
-    'Los cambios han sido guardados correctamente.',
-    [
-      {
-        text: 'Ver detalles',
-        onPress: () => {
-          router.replace(`/admin/EventDetailScreen?eventId=${form.idevento}`);
+  if (Platform.OS === 'web') {
+    const irADetalles = window.confirm(
+      '✓ Los cambios han sido guardados correctamente.\n\nPresiona Aceptar para ver los detalles del evento, o Cancelar para volver a pendientes.'
+    );
+    if (irADetalles) {
+      router.replace(`/admin/EventDetailScreen?eventId=${form.idevento}`);
+    } else {
+      router.replace('/admin/EventosPendientes');
+    }
+  } else {
+    Alert.alert(
+      '✓ Actualizado',
+      'Los cambios han sido guardados correctamente.',
+      [
+        {
+          text: 'Ver detalles',
+          onPress: () => {
+            router.replace(`/admin/EventDetailScreen?eventId=${form.idevento}`);
+          }
+        },
+        {
+          text: 'Volver a pendientes',
+          onPress: () => router.replace('/admin/EventosPendientes'),
+          style: 'cancel'
         }
-      },
-      {
-        text: 'Volver a pendientes',
-        onPress: () => router.replace('/admin/EventosPendientes'),
-        style: 'cancel'
-      }
-    ]
-  );
+      ]
+    );
+  }
 }
 
     } catch (error) {
