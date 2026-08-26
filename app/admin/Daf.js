@@ -10,6 +10,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import QRCode from 'react-qr-code';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useTheme} from '../../context/ThemeContext'
 
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
@@ -257,7 +258,13 @@ const Daf = () => {
   const params = useLocalSearchParams();
   const nombreUsuario = params.nombre || 'Administrador DAF';
   const router = useRouter();
-
+  const {
+    colors,
+    colorScheme,
+    setTheme: setGlobalTheme,
+    setAccentColor: setGlobalAccentColor,
+  } = useTheme();
+  const styles =createStyles(colors);
   const [notifications, setNotifications]         = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isBannerExpanded, setIsBannerExpanded]   = useState(false);
@@ -269,7 +276,7 @@ const Daf = () => {
   const [stats, setStats]                           = useState(null);
   const [loadingReportes, setLoadingReportes]   = useState(false);
   const [hiddenPastCount, setHiddenPastCount]     = useState(0);
-  const [themeColor, setThemeColor] = useState(COLORS.primary);
+  const [themeColor, setThemeColor] = useState(colors.primary);
 
   const [showTelegramModal, setShowTelegramModal] = useState(false);
   const [isTelegramLinked, setIsTelegramLinked] = useState(false);
@@ -279,10 +286,10 @@ const Daf = () => {
     email: ''
   });
   const [dashboardStats, setDashboardStats] = useState([
-    { title: 'Usuarios Activos',      value: '–', icon: 'people-outline',        color: COLORS.primary,  description: 'Cuentas habilitadas' },
-    { title: 'Eventos Totales',       value: '–', icon: 'calendar-outline',      color: COLORS.info,     description: 'Todos los eventos' },
-    { title: 'Contenidos Pendientes', value: '–', icon: 'document-text-outline', color: COLORS.warning,  description: 'Esperando revisión' },
-    { title: 'Estabilidad Sistema',   value: '–', icon: 'pulse-outline',         color: COLORS.success,  description: 'Rendimiento del sistema' },
+    { title: 'Usuarios Activos',      value: '–', icon: 'people-outline',        color: themeColor,  description: 'Cuentas habilitadas' },
+    { title: 'Eventos Totales',       value: '–', icon: 'calendar-outline',      color: themeColor,     description: 'Todos los eventos' },
+    { title: 'Contenidos Pendientes', value: '–', icon: 'document-text-outline', color: themeColor,  description: 'Esperando revisión' },
+    { title: 'Estabilidad Sistema',   value: '–', icon: 'pulse-outline',         color: themeColor,  description: 'Rendimiento del sistema' },
   ]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
