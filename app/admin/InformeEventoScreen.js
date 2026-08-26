@@ -95,6 +95,7 @@ const InformeEventoScreen = () => {
   const [showInscritos, setShowInscritos] = useState(false);
   const [inscritos, setInscritos] = useState([]);
   const [loadingInscritos, setLoadingInscritos] = useState(false);
+
   const fetchAllData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -152,8 +153,6 @@ const InformeEventoScreen = () => {
       const yaFinalizado = estadoInforme === 'finalizado';
       const sinPermisoRol = userRes.data.role !== 'admin' && userRes.data.role !== 'academico';
       setReadOnly(sinPermisoRol || yaFinalizado);
-
-      // Guardá esto también para poder mostrar el mensaje correcto abajo:
       setInformeFinalizado(yaFinalizado);
 
       const informe = informeRes.data.informe;
@@ -177,8 +176,11 @@ const InformeEventoScreen = () => {
         setParticipacionReal(informe.participacion_real || '');
         setSatisfaccionReal(informe.indice_satisfaccion_real || '');
         setOtrosResultadosReal(informe.otros_resultados_real || '');
-        setEgresosReales(informe.egresos_reales?.length ? informe.egresos_reales : [emptyEgresoRow()]);
-        setIngresosReales(informe.ingresos_reales?.length ? informe.ingresos_reales : [emptyEgresoRow()]);
+        
+        // CORRECCIÓN 1: Validar estrictamente que sea un Array antes de asignarlo
+        setEgresosReales(Array.isArray(informe.egresos_reales) && informe.egresos_reales.length > 0 ? informe.egresos_reales : [emptyEgresoRow()]);
+        setIngresosReales(Array.isArray(informe.ingresos_reales) && informe.ingresos_reales.length > 0 ? informe.ingresos_reales : [emptyEgresoRow()]);
+        
         setInfoPrensa(informe.info_prensa || '');
         setAnalisisDesviaciones(informe.analisis_desviaciones || '');
         setLeccionesAprendidas(informe.lecciones_aprendidas || '');
@@ -196,6 +198,7 @@ const InformeEventoScreen = () => {
   }, [fetchAllData, eventId]);
 
   const updateRow = (setter, rows, index, field, value) => {
+    if (!Array.isArray(rows)) return;
     const updated = [...rows];
     updated[index] = { ...updated[index], [field]: value };
     if (field === 'cantidad' || field === 'precio_unitario') {
@@ -205,45 +208,55 @@ const InformeEventoScreen = () => {
     }
     setter(updated);
   };
+
   const handleFinalizarInforme = () => {
-  const confirmarYFinalizar = () => handleGuardar('finalizado');
+    const confirmarYFinalizar = () => handleGuardar('finalizado');
 
-  if (Platform.OS === 'web') {
-    const confirmado = window.confirm(
-      '¿Estás seguro de finalizar este informe? El evento pasará a Fase 3 y no podrá ser modificado.'
-    );
-    if (confirmado) confirmarYFinalizar();
-  } else {
-    Alert.alert(
-      'Finalizar Informe',
-      '¿Estás seguro de finalizar este informe? El evento pasará a Fase 3 y no podrá ser modificado.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sí, finalizar', style: 'destructive', onPress: confirmarYFinalizar }
-      ]
-    );
-  }
-};
-  const addRow = (setter, rows) => setter([...rows, emptyEgresoRow()]);
-  const removeRow = (setter, rows, index) => setter(rows.filter((_, i) => i !== index));
+    if (Platform.OS === 'web') {
+      const confirmado = window.confirm(
+        '¿Estás seguro de finalizar este informe? El evento pasará a Fase 3 y no podrá ser modificado.'
+      );
+      if (confirmado) confirmarYFinalizar();
+    } else {
+      Alert.alert(
+        'Finalizar Informe',
+        '¿Estás seguro de finalizar este informe? El evento pasará a Fase 3 y no podrá ser modificado.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Sí, finalizar', style: 'destructive', onPress: confirmarYFinalizar }
+        ]
+      );
+    }
+  };
 
-  const totalEgresosReal = egresosReales.reduce((sum, e) => sum + (Number(e.total) || 0), 0);
-  const totalIngresosReal = ingresosReales.reduce((sum, i) => sum + (Number(i.total) || 0), 0);
+  const addRow = (setter, rows) => {
+    if (!Array.isArray(rows)) return;
+    setter([...rows, emptyEgresoRow()]);
+  };
+  
+  const removeRow = (setter, rows, index) => {
+    if (!Array.isArray(rows)) return;
+    setter(rows.filter((_, i) => i !== index));
+  };
+
+  // CORRECCIÓN 2: Blindar el .reduce para que nunca falle si el estado no es un array
+  const totalEgresosReal = Array.isArray(egresosReales) ? egresosReales.reduce((sum, e) => sum + (Number(e.total) || 0), 0) : 0;
+  const totalIngresosReal = Array.isArray(ingresosReales) ? ingresosReales.reduce((sum, i) => sum + (Number(i.total) || 0), 0) : 0;
   const balanceReal = totalIngresosReal - totalEgresosReal;
 
   const totalEgresosEsperado = event?.presupuesto?.total_egresos || 0;
   const totalIngresosEsperado = event?.presupuesto?.total_ingresos || 0;
   const balanceEsperado = event?.presupuesto?.balance || 0;
 
-    const handleGuardar = async (estadoFinal) => {
+  const handleGuardar = async (estadoFinal) => {
     console.log('🔵 [handleGuardar] Iniciando guardado. Estado:', estadoFinal);
     setSaving(true);
     try {
       const token = await getTokenAsync();
       if (!token) throw new Error('Token inválido');
-       console.log(' Egresos reales antes de filtrar:', egresosReales);
-    console.log('📊 Ingresos reales antes de filtrar:', ingresosReales);
-
+      
+      console.log(' Egresos reales antes de filtrar:', egresosReales);
+      console.log('📊 Ingresos reales antes de filtrar:', ingresosReales);
 
       const payload = {
         segmento_alcanzado_estudiantes: Number(segAlcanzado.estudiantes) || 0,
@@ -261,14 +274,15 @@ const InformeEventoScreen = () => {
         participacion_real: participacionReal,
         indice_satisfaccion_real: satisfaccionReal,
         otros_resultados_real: otrosResultadosReal,
-        egresos_reales: egresosReales.filter(e => e.descripcion || e.cantidad || e.precio_unitario),
-        ingresos_reales: ingresosReales.filter(i => i.descripcion || i.cantidad || i.precio_unitario),
+        // CORRECCIÓN 3: Blindar el .filter
+        egresos_reales: Array.isArray(egresosReales) ? egresosReales.filter(e => e.descripcion || e.cantidad || e.precio_unitario) : [],
+        ingresos_reales: Array.isArray(ingresosReales) ? ingresosReales.filter(i => i.descripcion || i.cantidad || i.precio_unitario) : [],
         info_prensa: infoPrensa,
         analisis_desviaciones: analisisDesviaciones,
         lecciones_aprendidas: leccionesAprendidas,
         estado: estadoFinal,
       };
-          console.log('📤 Payload final a enviar:', JSON.stringify(payload, null, 2));
+      console.log('📤 Payload final a enviar:', JSON.stringify(payload, null, 2));
 
       const url = `${API_BASE_URL}/eventos/${eventId}/informe`;
       console.log('🔵 [handleGuardar] Enviando petición a:', url);
@@ -280,10 +294,10 @@ const InformeEventoScreen = () => {
       console.log('🟢 [handleGuardar] ÉXITO DEL SERVIDOR:', response.data);
       
       await fetchAllData();
-       if (estadoFinal === 'finalizado') {
-      setReadOnly(true);
-      console.log('🔒 [handleGuardar] Modo solo lectura activado');
-    }
+      if (estadoFinal === 'finalizado') {
+        setReadOnly(true);
+        console.log('🔒 [handleGuardar] Modo solo lectura activado');
+      }
       
       Alert.alert(
         '✅ Éxito', 
@@ -294,14 +308,14 @@ const InformeEventoScreen = () => {
           {
              text: 'Aceptar',
              style: 'default',
-          onPress: () => { 
-            console.log('regresando');
-            router.replace('/admin/EventosCompletos');
-         }
-    }
-  ],
-  { cancelable: false }
-);
+             onPress: () => { 
+               console.log('regresando');
+               router.replace('/admin/EventosCompletos');
+             }
+          }
+        ],
+        { cancelable: false }
+      );
       
     } catch (err) {
       console.error('🔴 [handleGuardar] ERROR:', err.response?.data || err.message);
@@ -312,7 +326,7 @@ const InformeEventoScreen = () => {
   };
 
   const buildInformeHtml = () => {
-    const rowsHtml = (rows) => rows.map(r => `<tr><td>${r.descripcion || ''}</td><td style="text-align:right">${r.cantidad || ''}</td><td style="text-align:right">Bs ${parseFloat(r.precio_unitario || 0).toFixed(2)}</td><td style="text-align:right">Bs ${parseFloat(r.total || 0).toFixed(2)}</td></tr>`).join('');
+    const rowsHtml = (rows) => (Array.isArray(rows) ? rows : []).map(r => `<tr><td>${r.descripcion || ''}</td><td style="text-align:right">${r.cantidad || ''}</td><td style="text-align:right">Bs ${parseFloat(r.precio_unitario || 0).toFixed(2)}</td><td style="text-align:right">Bs ${parseFloat(r.total || 0).toFixed(2)}</td></tr>`).join('');
     return `<html><head><meta charset="UTF-8"><style>
       @page { margin: 1cm; }
       body { font-family: Arial, sans-serif; padding: 1cm; color: #333; }
@@ -364,8 +378,9 @@ const InformeEventoScreen = () => {
       Alert.alert('Error', 'No se pudo generar el PDF: ' + err.message);
     }
   };
+
   const buildRegistroParticipantesHtml = () => {
-    const filasEstudiantes = inscritos.map((est, i) => `
+    const filasEstudiantes = (Array.isArray(inscritos) ? inscritos : []).map((est, i) => `
       <tr>
         <td class="num">${i + 1}</td>
         <td class="nombre">${est.nombre || ''}</td>
@@ -380,7 +395,7 @@ const InformeEventoScreen = () => {
 
     const filasVacias = Array.from({ length: 15 }).map((_, i) => `
       <tr>
-        <td class="num">${inscritos.length + i + 1}</td>
+        <td class="num">${(Array.isArray(inscritos) ? inscritos.length : 0) + i + 1}</td>
         <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
       </tr>`).join('');
 
@@ -460,20 +475,20 @@ const InformeEventoScreen = () => {
   };
 
   const verInscritos = async () => {
-  setShowInscritos(true);
-  setLoadingInscritos(true);
-  try {
-    const token = await getTokenAsync();
-    const res = await axios.get(`${API_BASE_URL}/estudiantes/estudiantes-inscritos-evento/${eventId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setInscritos(res.data.estudiantes || []);
-  } catch (err) {
-    Alert.alert('Error', 'No se pudo cargar la lista de inscritos: ' + (err.response?.data?.message || err.message));
-  } finally {
-    setLoadingInscritos(false);
-  }
-};
+    setShowInscritos(true);
+    setLoadingInscritos(true);
+    try {
+      const token = await getTokenAsync();
+      const res = await axios.get(`${API_BASE_URL}/estudiantes/estudiantes-inscritos-evento/${eventId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setInscritos(Array.isArray(res.data.estudiantes) ? res.data.estudiantes : []);
+    } catch (err) {
+      Alert.alert('Error', 'No se pudo cargar la lista de inscritos: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoadingInscritos(false);
+    }
+  };
 
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator size="large" color={COLORS.primary} /><Text style={styles.loadingText}>Cargando...</Text></View>;
@@ -782,7 +797,6 @@ const InformeEventoScreen = () => {
           </View>
         )}
 
-       
         {/* Participación / Satisfacción - COMPARACIÓN */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>3. Participación e Índice de Satisfacción</Text>
@@ -868,7 +882,8 @@ const InformeEventoScreen = () => {
               <Text style={[styles.budgetCell, styles.budgetCellNum]}>Total</Text>
               {!readOnly && <View style={{ width: 24 }} />}
             </View>
-                        {egresosReales.map((row, index) => (
+            {/* CORRECCIÓN 4: Blindar el .map */}
+            {Array.isArray(egresosReales) && egresosReales.map((row, index) => (
               <View key={index} style={styles.budgetTableRow}>
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{row.descripcion || '-'}</Text>
@@ -907,7 +922,8 @@ const InformeEventoScreen = () => {
               <Text style={[styles.budgetCell, styles.budgetCellNum]}>Total</Text>
               {!readOnly && <View style={{ width: 24 }} />}
             </View>
-                        {ingresosReales.map((row, index) => (
+            {/* CORRECCIÓN 5: Blindar el .map */}
+            {Array.isArray(ingresosReales) && ingresosReales.map((row, index) => (
               <View key={index} style={styles.budgetTableRow}>
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{row.descripcion || '-'}</Text>
@@ -942,7 +958,7 @@ const InformeEventoScreen = () => {
           </View>
         </View>
 
-              {/* Nota de Prensa */}
+        {/* Nota de Prensa */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>5. Información para la Nota de Prensa</Text>
           <View style={styles.detailRow}>
@@ -965,7 +981,7 @@ const InformeEventoScreen = () => {
           </View>
         </View>
 
-                {/* Análisis de Desviaciones */}
+        {/* Análisis de Desviaciones */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>6. Análisis de Desviaciones Críticas/Significativas</Text>
           <View style={styles.detailRow}>
@@ -988,7 +1004,7 @@ const InformeEventoScreen = () => {
           </View>
         </View>
 
-                {/* Lecciones Aprendidas */}
+        {/* Lecciones Aprendidas */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>7. Lecciones Aprendidas</Text>
           <View style={styles.detailRow}>
@@ -1032,83 +1048,84 @@ const InformeEventoScreen = () => {
           <Text style={styles.inscritosButtonText}>Ver estudiantes inscritos</Text>
         </TouchableOpacity>
       </ScrollView>
+      
       <Modal visible={showInscritos} animationType="slide" onRequestClose={() => setShowInscritos(false)}>
-  <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-    <View style={styles.header}>
-      <TouchableOpacity onPress={() => setShowInscritos(false)}>
-        <Ionicons name="close" size={24} color={COLORS.white} />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>Estudiantes Inscritos</Text>
-      <TouchableOpacity onPress={generarPDFRegistro}>
-        <Ionicons name="print-outline" size={24} color={COLORS.white} />
-      </TouchableOpacity>
-    </View>
-    {loadingInscritos ? (
-      <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 30 }} />
-    ) : (
-      <FlatList
-        data={inscritos}
-        keyExtractor={(item) => String(item.idestudiante)}
-        contentContainerStyle={{ padding: 16 }}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', color: COLORS.grayText, marginTop: 30 }}>Aún no hay estudiantes inscritos.</Text>}
-        ListHeaderComponent={
-          <View style={styles.eventInfoCard}>
-            <Text style={styles.eventInfoTitle}>{event?.title}</Text>
-            <View style={styles.badgesRow}>
-              <View style={[styles.phaseBadge, { backgroundColor: COLORS.info }]}>
-                <Ionicons name="flag-outline" size={14} color={COLORS.white} />
-                <Text style={styles.phaseBadgeText}>Fase {event?.idfase || 1}</Text>
-              </View>
-              <View style={[styles.phaseBadge, { backgroundColor: event?.status === 'aprobado' ? COLORS.success : COLORS.warning }]}>
-                <Ionicons name={event?.status === 'aprobado' ? 'checkmark-circle' : 'time-outline'} size={14} color={COLORS.white} />
-                <Text style={styles.phaseBadgeText}>{event?.status}</Text>
-              </View>
-            </View>
-
-            <View style={styles.eventInfoDivider} />
-
-            <View style={styles.detailRow}>
-              <Ionicons name="calendar-outline" size={18} color={COLORS.primary} style={styles.detailIcon} />
-              <Text style={styles.eventInfoText}>{event?.date}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Ionicons name="time-outline" size={18} color={COLORS.primary} style={styles.detailIcon} />
-              <Text style={styles.eventInfoText}>{event?.time}</Text>
-            </View>
-            <View style={[styles.detailRow, { marginBottom: 0 }]}>
-              <Ionicons name="location-outline" size={18} color={COLORS.primary} style={styles.detailIcon} />
-              <Text style={styles.eventInfoText}>{event?.location}</Text>
-            </View>
-
-            <View style={styles.inscritosCardFooter}>
-              <View style={styles.inscritosCountPill}>
-                <Ionicons name="people" size={14} color={COLORS.primary} />
-                <Text style={styles.inscritosCountText}>{inscritos.length} estudiante{inscritos.length !== 1 ? 's' : ''} inscrito{inscritos.length !== 1 ? 's' : ''}</Text>
-              </View>
-              <TouchableOpacity style={styles.pdfRegistroButton} onPress={generarPDFRegistro}>
-                <Ionicons name="print-outline" size={14} color={COLORS.white} />
-                <Text style={styles.pdfRegistroButtonText}>Generar registro PDF</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => setShowInscritos(false)}>
+              <Ionicons name="close" size={24} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Estudiantes Inscritos</Text>
+            <TouchableOpacity onPress={generarPDFRegistro}>
+              <Ionicons name="print-outline" size={24} color={COLORS.white} />
+            </TouchableOpacity>
           </View>
-        }
-        renderItem={({ item }) => (
-  <View style={styles.committeeMember}>
-    <Text style={styles.committeeName}>{item.nombre}</Text>
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 6 }}>
-      <Text style={styles.committeeRole}>Código: {item.codigoestudiante || '-'}</Text>
-      <Text style={styles.committeeRole}>Carrera: {item.carrera || '-'}</Text>
-      <Text style={styles.committeeRole}>Semestre: {item.semestre || '-'}</Text>
-    </View>
-    <Text style={styles.committeeEmail}>{item.email}</Text>
-    <Text style={styles.committeeRole}>Teléfono: {item.telefono || '-'}</Text>
-    <Text style={styles.creatorRole}>Inscrito: {formatDate(item.fecha_inscripcion)}</Text>
-  </View>
-)}
-      />
-    )}
-  </View>
-</Modal>
+          {loadingInscritos ? (
+            <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 30 }} />
+          ) : (
+            <FlatList
+              data={inscritos}
+              keyExtractor={(item) => String(item.idestudiante)}
+              contentContainerStyle={{ padding: 16 }}
+              ListEmptyComponent={<Text style={{ textAlign: 'center', color: COLORS.grayText, marginTop: 30 }}>Aún no hay estudiantes inscritos.</Text>}
+              ListHeaderComponent={
+                <View style={styles.eventInfoCard}>
+                  <Text style={styles.eventInfoTitle}>{event?.title}</Text>
+                  <View style={styles.badgesRow}>
+                    <View style={[styles.phaseBadge, { backgroundColor: COLORS.info }]}>
+                      <Ionicons name="flag-outline" size={14} color={COLORS.white} />
+                      <Text style={styles.phaseBadgeText}>Fase {event?.idfase || 1}</Text>
+                    </View>
+                    <View style={[styles.phaseBadge, { backgroundColor: event?.status === 'aprobado' ? COLORS.success : COLORS.warning }]}>
+                      <Ionicons name={event?.status === 'aprobado' ? 'checkmark-circle' : 'time-outline'} size={14} color={COLORS.white} />
+                      <Text style={styles.phaseBadgeText}>{event?.status}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.eventInfoDivider} />
+
+                  <View style={styles.detailRow}>
+                    <Ionicons name="calendar-outline" size={18} color={COLORS.primary} style={styles.detailIcon} />
+                    <Text style={styles.eventInfoText}>{event?.date}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="time-outline" size={18} color={COLORS.primary} style={styles.detailIcon} />
+                    <Text style={styles.eventInfoText}>{event?.time}</Text>
+                  </View>
+                  <View style={[styles.detailRow, { marginBottom: 0 }]}>
+                    <Ionicons name="location-outline" size={18} color={COLORS.primary} style={styles.detailIcon} />
+                    <Text style={styles.eventInfoText}>{event?.location}</Text>
+                  </View>
+
+                  <View style={styles.inscritosCardFooter}>
+                    <View style={styles.inscritosCountPill}>
+                      <Ionicons name="people" size={14} color={COLORS.primary} />
+                      <Text style={styles.inscritosCountText}>{inscritos.length} estudiante{inscritos.length !== 1 ? 's' : ''} inscrito{inscritos.length !== 1 ? 's' : ''}</Text>
+                    </View>
+                    <TouchableOpacity style={styles.pdfRegistroButton} onPress={generarPDFRegistro}>
+                      <Ionicons name="print-outline" size={14} color={COLORS.white} />
+                      <Text style={styles.pdfRegistroButtonText}>Generar registro PDF</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <View style={styles.committeeMember}>
+                  <Text style={styles.committeeName}>{item.nombre}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 6 }}>
+                    <Text style={styles.committeeRole}>Código: {item.codigoestudiante || '-'}</Text>
+                    <Text style={styles.committeeRole}>Carrera: {item.carrera || '-'}</Text>
+                    <Text style={styles.committeeRole}>Semestre: {item.semestre || '-'}</Text>
+                  </View>
+                  <Text style={styles.committeeEmail}>{item.email}</Text>
+                  <Text style={styles.committeeRole}>Teléfono: {item.telefono || '-'}</Text>
+                  <Text style={styles.creatorRole}>Inscrito: {formatDate(item.fecha_inscripcion)}</Text>
+                </View>
+              )}
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1135,22 +1152,18 @@ const styles = StyleSheet.create({
   phaseBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, alignSelf: 'flex-start' },
   phaseBadgeText: { color: COLORS.white, fontSize: 13, fontWeight: '600', marginLeft: 5 },
 
-  // Detalles
   detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   detailIcon: { marginRight: 10 },
   detailText: { fontSize: 16, color: COLORS.darkText, flex: 1 },
 
-  // Listas
   listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   listIcon: { marginRight: 12, marginTop: 4 },
   listText: { fontSize: 15, color: COLORS.darkText, flex: 1, lineHeight: 20 },
 
-  // Creador
   creatorName: { fontSize: 16, color: COLORS.darkText, fontWeight: '500', marginBottom: 3 },
   creatorRole: { fontSize: 14, color: COLORS.grayText, marginBottom: 3 },
   creatorEmail: { fontSize: 14, color: COLORS.grayText, fontStyle: 'italic' },
 
-  // Actividades
   activityItem: { backgroundColor: COLORS.grayLight, borderRadius: 12, padding: 15, marginBottom: 12 },
   activityHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   activityTitle: { fontSize: 16, fontWeight: '600', color: COLORS.darkText, marginLeft: 10, flex: 1 },
@@ -1158,7 +1171,6 @@ const styles = StyleSheet.create({
   activityDetailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   activityDetailText: { fontSize: 14, color: COLORS.grayText, marginLeft: 8, flex: 1 },
 
-  // Servicios
   serviceItem: { backgroundColor: COLORS.grayLight, borderRadius: 12, padding: 15, marginBottom: 12 },
   serviceHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   serviceTitle: { fontSize: 16, fontWeight: '600', color: COLORS.darkText, marginLeft: 10, flex: 1 },
@@ -1166,29 +1178,23 @@ const styles = StyleSheet.create({
   serviceDetailRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
   serviceDetailText: { fontSize: 14, color: COLORS.grayText, marginLeft: 8, flex: 1 },
 
-  // Layout
   layoutImage: { width: '100%', height: 250, borderRadius: 12, backgroundColor: COLORS.grayLight, marginBottom: 10 },
   layoutPlaceholder: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30, backgroundColor: COLORS.grayLight, borderRadius: 12, marginBottom: 10 },
   layoutPlaceholderText: { fontSize: 14, color: COLORS.grayText, marginTop: 10, textAlign: 'center' },
 
-  // Comité
   committeeMember: { padding: 12, backgroundColor: COLORS.grayLight, borderRadius: 12, marginBottom: 12 },
   committeeName: { fontSize: 15, fontWeight: '600', color: COLORS.darkText, marginBottom: 4 },
   committeeRole: { fontSize: 14, color: COLORS.grayText, marginBottom: 4 },
   committeeEmail: { fontSize: 14, color: COLORS.grayText, fontStyle: 'italic' },
 
-  // Recursos
   resourceCategory: { marginBottom: 12 },
   resourceCategoryTitle: { fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 8, marginLeft: 28 },
 
-  // Imagen del evento
   eventImage: { width: '100%', height: 200, resizeMode: 'cover', marginBottom: 16, borderRadius: 12 },
 
-  // Inputs
   numberInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 8, textAlign: 'right', backgroundColor: COLORS.background },
   textInput: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, backgroundColor: COLORS.background, marginBottom: 8 },
 
-  // Comparación Esperado vs Real
   compareBlock: { marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.grayLight },
   compareRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
   compareLabel: { fontSize: 15, fontWeight: '600', color: COLORS.darkText },
@@ -1200,13 +1206,11 @@ const styles = StyleSheet.create({
   multilineCompare: { minHeight: 60, textAlignVertical: 'top' },
   editableInput: { borderWidth: 1, borderColor: COLORS.primary, borderRadius: 6, padding: 6, backgroundColor: COLORS.white },
 
-  // Balance comparativo
   balanceComparison: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.grayLight, padding: 15, borderRadius: 12, marginBottom: 20 },
   balanceCompareBox: { flex: 1, alignItems: 'center' },
   balanceCompareLabel: { fontSize: 12, fontWeight: 'bold', color: COLORS.grayText, marginBottom: 4 },
   balanceCompareValue: { fontSize: 18, fontWeight: 'bold' },
 
-  // Presupuesto
   budgetSubsection: { marginBottom: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: COLORS.grayLight },
   budgetHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottomWidth: 2, borderBottomColor: COLORS.primary },
   budgetSubtitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.darkText, marginLeft: 8 },
@@ -1223,15 +1227,12 @@ const styles = StyleSheet.create({
   balanceFinalLabel: { fontSize: 16, fontWeight: 'bold', color: COLORS.darkText },
   balanceFinalValue: { fontSize: 18, fontWeight: 'bold' },
 
-  // Inputs de celda
   inputCell: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 6, padding: 6, backgroundColor: COLORS.background, fontSize: 14, color: COLORS.darkText },
   inputCellDesc: { textAlign: 'left' },
 
-  // Botones de fila
   addRowButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, padding: 8 },
   addRowText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
 
-  // Botones de acción
   actionButtonsContainer: { flexDirection: 'row', gap: 12, marginTop: 8, marginBottom: 12 },
   draftButton: { flex: 1, borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   draftButtonText: { color: COLORS.primary, fontWeight: 'bold' },
@@ -1242,7 +1243,6 @@ const styles = StyleSheet.create({
   inscritosButton: { flexDirection: 'row', backgroundColor: COLORS.secondary, paddingVertical: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 16 },
   inscritosButtonText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold' },
 
-  // Tarjeta de datos del evento dentro del modal de inscritos
   eventInfoCard: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,
