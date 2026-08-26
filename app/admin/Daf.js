@@ -9,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import QRCode from 'react-qr-code';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
@@ -40,9 +42,8 @@ const COLORS = {
   border: '#E5E7EB', divider: '#F3F4F6', white: '#FFFFFF', black: '#000000',
 };
 
-// ─── KPI Card ─────────────────────────────────────────────────────────────────
 const DashboardCard = ({ title, value, icon, color, description, subtitle }) => (
-  <View style={[styles.kpiCard, { borderTopColor: color }]}>
+  <View style={[styles.kpiCard, { borderTopColor: color || themeColor }]}>
     <View style={styles.kpiTopRow}>
       <View style={[styles.kpiIconWrap, { backgroundColor: color + '15' }]}>
         <Ionicons name={icon} size={20} color={color} />
@@ -55,7 +56,6 @@ const DashboardCard = ({ title, value, icon, color, description, subtitle }) => 
   </View>
 );
 
-// ─── Action Card ──────────────────────────────────────────────────────────────
 const ActionCardLarge = ({ action, onPress, index }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -91,7 +91,7 @@ const ActionCardLarge = ({ action, onPress, index }) => {
   );
 };
 
-// ─── Event Cards (móvil) ──────────────────────────────────────────────────────
+
 const EventCards = ({ data, onPrint }) => {
   if (!data?.length) {
     return (
@@ -147,7 +147,6 @@ const EventCards = ({ data, onPrint }) => {
   );
 };
 
-// ─── Bottom Dock ──────────────────────────────────────────────────────────────
 const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpanded }) => {
   const dockHeight = useRef(new Animated.Value(60)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -195,7 +194,6 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
   );
 };
 
-// ─── Header ───────────────────────────────────────────────────────────────────
 const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificationPress, lastUpdated, onRefresh, refreshing, onTelegramPress, isTelegramLinked }) => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
@@ -245,7 +243,6 @@ const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificatio
   );
 };
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
 const Section = ({ title, subtitle, children }) => (
   <View style={styles.section}>
     <View style={styles.sectionHead}>
@@ -256,7 +253,6 @@ const Section = ({ title, subtitle, children }) => (
   </View>
 );
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
 const Daf = () => {
   const params = useLocalSearchParams();
   const nombreUsuario = params.nombre || 'Administrador DAF';
@@ -273,8 +269,8 @@ const Daf = () => {
   const [stats, setStats]                           = useState(null);
   const [loadingReportes, setLoadingReportes]   = useState(false);
   const [hiddenPastCount, setHiddenPastCount]     = useState(0);
+  const [themeColor, setThemeColor] = useState(COLORS.primary);
 
-  // Estados de Telegram
   const [showTelegramModal, setShowTelegramModal] = useState(false);
   const [isTelegramLinked, setIsTelegramLinked] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState('');
@@ -358,6 +354,25 @@ const Daf = () => {
       console.error('Error al verificar estado de Telegram:', error);
     }
   }, []);
+
+  const loadThemeColor = useCallback(async () => {
+  try {
+    const savedColor = await AsyncStorage.getItem('themeColor');
+    if (savedColor) {
+      setThemeColor(savedColor);
+    }
+  } catch (error) {
+    console.error('Error loading theme:', error);
+  }
+}, []);
+const saveThemeColor = useCallback(async (color) => {
+  try {
+    await AsyncStorage.setItem('themeColor', color);
+    setThemeColor(color);
+  } catch (error) {
+    console.error('Error saving theme:', error);
+  }
+}, []);
 
   const unlinkTelegram = useCallback(async () => {
     try {
@@ -481,7 +496,8 @@ const Daf = () => {
     fetchData();
     cargarInfoUsuario();
     checkTelegramStatus();
-  }, [fetchData, checkTelegramStatus]);
+    loadThemeColor();
+  }, [fetchData, checkTelegramStatus, cargarInfoUsuario, loadThemeColor]);
 
   const markAsRead = async (id) => {
     try {
@@ -551,7 +567,6 @@ const Daf = () => {
     { id: '5', title: 'Subida de Layouts',     iconName: 'images-outline',           route: '/admin/Layouts',          color: COLORS.info,      description: 'Administración de plantillas',       badge: 'Nuevo', badgeColor: COLORS.accent },
   ];
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -586,7 +601,6 @@ const Daf = () => {
           )}
         </Section>
 
-        {/* ── EVENTOS EN FASE 2 ── */}
         <Section
           title="Eventos en Fase 2"
           subtitle="Solo se muestran eventos desde hoy en adelante"
@@ -621,7 +635,6 @@ const Daf = () => {
           )}
         </Section>
 
-        {/* ── HERRAMIENTAS ── */}
         <Section title="Herramientas de Gestión" subtitle="Acceda a las funcionalidades principales">
           {adminActions.map((action, i) => (
             <ActionCardLarge
@@ -634,7 +647,6 @@ const Daf = () => {
         </Section>
       </ScrollView>
 
-      {/* ── NOTIFICACIONES MODAL ── */}
       {showNotifications && (
         <View style={styles.overlay}>
           <View style={styles.notifModal}>
@@ -878,7 +890,6 @@ const Daf = () => {
   </Modal>
 )}
 
-      {/* ── DOCK ── */}
       <MinimalBottomDock
         onLogout={handleLogout}
         onActionPress={handleActionPress}
@@ -915,13 +926,12 @@ const styles = StyleSheet.create({
   lastUpdated: { fontSize: 11, color: COLORS.textTertiary, marginTop: 4 },
   notifBtn: { position: 'relative', padding: 6 },
   notifBadge: {
-    position: 'absolute', top: 0, right: 0, backgroundColor: COLORS.accent,
+    position: 'absolute', top: 0, right: 0, backgroundColor: themeColor,
     borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center',
     borderWidth: 1.5, borderColor: COLORS.white,
   },
   notifBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: '700' },
 
-  // Telegram
   telegramBell: {
     padding: 8,
     borderRadius: 20,
@@ -1226,7 +1236,8 @@ telegramQRCode: {
     borderWidth: 1, borderColor: COLORS.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
   },
-  actionIcon: { width: 52, height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  actionIcon: { width: 52, height: 52, borderRadius: 12, 
+    justifyContent: 'center', alignItems: 'center' },
   actionContent: { flex: 1 },
   actionTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   actionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, flex: 1 },
@@ -1236,7 +1247,7 @@ telegramQRCode: {
 
   minimalDockLogoutButton: {
     flexDirection: 'row',
-    backgroundColor: COLORS.accent,
+    backgroundColor: themeColor,
     paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -1245,10 +1256,9 @@ telegramQRCode: {
     marginTop: 10,
   },
 
-  // Dock
   dock: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: COLORS.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: themeColor, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8,
     elevation: 10, overflow: 'hidden',
   },
