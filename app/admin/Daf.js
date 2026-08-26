@@ -44,7 +44,7 @@ const COLORS = {
 };
 
 const DashboardCard = ({ title, value, icon, color, description, subtitle }) => (
-  <View style={[styles.kpiCard, { borderTopColor: color || themeColor }]}>
+  <View style={[styles.kpiCard, { borderTopColor: color || COLORS.primary }]}>
     <View style={styles.kpiTopRow}>
       <View style={[styles.kpiIconWrap, { backgroundColor: color + '15' }]}>
         <Ionicons name={icon} size={20} color={color} />
@@ -264,7 +264,6 @@ const Daf = () => {
     setTheme: setGlobalTheme,
     setAccentColor: setGlobalAccentColor,
   } = useTheme();
-  const styles =createStyles(colors);
   const [notifications, setNotifications]         = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isBannerExpanded, setIsBannerExpanded]   = useState(false);
@@ -276,7 +275,7 @@ const Daf = () => {
   const [stats, setStats]                           = useState(null);
   const [loadingReportes, setLoadingReportes]   = useState(false);
   const [hiddenPastCount, setHiddenPastCount]     = useState(0);
-  const [themeColor, setThemeColor] = useState(colors.primary);
+  const [themeColor, setThemeColor] = useState(colors?.primary || COLORS.primary);
 
   const [showTelegramModal, setShowTelegramModal] = useState(false);
   const [isTelegramLinked, setIsTelegramLinked] = useState(false);
@@ -433,7 +432,7 @@ const saveThemeColor = useCallback(async (color) => {
         { title: 'Tasa Aprobación',       value: `${tasaAprobacion}%`,                                 icon: 'checkmark-done-outline', color: COLORS.success,  description: 'Porcentaje de aprobación' },
         { title: 'Tiempo Prom.',          value: `${data.tiempoPromedioAprobacion || 0}h`,            icon: 'time-outline',          color: COLORS.warning,  description: 'Tiempo promedio aprobación' },
         { title: 'Pendientes',            value: pendientes.toString(),                                icon: 'hourglass-outline',     color: COLORS.warning,  description: 'Sin revisar', subtitle: 'Sin revisar' },
-        { title: 'Nuevos Usuarios',       value: (data.usuariosNuevosEsteMes || 0).toString(),        icon: 'person-add-outline',    color: COLORS.purple,   description: 'Este mes', subtitle: 'Este mes' },
+        { title: 'Nuevos Usuarios',       value: (data.usuariosNuevosEsteMes || 0).toString(),        icon: 'person-add-outline',    color: COLORS.info,   description: 'Este mes', subtitle: 'Este mes' },
       ]);
 
       // ─── 👇 FILTRO DE FECHAS PASADAS ───────────────────────────────────────
@@ -908,6 +907,9 @@ const saveThemeColor = useCallback(async (color) => {
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+// NOTE: This is a module-level constant, so it CANNOT reference component state
+// like `themeColor`. All dynamic accent-color usage below uses COLORS.primary
+// as a safe static fallback instead of the undefined `themeColor` variable.
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollView: { flex: 1 },
@@ -933,7 +935,7 @@ const styles = StyleSheet.create({
   lastUpdated: { fontSize: 11, color: COLORS.textTertiary, marginTop: 4 },
   notifBtn: { position: 'relative', padding: 6 },
   notifBadge: {
-    position: 'absolute', top: 0, right: 0, backgroundColor: themeColor,
+    position: 'absolute', top: 0, right: 0, backgroundColor: COLORS.primary,
     borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center',
     borderWidth: 1.5, borderColor: COLORS.white,
   },
@@ -987,12 +989,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-  },
-   headerEmail: { 
-    fontSize: 13, 
-    color: COLORS.textSecondary,
-    marginTop: 2,
-    fontStyle: 'italic'
   },
   telegramModalTitle: {
     fontSize: 22,
@@ -1254,7 +1250,7 @@ telegramQRCode: {
 
   minimalDockLogoutButton: {
     flexDirection: 'row',
-    backgroundColor: themeColor,
+    backgroundColor: COLORS.primary,
     paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -1265,7 +1261,7 @@ telegramQRCode: {
 
   dock: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: themeColor, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: COLORS.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8,
     elevation: 10, overflow: 'hidden',
   },
