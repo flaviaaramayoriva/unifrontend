@@ -19,7 +19,7 @@ let determinedApiBaseUrl;
   determinedApiBaseUrl = 'http://localhost:3001/api';
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unifrontend-production-150c.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unifrontend-production-df6e.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 
 

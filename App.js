@@ -18,7 +18,7 @@ SplashScreenExpo.preventAutoHideAsync();
 const Stack = createNativeStackNavigator();
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
-const API_BASE_URL =  'https://unifrontend-production-150c.up.railway.app';
+const API_BASE_URL =  'https://unifrontend-production-df6e.up.railway.app';
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [userToken, setUserToken] = useState(null);

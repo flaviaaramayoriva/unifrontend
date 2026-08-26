@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 //const API_BASE_URL = 'https://unibackend-1-izpi.onrender.com';
 //const API_BASE_URL = 'https://evento.cidtec-uc.com'; 
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
-const API_BASE_URL = 'https://unifrontend-production-150c.up.railway.app'; // ✅ URL corregida y sin espacios
+const API_BASE_URL = 'https://unifrontend-production-df6e.up.railway.app'; // ✅ URL corregida y sin espacios
 const apiClient = axios.create({
   baseURL: API_BASE_URL.trim(), // ✅ .trim() por seguridad extra
   timeout: 10000, // ✅ Agrega timeout para manejar errores de red

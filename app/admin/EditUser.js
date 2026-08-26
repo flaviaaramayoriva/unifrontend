@@ -21,7 +21,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 // ✅ URL de producción (igual que en CrearUsuarioA y UsuarioA)
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
-const API_BASE_URL = 'https://unibackend-production.up.railway.app';
+const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';
 const CARRERA_A_FACULTAD = {
   '1':'1', '2':'2', '3':'2', '4':'2', '5':'2', '6':'2', '7':'2',
   '8':'3', '9':'3', '10':'3', '11':'3',

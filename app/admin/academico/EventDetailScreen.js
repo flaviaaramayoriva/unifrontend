@@ -26,7 +26,7 @@ let determinedApiBaseUrl;
   determinedApiBaseUrl = 'http://192.168.0.167:3001/api';
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL =  'https://unibackend-production.up.railway.app';
+const API_BASE_URL =  'unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'acadAuthToken';
 
 // Funciones para manejo de tokens (sin cambios)

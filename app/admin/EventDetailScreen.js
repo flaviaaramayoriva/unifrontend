@@ -12,7 +12,7 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
-const API_BASE_URL =  'https://unibackend-production.up.railway.app';
+const API_BASE_URL =  'unibackend-production-a0f8.up.railway.app';
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
 

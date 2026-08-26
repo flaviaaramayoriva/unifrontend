@@ -15,7 +15,7 @@ import dayjs from 'dayjs';
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
-const API_BASE_URL = 'https://unibackend-production.up.railway.app';
+const API_BASE_URL = 'unibackend-production-a0f8.up.railway.app';
 const RASA_WEBHOOK_URL = 'https://unirasa.onrender.com/webhooks/rest/webhook';
 const TOKEN_KEY = 'adminAuthToken';
 const BOT_USERNAME = 'EventUniBot';
