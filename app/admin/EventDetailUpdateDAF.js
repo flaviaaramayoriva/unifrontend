@@ -25,7 +25,7 @@ let determinedApiBaseUrl;
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unifrontend-production-df6e.up.railway.app';
+const API_BASE_URL = 'https://unifrontend-production-df6e.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {

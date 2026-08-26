@@ -6,7 +6,7 @@ import axios from 'axios';
 //const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://evento.cidtec-uc.com';
 //const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unifrontend.onrender.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend1-production.up.railway.app';
+const BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
 
 console.log('🔍 [BotService] BASE_URL:', BASE_URL);
 const API = axios.create({

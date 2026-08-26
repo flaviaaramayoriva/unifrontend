@@ -10,7 +10,8 @@ import * as SecureStore from 'expo-secure-store';
 import { PieChart, LineChart } from 'react-native-chart-kit';
 
 //const API_BASE_URL = 'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';//const API_BASE_URL =  'https://unifrontend.onrender.com';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+//const API_BASE_URL =  'https://unifrontend.onrender.com';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {

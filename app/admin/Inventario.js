@@ -10,7 +10,8 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';';const TOKEN_KEY = 'adminAuthToken';
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const TOKEN_KEY = 'adminAuthToken';
 const getToken = async () => {
   if (Platform.OS === 'web') { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } }
   try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
