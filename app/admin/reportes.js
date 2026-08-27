@@ -361,64 +361,54 @@ const cargarEventosParaPicker = async () => {
     router.push(`/admin/EventoDetalleImp?eventId=${evento.idevento}`);
   };
 
-  const generarPDF = async (mesFormato) => {
-    console.log('Eventos del mes:', eventosDelMes.length);
-  console.log('IDs seleccionados:', eventosIds);
+    const generarPDF = async (mesFormato) => {
     setLoading(true);
     try {
       const token = await getTokenAsync();
-      if (!token) return;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
       const reporte = reportesMensuales.find(r => r.mes === mesFormato);
-      if (!reporte) { showError(`Sin datos para ${mesFormato}.`); return; }
+      if (!reporte) { 
+        setLoading(false);
+        showError(`Sin datos para ${mesFormato}.`); 
+        return; 
+      }
 
       const [year, monthNum] = mesFormato.split('-');
       const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
 
+      // ✅ 1. Inicializar la variable ANTES de usarla
       let eventosDelMes = [];
-      const eventosIds = undefined; // 🔧 CORRECCIÓN: Se declara para evitar ReferenceError
-      if (eventosIds && Array.isArray(eventosIds)) {
-        // Usar solo los eventos seleccionados
-        const res = await axios.get(`${API_BASE_URL}/eventos`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const todosEventos = Array.isArray(res.data) ? res.data : [];
-        eventosDelMes = todosEventos.filter(ev => eventosIds.includes(ev.idevento));
-      } else {
-        const res = await axios.get(`${API_BASE_URL}/eventos`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { mes: mesFormato } // Filtrar por mes
-        });
-        const todosEventos = Array.isArray(res.data) ? res.data : [];
-        
-        const [yearStr, monthStr] = mesFormato.split('-');
-        const yearNum = parseInt(yearStr);
-        const monthNum2 = parseInt(monthStr);
-        const fechaLimite = new Date(yearNum, monthNum2, 0); // último día del mes
-        fechaLimite.setMonth(fechaLimite.getMonth() + 1); // +1 mes
-        
-        
-        eventosDelMes = todosEventos.filter(ev => {
-              if (!ev.fechaevento) return false;
-              const fechaEvento = new Date(ev.fechaevento);
-                return fechaEvento.getFullYear() === yearNum && (fechaEvento.getMonth() + 1) === monthNum2;
-             /* const fechaCreacion = ev.created_at ? new Date(ev.created_at) : fechaEvento;
-              const añoEvento = fechaEvento.getFullYear();
-              if (añoEvento !== yearNum) return false;
-              const diffMs = fechaEvento.getTime() - fechaCreacion.getTime();
-              const diffDias = diffMs / (1000 * 60 * 60 * 24);
-              if (diffDias > 30) return false;
-              if (fechaEvento > fechaLimite) return false;
-              return true;*/
-            });
-        
-      }
+      
+      // ✅ 2. Obtener todos los eventos
+      const res = await axios.get(`${API_BASE_URL}/eventos`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const todosEventos = Array.isArray(res.data) ? res.data : [];
+      
+      const yearNum = parseInt(year);
+      const monthNum2 = parseInt(monthNum);
+      
+      // ✅ 3. Filtrar limpiamente por año y mes
+      eventosDelMes = todosEventos.filter(ev => {
+        if (!ev.fechaevento) return false;
+        const fechaEvento = new Date(ev.fechaevento);
+        return fechaEvento.getFullYear() === yearNum && 
+               (fechaEvento.getMonth() + 1) === monthNum2;
+      });
+      
+      // ✅ 4. Ahora sí podemos hacer el console.log de forma segura
+      console.log(`✅ Eventos filtrados para ${mesNombre} ${year}:`, eventosDelMes.length);
+
       const aprobado       = reporte.aprobado  || 0;
       const pendiente      = reporte.pendiente || 0;
       const rechazado      = reporte.rechazado || 0;
-      const totalEvents    = reporte.totalEvents    || (aprobado + pendiente + rechazado);
+      const totalEvents    = reporte.totalEvents || (aprobado + pendiente + rechazado);
       const tasaAprobacion = reporte.tasaAprobacion || (totalEvents > 0 ? Math.round((aprobado / totalEvents) * 100) : 0);
-      const activeUsers    = reporte.activeUsers    || stats?.activeUsers    || 0;
+      const activeUsers    = reporte.activeUsers || stats?.activeUsers || 0;
       const usuariosNuevos = reporte.usuariosNuevosEsteMes || stats?.usuariosNuevosEsteMes || 0;
       const tiempoPromedio = reporte.tiempoPromedioAprobacion || stats?.tiempoPromedioAprobacion || 0;
 
@@ -441,7 +431,6 @@ const cargarEventosParaPicker = async () => {
         `;
       }).join('');
 
-      // ✅ USAR eventosDelMes en lugar de eventosRecientes
       const eventosRows = eventosDelMes.slice(0, 10).map(ev => {
         const estadoColors = {
           aprobado: { bg: '#d1fae5', text: '#059669' },
@@ -620,13 +609,15 @@ const cargarEventosParaPicker = async () => {
           w.document.write(html); 
           w.document.close(); 
           setTimeout(() => w.print(), 800); 
+        } else {
+          showError('Permite ventanas emergentes para ver el reporte.');
         }
-        else showError('Permite ventanas emergentes para ver el reporte.');
       } else {
         const { uri } = await Print.printToFileAsync({ html });
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
       }
     } catch (err) {
+      console.error('Error al generar PDF:', err);
       showError('Error al generar PDF: ' + err.message);
     } finally {
       setLoading(false);
