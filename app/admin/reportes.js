@@ -232,28 +232,19 @@ const cargarEventos = useCallback(async () => {
     });
     const lista = Array.isArray(res.data) ? res.data : [];
     
-    const añoActual = new Date().getFullYear();
+    const anioActual = new Date().getFullYear();
     const eventosFiltrados = lista.filter(ev => {
       if (!ev.fechaevento) return false;
       
       const fechaEvento = new Date(ev.fechaevento);
+      const anioEvento = fechaEvento.getFullYear();
+      return anioEvento === anioActual;
       const fechaCreacion = ev.created_at ? new Date(ev.created_at) : fechaEvento;
       
-      const añoEvento = fechaEvento.getFullYear();
-      if (añoEvento !== añoActual) {
-        return false;
-      }
       
-      const diffMs = fechaEvento.getTime() - fechaCreacion.getTime();
-      const diffDias = diffMs / (1000 * 60 * 60 * 24);
-      if (diffDias > 30) {
-        return false;
-      }
-      
-      return true;
     });
     
-    console.log(`✅ Eventos recientes: ${eventosFiltrados.length} de ${lista.length} (solo ${añoActual})`);
+    console.log(`✅ Eventos recientes: ${eventosFiltrados.length} de ${lista.length} (solo ${anioActual})`);
     setEventosRecientes(eventosFiltrados.slice(0, 10));
   } catch (err) {
     console.error(err);
@@ -371,6 +362,8 @@ const cargarEventosParaPicker = async () => {
   };
 
   const generarPDF = async (mesFormato) => {
+    console.log('Eventos del mes:', eventosDelMes.length);
+  console.log('IDs seleccionados:', eventosIds);
     setLoading(true);
     try {
       const token = await getTokenAsync();
@@ -408,14 +401,15 @@ const cargarEventosParaPicker = async () => {
         eventosDelMes = todosEventos.filter(ev => {
               if (!ev.fechaevento) return false;
               const fechaEvento = new Date(ev.fechaevento);
-              const fechaCreacion = ev.created_at ? new Date(ev.created_at) : fechaEvento;
+                return fechaEvento.getFullYear() === yearNum && (fechaEvento.getMonth() + 1) === monthNum2;
+             /* const fechaCreacion = ev.created_at ? new Date(ev.created_at) : fechaEvento;
               const añoEvento = fechaEvento.getFullYear();
               if (añoEvento !== yearNum) return false;
               const diffMs = fechaEvento.getTime() - fechaCreacion.getTime();
               const diffDias = diffMs / (1000 * 60 * 60 * 24);
               if (diffDias > 30) return false;
               if (fechaEvento > fechaLimite) return false;
-              return true;
+              return true;*/
             });
         
       }
