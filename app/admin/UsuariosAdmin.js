@@ -263,48 +263,67 @@ const UsuariosAdmin = () => {
     setShowEditModal(true);
   };
 
-  // ✅ FUNCIÓN REESTRUCTURADA CON LOGS DETALLADOS PASO A PASO
-  const handleDisableUser = (userId) => {
+    const handleDisableUser = async (userId) => {
     console.log("🔴 [PASO 1] handleDisableUser INICIADO con userId:", userId);
     
+    let isConfirmed = false;
+
+    // ✅ SOLUCIÓN WEB: Usar window.confirm nativo del navegador para evitar fallos de Alert en Web
+    if (Platform.OS === 'web') {
+      isConfirmed = window.confirm("¿Estás seguro de que quieres deshabilitar a este usuario? No podrá iniciar sesión.");
+      console.log("✅ [PASO 2 WEB] Resultado de window.confirm:", isConfirmed);
+    } else {
+      // Para móviles (iOS/Android) seguimos usando Alert.alert normal
+      isConfirmed = await new Promise((resolve) => {
+        Alert.alert(
+          "Dar de baja al usuario",
+          "¿Estás seguro de que quieres deshabilitar a este usuario? No podrá iniciar sesión.",
+          [
+            { text: "Cancelar", onPress: () => resolve(false), style: "cancel" },
+            { text: "Sí, dar de baja", onPress: () => resolve(true), style: "destructive" }
+          ]
+        );
+      });
+      console.log("✅ [PASO 2 NATIVO] Resultado de Alert:", isConfirmed);
+    }
+
+    if (!isConfirmed) {
+      console.log("🔴 [PASO 2A] Usuario canceló la acción. Proceso detenido.");
+      return;
+    }
+
+    console.log("✅ [PASO 3] Usuario CONFIRMÓ. Iniciando petición al backend...");
+    
     try {
-      Alert.alert(
-        "Dar de baja al usuario",
-        "¿Estás seguro de que quieres deshabilitar a este usuario? No podrá iniciar sesión.",
-        [
-          { 
-            text: "Cancelar", 
-            onPress: () => console.log("🔴 [PASO 2A] Usuario canceló la acción") 
-          },
-          { 
-            text: "Sí, dar de baja", 
-            onPress: async () => {
-              console.log("✅ [PASO 3] Usuario CONFIRMÓ. Iniciando petición...");
-              try {
-                const token = await getTokenAsync();
-                console.log("📡 [PASO 4] Enviando petición PUT a:", `${API_BASE_URL}/users/${userId}`);
-                
-                const response = await axios.put(
-                  `${API_BASE_URL}/users/${userId}`, 
-                  { habilitado: 0 }, 
-                  { headers: { 'Authorization': `Bearer ${token}` } }
-                );
-                
-                console.log("✅ [PASO 5] Respuesta exitosa del servidor:", response.data);
-                Alert.alert("Éxito", "Usuario dado de baja correctamente.");
-                fetchUsers(true);
-              } catch (error) {
-                console.error("❌ [PASO 6] Error completo al deshabilitar usuario:", error);
-                const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Error desconocido';
-                Alert.alert('Error', `No se pudo dar de baja: ${errorMsg}`);
-              }
-            }, 
-            style: "destructive" 
-          }
-        ]
+      const token = await getTokenAsync();
+      console.log("📡 [PASO 4] Enviando petición PUT a:", `${API_BASE_URL}/users/${userId}`);
+      
+      const response = await axios.put(
+        `${API_BASE_URL}/users/${userId}`, 
+        { habilitado: 0 }, 
+        { headers: { 'Authorization': `Bearer ${token}` } }
       );
-    } catch (err) {
-      console.error("❌ [PASO 0] Error antes de mostrar el Alert:", err);
+      
+      console.log("✅ [PASO 5] Respuesta exitosa del servidor:", response.data);
+      
+      // ✅ Mensaje de éxito también adaptado a Web
+      if (Platform.OS === 'web') {
+        window.alert("✅ Usuario dado de baja correctamente.");
+      } else {
+        Alert.alert("Éxito", "Usuario dado de baja correctamente.");
+      }
+      
+      fetchUsers(true); // Recargar la lista
+      
+    } catch (error) {
+      console.error("❌ [PASO 6] Error completo al deshabilitar usuario:", error);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Error desconocido';
+      
+      if (Platform.OS === 'web') {
+        window.alert(`❌ No se pudo dar de baja: ${errorMsg}`);
+      } else {
+        Alert.alert('Error', `No se pudo dar de baja: ${errorMsg}`);
+      }
     }
   };
 
