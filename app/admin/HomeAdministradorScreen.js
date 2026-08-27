@@ -1072,56 +1072,7 @@ const HomeAdministradorScreen = () => {
           </View>
         </Section>
 
-        <Section title="🤖 Análisis Predictivo (IA)" subtitle="Estimaciones de asistencia basadas en datos históricos">
-          {loadingPredictions ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingText}>La IA está analizando los datos...</Text>
-            </View>
-          ) : prediccionesIA.length === 0 ? (
-            <ChartCard empty={true} emptyIcon="analytics-outline" title="Sin predicciones disponibles" />
-          ) : (
-            <View style={{ gap: 12 }}>
-              {prediccionesIA.map((pred, index) => {
-                // Determinar color según confianza
-                const confColor = pred.confianza_ia === 'alta' ? COLORS.success : 
-                                  pred.confianza_ia === 'media' ? COLORS.warning : COLORS.accent;
-                
-                return (
-                  <View key={index} style={styles.predictionCard}>
-                    <View style={styles.predictionHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.predictionTitle} numberOfLines={1}>{pred.nombreevento}</Text>
-                        <Text style={styles.predictionDate}>
-                          {new Date(pred.fechaevento).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </Text>
-                      </View>
-                      <View style={[styles.confidenceBadge, { backgroundColor: confColor + '15' }]}>
-                        <Text style={[styles.confidenceText, { color: confColor }]}>
-                          {pred.confianza_ia?.toUpperCase()}
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.predictionStats}>
-                      <View style={styles.predictionStatItem}>
-                        <Text style={styles.predictionLabel}>Inscritos</Text>
-                        <Text style={styles.predictionValue}>{pred.participacion_esperada || 0}</Text>
-                      </View>
-                      <View style={styles.predictionDivider} />
-                      <View style={styles.predictionStatItem}>
-                        <Text style={styles.predictionLabel}>Predicción IA</Text>
-                        <Text style={[styles.predictionValue, { color: COLORS.primary, fontWeight: '800' }]}>
-                          {pred.prediccion_ia}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </Section>
+        
         <Section title="Herramientas de Gestión" subtitle="Acceda a las funcionalidades principales">
           {loadingDashboard ? (
             <View style={styles.loadingBox}><ActivityIndicator size="large" color={COLORS.primary} /></View>
