@@ -922,6 +922,7 @@ const ProyectoEvento = () => {
   const [facultadSeleccionada, setFacultadSeleccionada] = useState(null);
   const [showFacultadModal, setShowFacultadModal] = useState(false);
   const [userIdActual, setUserIdActual] = useState(null);
+  const cantidadDisponible = getCantidadDisponible(recurso);
   const [recursosSeleccionadosCount, setRecursosSeleccionadosCount] = useState([]);
   const addRecursoTecnologico = () => setRecursosTecnologicos(prev => [...prev, { nombre: '', cantidad: '' }]);
   const removeRecursoTecnologico = (index) => setRecursosTecnologicos(prev => prev.filter((_, i) => i !== index));
@@ -2138,44 +2139,65 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
           )}
 
           {seccionRecursosVisible && (
-            <View style={[styles.formSection, isScrollingToRecursos && styles.formSectionHighlighted]} ref={recursosSectionRef}>
-              <Text style={styles.sectionTitle}>V. RECURSOS NECESARIOS</Text>
-              <View style={styles.subsection}>
-                <Text style={styles.subsectionTitle}>Recursos Disponibles<Text style={styles.requiredAsterisk}>*</Text></Text>
-                <Text style={styles.subsectionDescription}>Selecciona los recursos existentes que necesitarás para tu evento:</Text>
-                {recursosDisponibles.length > 0 ? (
-                  <View style={styles.recursosDisponiblesGrid}>
-                    {recursosDisponibles.map((recurso) => {
-                      const isSelected = recursosSeleccionados.includes(String(recurso.idrecurso));
-                      return (
-                        <TouchableOpacity
-                          key={String(recurso.idrecurso)}
-                          style={[styles.recursoDisponibleCard, isSelected && styles.recursoDisponibleCardSelected]}
-                          onPress={() => handleRecursoChange(recurso.idrecurso)}
-                        >
-                          <View style={styles.recursoCheckboxContainer}>
-                            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={24} color={isSelected ? "#e95a0c" : "#888"} />
-                          </View>
-                          <View style={styles.recursoInfo}>
-                            <Text style={styles.recursoNombre}>{recurso.nombre_recurso}</Text>
-                            <Text style={styles.recursoTipo}>
-                              {recurso.recurso_tipo === 'tecnologico' ? 'Tecnológico' : recurso.recurso_tipo === 'mobiliario' ? 'Mobiliario' : 'Vajilla'}
-                            </Text>
-                            <Text style={styles.recursoCantidad}>Disponibles: {recurso.cantidad || 'N/A'}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <Text style={styles.noRecursosText}>📦 No hay recursos disponibles en este momento.</Text>
-                )}
-              </View>
-              <TouchableOpacity style={styles.gotoButton} onPress={scrollToPresupuesto}>
-                <Ionicons name="arrow-forward" size={20} color="#ffffff" />
-                <Text style={styles.gotoButtonText}>Ir a Presupuesto</Text>
-              </TouchableOpacity>
+          <View style={[styles.formSection, isScrollingToRecursos && styles.formSectionHighlighted]} ref={recursosSectionRef}>
+            <Text style={styles.sectionTitle}>V. RECURSOS NECESARIOS</Text>
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>Recursos Disponibles<Text style={styles.requiredAsterisk}>*</Text></Text>
+              <Text style={styles.subsectionDescription}>Selecciona los recursos existentes que necesitarás para tu evento:</Text>
+              {recursosDisponibles.length > 0 ? (
+                <View style={styles.recursosDisponiblesGrid}>
+                  {recursosDisponibles.map((recurso) => {
+                    const idString = String(recurso.idrecurso);
+                    const cantidadSeleccionada = recursosSeleccionadosCount[idString] || 0;
+                    const cantidadDisponible = getCantidadDisponible(recurso);
+                    const isSelected = cantidadSeleccionada > 0;
+                    const canSelect = puedeSeleccionarRecurso(recurso);
+                    
+                    return (
+                      <TouchableOpacity
+                        key={idString}
+                        style={[
+                          styles.recursoDisponibleCard,
+                          isSelected && styles.recursoDisponibleCardSelected,
+                          !canSelect && styles.recursoDisponibleCardDisabled
+                        ]}
+                        onPress={() => canSelect && handleRecursoChange(recurso.idrecurso, recurso)}
+                        disabled={!canSelect}
+                      >
+                        <View style={styles.recursoCheckboxContainer}>
+                          <Ionicons
+                            name={isSelected ? "checkbox" : "square-outline"}
+                            size={24}
+                            color={isSelected ? "#e95a0c" : !canSelect ? "#ccc" : "#888"}
+                          />
+                        </View>
+                        <View style={styles.recursoInfo}>
+                          <Text style={styles.recursoNombre}>{recurso.nombre_recurso}</Text>
+                          <Text style={styles.recursoTipo}>
+                            {recurso.recurso_tipo === 'tecnologico' ? 'Tecnológico' :
+                            recurso.recurso_tipo === 'mobiliario' ? 'Mobiliario' : 'Vajilla'}
+                          </Text>
+                          <Text style={[
+                            styles.recursoCantidad,
+                            { color: cantidadDisponible <= 2 ? '#e74c3c' : '#27ae60' }
+                          ]}>
+                            Disponibles: {cantidadDisponible}
+                            {cantidadSeleccionada > 0 && ` (Seleccionadas: ${cantidadSeleccionada})`}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Text style={styles.noRecursosText}> No hay recursos disponibles en este momento.</Text>
+              )}
             </View>
+            <TouchableOpacity style={styles.gotoButton} onPress={scrollToPresupuesto}>
+              <Ionicons name="arrow-forward" size={20} color="#ffffff" />
+              <Text style={styles.gotoButtonText}>Ir a Presupuesto</Text>
+            </TouchableOpacity>
+          </View>
           )}
 
           {seccionPresupuestoVisible && (
