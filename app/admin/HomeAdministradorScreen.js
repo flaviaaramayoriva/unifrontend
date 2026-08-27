@@ -929,7 +929,7 @@ const HomeAdministradorScreen = () => {
   }, [windowWidth]);
 
   const adminActions = [
-    { id: '1', title: 'Gestión de Usuarios',  iconName: 'people-outline',          route: '/admin/UsuarioAcademico',        color: COLORS.secondary, description: 'Administración de cuentas de usuario' },
+    { id: '1', title: 'Gestión de Usuarios',  iconName: 'people-outline',          route: '/admin/UsuariosAdmin',        color: COLORS.secondary, description: 'Administración de cuentas de usuario' },
     { id: '2', title: 'Eventos Pendientes',   iconName: 'timer-outline',            route: '/admin/EventosPendientes', color: COLORS.warning,   description: 'Revisión y aprobación de eventos',  badge: `${pendingContentCount} pendientes` },
     { id: '3', title: 'Eventos Aprobados',    iconName: 'checkmark-circle-outline', route: '/admin/EventosAprobados',  color: COLORS.success,   description: 'Gestión de eventos ya aprobados',   badge: `${approvedEventsCount} aprobados` },
     { id: '4', title: 'Reportes Avanzados',   iconName: 'document-text-outline',    route: '/admin/reportes',          color: COLORS.secondary, description: 'Generación de reportes detallados', badge: 'Nuevo' },
