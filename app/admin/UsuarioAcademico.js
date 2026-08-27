@@ -101,6 +101,17 @@ const UsuarioAcademico = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [filterRole, setFilterRole] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
+  
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    nombre: '',
+    apellidopat: '',
+    apellidomat: '',
+    username: '',
+    email: ''
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+  
   const params = useLocalSearchParams();
 
   const fetchUsers = async (isRefresh = false) => {
@@ -114,7 +125,7 @@ const UsuarioAcademico = () => {
 
     try {
       localToken = await getTokenAsync();
-       console.log('🔑 Token:', localToken ? 'Existe' : 'NO ENCONTRADO');
+      console.log('🔑 Token:', localToken ? 'Existe' : 'NO ENCONTRADO');
       console.log('🌐 URL a la que se llama:', `${API_BASE_URL}/users`);
 
       if (!localToken) {
@@ -143,11 +154,11 @@ const UsuarioAcademico = () => {
       setFilteredUsers(processedUsers);
 
     } catch (error) {
-       console.error("❌ Error completo:", error);
-        console.error("❌ Respuesta del error:", error.response);
-        console.error("❌ Estado del error:", error.response?.status);
-        console.error("❌ Datos del error:", error.response?.data);
-    
+      console.error("❌ Error completo:", error);
+      console.error("❌ Respuesta del error:", error.response);
+      console.error("❌ Estado del error:", error.response?.status);
+      console.error("❌ Datos del error:", error.response?.data);
+  
       let errorMessage = 'No se pudieron cargar los usuarios.';
       if (error.response?.status === 401) {
         errorMessage = 'No autorizado. Tu sesión podría haber expirado.';
@@ -263,6 +274,54 @@ const UsuarioAcademico = () => {
     setShowUserModal(true);
   };
 
+  const openEditModal = () => {
+    if (currentUser) {
+      setEditFormData({
+        nombre: currentUser.nombre || '',
+        apellidopat: currentUser.apellidopat || '',
+        apellidomat: currentUser.apellidomat || '',
+        username: currentUser.username || '',
+        email: currentUser.email || '',
+      });
+      setShowEditModal(true);
+    }
+  };
+
+  const handleUpdateCurrentUser = async () => {
+    if (!currentUser) return;
+    
+    if (!editFormData.nombre || !editFormData.email || !editFormData.username) {
+      Alert.alert('Campos obligatorios', 'Nombre, usuario y correo electrónico son requeridos.');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const token = await getTokenAsync();
+      const response = await axios.put(
+        `${API_BASE_URL}/users/${currentUser.id}`, 
+        editFormData,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      Alert.alert('Éxito', 'Tu perfil ha sido actualizado correctamente.');
+      setShowEditModal(false);
+      
+      const updatedUser = { ...currentUser, ...editFormData };
+      setCurrentUser(updatedUser);
+
+      setUsers(prevUsers => 
+        prevUsers.map(u => (u.id === currentUser.id ? { ...u, ...editFormData } : u))
+      );
+
+    } catch (error) {
+      console.error("❌ Error al actualizar perfil:", error);
+      Alert.alert('Error', 'No se pudo actualizar el perfil. Verifica tu conexión o intenta más tarde.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const getRoleColor = (role) => {
     switch (role?.toLowerCase()) {
       case 'admin': return COLORS.accent;
@@ -360,10 +419,84 @@ const UsuarioAcademico = () => {
                   </Text>
                 </View>
               </View>
-
-              {/* ✅ ELIMINADO: Sección de acciones (eliminar) del modal */}
             </View>
           )}
+        </View>
+      </Pressable>
+    </Modal>
+  );
+
+  const renderEditUserModal = () => (
+    <Modal
+      visible={showEditModal}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowEditModal(false)}
+    >
+      <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Editar Mi Perfil</Text>
+            <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.modalCloseButton}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
+            <Text style={styles.inputLabel}>Nombre</Text>
+            <TextInput
+              style={styles.input}
+              value={editFormData.nombre}
+              onChangeText={(text) => setEditFormData({ ...editFormData, nombre: text })}
+              placeholder="Tu nombre"
+            />
+            
+            <Text style={styles.inputLabel}>Apellido Paterno</Text>
+            <TextInput
+              style={styles.input}
+              value={editFormData.apellidopat}
+              onChangeText={(text) => setEditFormData({ ...editFormData, apellidopat: text })}
+              placeholder="Apellido paterno"
+            />
+            
+            <Text style={styles.inputLabel}>Apellido Materno</Text>
+            <TextInput
+              style={styles.input}
+              value={editFormData.apellidomat}
+              onChangeText={(text) => setEditFormData({ ...editFormData, apellidomat: text })}
+              placeholder="Apellido materno"
+            />
+            
+            <Text style={styles.inputLabel}>Nombre de Usuario</Text>
+            <TextInput
+              style={styles.input}
+              value={editFormData.username}
+              onChangeText={(text) => setEditFormData({ ...editFormData, username: text })}
+              placeholder="Nombre de usuario"
+              autoCapitalize="none"
+            />
+            
+            <Text style={styles.inputLabel}>Correo Electrónico</Text>
+            <TextInput
+              style={styles.input}
+              value={editFormData.email}
+              onChangeText={(text) => setEditFormData({ ...editFormData, email: text })}
+              placeholder="correo@ejemplo.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            
+            <TouchableOpacity 
+              style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]} 
+              onPress={handleUpdateCurrentUser}
+              disabled={isUpdating}
+            >
+              {isUpdating ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </Pressable>
     </Modal>
@@ -412,12 +545,17 @@ const UsuarioAcademico = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* ✅ NUEVO: Mostrar información del usuario actual arriba de todo */}
         {currentUser && (
           <View style={styles.currentUserCard}>
             <View style={styles.currentUserHeader}>
-              <Ionicons name="person-circle" size={24} color={COLORS.primary} />
-              <Text style={styles.currentUserTitle}>Usuario Actual</Text>
+              <View style={styles.currentUserHeaderLeft}>
+                <Ionicons name="person-circle" size={24} color={COLORS.primary} />
+                <Text style={styles.currentUserTitle}>Mi Perfil</Text>
+              </View>
+              <TouchableOpacity style={styles.editProfileButton} onPress={openEditModal}>
+                <Ionicons name="create-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.editProfileText}>Editar</Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.currentUserContent}>
               <View style={styles.currentUserAvatar}>
@@ -525,7 +663,6 @@ const UsuarioAcademico = () => {
                     </View>
 
                     <View style={styles.userActions}>
-                      {/* ✅ SOLO BOTÓN DE VER (Ojo) */}
                       <TouchableOpacity
                         onPress={() => handleViewUser(user)}
                         style={[styles.actionButton, styles.viewButton]}
@@ -533,8 +670,6 @@ const UsuarioAcademico = () => {
                       >
                         <Ionicons name="eye-outline" size={20} color={COLORS.info} />
                       </TouchableOpacity>
-                      
-                      {/* ✅ ELIMINADOS: Botones de editar y eliminar */}
                     </View>
                   </View>
                 ))}
@@ -545,6 +680,7 @@ const UsuarioAcademico = () => {
       </ScrollView>
 
       {renderUserModal()}
+      {renderEditUserModal()} 
     </SafeAreaView>
   );
 };
@@ -602,13 +738,32 @@ const styles = StyleSheet.create({
   currentUserHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  currentUserHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   currentUserTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.textPrimary,
     marginLeft: 8,
+  },
+  editProfileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  editProfileText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   currentUserContent: {
     flexDirection: 'row',
@@ -832,6 +987,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     width: width * 0.9,
     maxWidth: 400,
+    maxHeight: '80%',
     overflow: 'hidden',
   },
   modalHeader: {
@@ -897,6 +1053,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+  },
+  saveButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 10,
+  },
+  saveButtonDisabled: {
+    backgroundColor: COLORS.textTertiary,
+  },
+  saveButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
