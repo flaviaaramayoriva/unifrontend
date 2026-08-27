@@ -143,7 +143,7 @@ const UsuariosAdmin = () => {
       const usersData = Array.isArray(response.data) ? response.data : (response.data.data || []);
       const processedUsers = usersData.map(user => ({
         ...user,
-        id: user.idusuario || user.id
+        id: user.idusuario || user.id // Aseguramos que 'id' siempre exista
       }));
 
       setUsers(processedUsers);
@@ -263,8 +263,10 @@ const UsuariosAdmin = () => {
     setShowEditModal(true);
   };
 
-  // ✅ NUEVA FUNCIÓN: Dar de baja / Deshabilitar usuario
+  // ✅ FUNCIÓN CORREGIDA: Dar de baja / Deshabilitar usuario
   const handleDisableUser = async (userId) => {
+    console.log("🔴 handleDisableUser llamado con userId:", userId);
+    
     const isConfirmed = await new Promise((resolve) => {
       Alert.alert(
         "Dar de baja al usuario",
@@ -276,21 +278,26 @@ const UsuariosAdmin = () => {
       );
     });
 
+    console.log("✅ Confirmación del usuario:", isConfirmed);
     if (!isConfirmed) return;
 
     try {
       const token = await getTokenAsync();
-      await axios.put(
+      console.log("📡 Enviando petición a:", `${API_BASE_URL}/users/${userId}`);
+      
+      const response = await axios.put(
         `${API_BASE_URL}/users/${userId}`, 
-        { habilitado: false }, 
+        { habilitado: 0 }, // ⚠️ CAMBIO CLAVE: Usar 0 en lugar de false, ya que en el registro usamos 1/0
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
+      console.log("✅ Respuesta exitosa del servidor:", response.data);
       Alert.alert("Éxito", "Usuario dado de baja correctamente.");
       fetchUsers(true); // Recargar la lista para reflejar el cambio
     } catch (error) {
-      console.error("❌ Error al deshabilitar usuario:", error);
-      Alert.alert('Error', 'No se pudo dar de baja al usuario. Verifica tu conexión.');
+      console.error("❌ Error completo al deshabilitar usuario:", error);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Error desconocido';
+      Alert.alert('Error', `No se pudo dar de baja al usuario: ${errorMsg}`);
     }
   };
 
@@ -570,17 +577,14 @@ const UsuariosAdmin = () => {
                     </View>
 
                     <View style={styles.userActions}>
-                      {/* ✅ Botón de Editar */}
                       <TouchableOpacity onPress={() => openEditModal(user)} style={[styles.actionButton, styles.editButton]} activeOpacity={0.7}>
                         <Ionicons name="pencil-outline" size={20} color={COLORS.warning} />
                       </TouchableOpacity>
                       
-                      {/* ✅ Botón de Ver */}
                       <TouchableOpacity onPress={() => handleViewUser(user)} style={[styles.actionButton, styles.viewButton]} activeOpacity={0.7}>
                         <Ionicons name="eye-outline" size={20} color={COLORS.info} />
                       </TouchableOpacity>
 
-                      {/* ✅ NUEVO: Botón de Dar de Baja / Deshabilitar */}
                       <TouchableOpacity 
                         onPress={() => handleDisableUser(user.id)} 
                         style={[styles.actionButton, styles.disableButton]} 
@@ -653,7 +657,7 @@ const styles = StyleSheet.create({
   actionButton: { padding: 10, borderRadius: 8, marginLeft: 5 },
   viewButton: { backgroundColor: 'rgba(52, 152, 219, 0.1)' },
   editButton: { backgroundColor: 'rgba(243, 156, 18, 0.1)' },
-  disableButton: { backgroundColor: 'rgba(239, 68, 68, 0.1)' }, // ✅ Estilo para el botón de dar de baja
+  disableButton: { backgroundColor: 'rgba(239, 68, 68, 0.1)' },
   noUsersText: { fontSize: 16, color: COLORS.textTertiary, textAlign: 'center', marginTop: 20 },
   clearFiltersButton: { marginTop: 15, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: COLORS.primary, borderRadius: 8 },
   clearFiltersText: { color: COLORS.white, fontSize: 14, fontWeight: '600' },
