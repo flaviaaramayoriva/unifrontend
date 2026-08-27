@@ -143,7 +143,7 @@ const UsuariosAdmin = () => {
       const usersData = Array.isArray(response.data) ? response.data : (response.data.data || []);
       const processedUsers = usersData.map(user => ({
         ...user,
-        id: user.idusuario || user.id // Aseguramos que 'id' siempre exista
+        id: user.idusuario || user.id
       }));
 
       setUsers(processedUsers);
@@ -263,41 +263,48 @@ const UsuariosAdmin = () => {
     setShowEditModal(true);
   };
 
-  // ✅ FUNCIÓN CORREGIDA: Dar de baja / Deshabilitar usuario
-  const handleDisableUser = async (userId) => {
-    console.log("🔴 handleDisableUser llamado con userId:", userId);
+  // ✅ FUNCIÓN REESTRUCTURADA CON LOGS DETALLADOS PASO A PASO
+  const handleDisableUser = (userId) => {
+    console.log("🔴 [PASO 1] handleDisableUser INICIADO con userId:", userId);
     
-    const isConfirmed = await new Promise((resolve) => {
+    try {
       Alert.alert(
         "Dar de baja al usuario",
         "¿Estás seguro de que quieres deshabilitar a este usuario? No podrá iniciar sesión.",
         [
-          { text: "Cancelar", onPress: () => resolve(false), style: "cancel" },
-          { text: "Sí, dar de baja", onPress: () => resolve(true), style: "destructive" }
+          { 
+            text: "Cancelar", 
+            onPress: () => console.log("🔴 [PASO 2A] Usuario canceló la acción") 
+          },
+          { 
+            text: "Sí, dar de baja", 
+            onPress: async () => {
+              console.log("✅ [PASO 3] Usuario CONFIRMÓ. Iniciando petición...");
+              try {
+                const token = await getTokenAsync();
+                console.log("📡 [PASO 4] Enviando petición PUT a:", `${API_BASE_URL}/users/${userId}`);
+                
+                const response = await axios.put(
+                  `${API_BASE_URL}/users/${userId}`, 
+                  { habilitado: 0 }, 
+                  { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                
+                console.log("✅ [PASO 5] Respuesta exitosa del servidor:", response.data);
+                Alert.alert("Éxito", "Usuario dado de baja correctamente.");
+                fetchUsers(true);
+              } catch (error) {
+                console.error("❌ [PASO 6] Error completo al deshabilitar usuario:", error);
+                const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Error desconocido';
+                Alert.alert('Error', `No se pudo dar de baja: ${errorMsg}`);
+              }
+            }, 
+            style: "destructive" 
+          }
         ]
       );
-    });
-
-    console.log("✅ Confirmación del usuario:", isConfirmed);
-    if (!isConfirmed) return;
-
-    try {
-      const token = await getTokenAsync();
-      console.log("📡 Enviando petición a:", `${API_BASE_URL}/users/${userId}`);
-      
-      const response = await axios.put(
-        `${API_BASE_URL}/users/${userId}`, 
-        { habilitado: 0 }, // ⚠️ CAMBIO CLAVE: Usar 0 en lugar de false, ya que en el registro usamos 1/0
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      
-      console.log("✅ Respuesta exitosa del servidor:", response.data);
-      Alert.alert("Éxito", "Usuario dado de baja correctamente.");
-      fetchUsers(true); // Recargar la lista para reflejar el cambio
-    } catch (error) {
-      console.error("❌ Error completo al deshabilitar usuario:", error);
-      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Error desconocido';
-      Alert.alert('Error', `No se pudo dar de baja al usuario: ${errorMsg}`);
+    } catch (err) {
+      console.error("❌ [PASO 0] Error antes de mostrar el Alert:", err);
     }
   };
 
@@ -585,8 +592,13 @@ const UsuariosAdmin = () => {
                         <Ionicons name="eye-outline" size={20} color={COLORS.info} />
                       </TouchableOpacity>
 
+                      {/* ✅ BOTÓN CON LOGS EXPLÍCITOS Y HIT SLOP PARA ASEGURAR EL CLIC */}
                       <TouchableOpacity 
-                        onPress={() => handleDisableUser(user.id)} 
+                        onPress={() => {
+                          console.log("👆 [CLICK DETECTADO] Botón de dar de baja presionado. Usuario:", user.username, "ID:", user.id);
+                          handleDisableUser(user.id);
+                        }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         style={[styles.actionButton, styles.disableButton]} 
                         activeOpacity={0.7}
                       >
