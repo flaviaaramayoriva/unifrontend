@@ -922,7 +922,7 @@ const ProyectoEvento = () => {
   const [facultadSeleccionada, setFacultadSeleccionada] = useState(null);
   const [showFacultadModal, setShowFacultadModal] = useState(false);
   const [userIdActual, setUserIdActual] = useState(null);
-  const cantidadDisponible = getCantidadDisponible(recurso);
+  
   const [recursosSeleccionadosCount, setRecursosSeleccionadosCount] = useState([]);
   const addRecursoTecnologico = () => setRecursosTecnologicos(prev => [...prev, { nombre: '', cantidad: '' }]);
   const removeRecursoTecnologico = (index) => setRecursosTecnologicos(prev => prev.filter((_, i) => i !== index));
@@ -1355,6 +1355,7 @@ const ProyectoEvento = () => {
   });
   };
 
+  
   const getCantidadDisponible = (recurso) => {
   const idString = String(recurso.idrecurso);
   const seleccionados = recursosSeleccionadosCount[idString] || 0;
