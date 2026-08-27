@@ -102,7 +102,6 @@ const UsuariosAdmin = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
   
-  // ✅ CAMBIO: Estado para saber a QUÉ usuario estamos editando (no solo al actual)
   const [userToEdit, setUserToEdit] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({
@@ -252,7 +251,6 @@ const UsuariosAdmin = () => {
     setShowUserModal(true);
   };
 
-  // ✅ CAMBIO: Ahora acepta cualquier usuario, no solo el currentUser
   const openEditModal = (user) => {
     setUserToEdit(user);
     setEditFormData({
@@ -265,7 +263,37 @@ const UsuariosAdmin = () => {
     setShowEditModal(true);
   };
 
-  // ✅ CAMBIO: Función unificada para actualizar cualquier usuario
+  // ✅ NUEVA FUNCIÓN: Dar de baja / Deshabilitar usuario
+  const handleDisableUser = async (userId) => {
+    const isConfirmed = await new Promise((resolve) => {
+      Alert.alert(
+        "Dar de baja al usuario",
+        "¿Estás seguro de que quieres deshabilitar a este usuario? No podrá iniciar sesión.",
+        [
+          { text: "Cancelar", onPress: () => resolve(false), style: "cancel" },
+          { text: "Sí, dar de baja", onPress: () => resolve(true), style: "destructive" }
+        ]
+      );
+    });
+
+    if (!isConfirmed) return;
+
+    try {
+      const token = await getTokenAsync();
+      await axios.put(
+        `${API_BASE_URL}/users/${userId}`, 
+        { habilitado: false }, 
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      
+      Alert.alert("Éxito", "Usuario dado de baja correctamente.");
+      fetchUsers(true); // Recargar la lista para reflejar el cambio
+    } catch (error) {
+      console.error("❌ Error al deshabilitar usuario:", error);
+      Alert.alert('Error', 'No se pudo dar de baja al usuario. Verifica tu conexión.');
+    }
+  };
+
   const handleUpdateUser = async () => {
     if (!userToEdit) return;
     
@@ -286,12 +314,10 @@ const UsuariosAdmin = () => {
       Alert.alert('Éxito', 'El perfil ha sido actualizado correctamente.');
       setShowEditModal(false);
       
-      // Actualizar la lista general de usuarios
       setUsers(prevUsers => 
         prevUsers.map(u => (u.id === userToEdit.id ? { ...u, ...editFormData } : u))
       );
 
-      // ✅ Si el usuario editado es el que tiene la sesión activa, actualizamos también su tarjeta de "Mi Perfil"
       if (currentUser && currentUser.id === userToEdit.id) {
         setCurrentUser(prev => ({ ...prev, ...editFormData }));
       }
@@ -386,7 +412,6 @@ const UsuariosAdmin = () => {
       <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            {/* ✅ Título dinámico según a quién se esté editando */}
             <Text style={styles.modalTitle}>
               {userToEdit && currentUser && userToEdit.id === currentUser.id ? 'Editar Mi Perfil' : 'Editar Usuario'}
             </Text>
@@ -458,7 +483,6 @@ const UsuariosAdmin = () => {
                 <Ionicons name="person-circle" size={24} color={COLORS.primary} />
                 <Text style={styles.currentUserTitle}>Mi Perfil</Text>
               </View>
-              {/* ✅ Pasamos currentUser explícitamente al modal de edición */}
               <TouchableOpacity style={styles.editProfileButton} onPress={() => openEditModal(currentUser)}>
                 <Ionicons name="create-outline" size={18} color={COLORS.primary} />
                 <Text style={styles.editProfileText}>Editar</Text>
@@ -546,13 +570,23 @@ const UsuariosAdmin = () => {
                     </View>
 
                     <View style={styles.userActions}>
-                      {/* ✅ NUEVO: Botón de Editar para CUALQUIER usuario de la lista */}
+                      {/* ✅ Botón de Editar */}
                       <TouchableOpacity onPress={() => openEditModal(user)} style={[styles.actionButton, styles.editButton]} activeOpacity={0.7}>
                         <Ionicons name="pencil-outline" size={20} color={COLORS.warning} />
                       </TouchableOpacity>
                       
+                      {/* ✅ Botón de Ver */}
                       <TouchableOpacity onPress={() => handleViewUser(user)} style={[styles.actionButton, styles.viewButton]} activeOpacity={0.7}>
                         <Ionicons name="eye-outline" size={20} color={COLORS.info} />
+                      </TouchableOpacity>
+
+                      {/* ✅ NUEVO: Botón de Dar de Baja / Deshabilitar */}
+                      <TouchableOpacity 
+                        onPress={() => handleDisableUser(user.id)} 
+                        style={[styles.actionButton, styles.disableButton]} 
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="ban-outline" size={20} color={COLORS.accent} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -618,7 +652,8 @@ const styles = StyleSheet.create({
   userActions: { flexDirection: 'row', alignItems: 'center' },
   actionButton: { padding: 10, borderRadius: 8, marginLeft: 5 },
   viewButton: { backgroundColor: 'rgba(52, 152, 219, 0.1)' },
-  editButton: { backgroundColor: 'rgba(243, 156, 18, 0.1)' }, // ✅ Asegurado que exista
+  editButton: { backgroundColor: 'rgba(243, 156, 18, 0.1)' },
+  disableButton: { backgroundColor: 'rgba(239, 68, 68, 0.1)' }, // ✅ Estilo para el botón de dar de baja
   noUsersText: { fontSize: 16, color: COLORS.textTertiary, textAlign: 'center', marginTop: 20 },
   clearFiltersButton: { marginTop: 15, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: COLORS.primary, borderRadius: 8 },
   clearFiltersText: { color: COLORS.white, fontSize: 14, fontWeight: '600' },
