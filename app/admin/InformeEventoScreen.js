@@ -325,39 +325,180 @@ const InformeEventoScreen = () => {
     }
   };
 
-  const buildInformeHtml = () => {
-    const rowsHtml = (rows) => (Array.isArray(rows) ? rows : []).map(r => `<tr><td>${r.descripcion || ''}</td><td style="text-align:right">${r.cantidad || ''}</td><td style="text-align:right">Bs ${parseFloat(r.precio_unitario || 0).toFixed(2)}</td><td style="text-align:right">Bs ${parseFloat(r.total || 0).toFixed(2)}</td></tr>`).join('');
+    const buildInformeHtml = () => {
     return `<html><head><meta charset="UTF-8"><style>
-      @page { margin: 1cm; }
-      body { font-family: Arial, sans-serif; padding: 1cm; color: #333; }
-      h1 { color: #E95A0C; border-bottom: 2px solid #E95A0C; padding-bottom: 0.3cm; }
-      .section-title { background: #f6a06b; color: #fff; font-weight: bold; padding: 6px 10px; margin-top: 16px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-      td, th { border: 1px solid #ccc; padding: 6px; font-size: 12px; }
-      .balance { font-weight: bold; background: #ecf0f1; padding: 8px; margin-top: 8px; }
+      @page { margin: 1.5cm; }
+      body { font-family: Arial, sans-serif; color: #333; font-size: 12px; }
+      h1 { color: #E95A0C; border-bottom: 2px solid #E95A0C; padding-bottom: 5px; font-size: 22px; }
+      h2 { color: #E95A0C; border-bottom: 1px solid #E95A0C; padding-bottom: 3px; font-size: 16px; margin-top: 20px; }
+      .section-title { background: #E95A0C; color: #fff; font-weight: bold; padding: 6px 10px; margin-top: 20px; margin-bottom: 10px; font-size: 14px; border-radius: 4px; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+      th { background: #f4f4f4; font-weight: bold; }
+      td, th { border: 1px solid #ccc; padding: 6px; font-size: 11px; }
+      .balance-box { background: #ecf0f1; padding: 10px; font-weight: bold; text-align: right; margin-top: 10px; border-radius: 4px; font-size: 14px; }
+      .text-block { background: #f9f9f9; padding: 10px; border-left: 4px solid #E95A0C; margin-bottom: 10px; white-space: pre-wrap; }
+      ul { margin: 0; padding-left: 20px; }
     </style></head><body>
       <h1>Informe del Evento: ${event?.title || ''}</h1>
-      <div class="section-title">Datos Generales</div>
+      
+      <div class="section-title">1. DATOS GENERALES DEL EVENTO</div>
       <table>
-        <tr><td><strong>Fecha</strong></td><td>${event?.date || ''}</td></tr>
-        <tr><td><strong>Hora</strong></td><td>${event?.time || ''}</td></tr>
-        <tr><td><strong>Ubicación</strong></td><td>${event?.location || ''}</td></tr>
-        <tr><td><strong>Responsable</strong></td><td>${event?.responsable || ''}</td></tr>
+        <tr><td style="width:25%; background:#f4f4f4;"><strong>Fecha</strong></td><td>${event?.date || '-'}</td><td style="width:25%; background:#f4f4f4;"><strong>Hora</strong></td><td>${event?.time || '-'}</td></tr>
+        <tr><td style="background:#f4f4f4;"><strong>Ubicación</strong></td><td colspan="3">${event?.location || '-'}</td></tr>
+        <tr><td style="background:#f4f4f4;"><strong>Responsable</strong></td><td>${event?.responsable || '-'}</td><td style="background:#f4f4f4;"><strong>Fase / Estado</strong></td><td>Fase ${event?.idfase || 1} / ${event?.status || '-'}</td></tr>
+        ${event?.creador ? `<tr><td style="background:#f4f4f4;"><strong>Propuesto por</strong></td><td colspan="3">${event.creador.nombre} (${event.creador.role})</td></tr>` : ''}
+        ${event?.Clasificacion ? `<tr><td style="background:#f4f4f4;"><strong>Clasificación</strong></td><td colspan="3">${event.Clasificacion.nombreClasificacion} - ${event.Clasificacion.nombresubcategoria}</td></tr>` : ''}
       </table>
-      <div class="section-title">Segmento Alcanzado</div>
+
+      ${event?.tiposEvento && event.tiposEvento.length > 0 ? `
+        <h2>Tipos de Evento</h2>
+        <ul>${event.tiposEvento.map(t => `<li>${t.nombretipo || 'Tipo'}</li>`).join('')}</ul>
+      ` : ''}
+
+      ${event?.objetivosPDI && event.objetivosPDI.length > 0 ? `
+        <h2>Objetivos del PDI Institucional</h2>
+        <ul>${event.objetivosPDI.map(p => `<li>${p}</li>`).join('')}</ul>
+      ` : ''}
+
+      ${event?.actividadesPrevias && event.actividadesPrevias.length > 0 ? `
+        <div class="section-title">2. ACTIVIDADES PREVIAS</div>
+        <table>
+          <tr><th>Actividad</th><th>Responsable</th><th>Inicio</th><th>Fin</th></tr>
+          ${event.actividadesPrevias.map(a => `<tr><td>${a.nombre || '-'}</td><td>${a.responsable || '-'}</td><td>${formatDate(a.fecha_inicio)}</td><td>${formatDate(a.fecha_fin)}</td></tr>`).join('')}
+        </table>
+      ` : ''}
+
+      ${event?.actividadesDurante && event.actividadesDurante.length > 0 ? `
+        <div class="section-title">3. ACTIVIDADES DURANTE EL EVENTO</div>
+        <table>
+          <tr><th>Actividad</th><th>Responsable</th><th>Inicio</th><th>Fin</th></tr>
+          ${event.actividadesDurante.map(a => `<tr><td>${a.nombre || '-'}</td><td>${a.responsable || '-'}</td><td>${formatDate(a.fecha_inicio)}</td><td>${formatDate(a.fecha_fin)}</td></tr>`).join('')}
+        </table>
+      ` : ''}
+
+      ${event?.actividadesPost && event.actividadesPost.length > 0 ? `
+        <div class="section-title">4. ACTIVIDADES DESPUÉS DEL EVENTO</div>
+        <table>
+          <tr><th>Actividad</th><th>Responsable</th><th>Inicio</th><th>Fin</th></tr>
+          ${event.actividadesPost.map(a => `<tr><td>${a.nombre || '-'}</td><td>${a.responsable || '-'}</td><td>${formatDate(a.fecha_inicio)}</td><td>${formatDate(a.fecha_fin)}</td></tr>`).join('')}
+        </table>
+      ` : ''}
+
+      ${event?.serviciosContratados && event.serviciosContratados.length > 0 ? `
+        <div class="section-title">5. SERVICIOS CONTRATADOS</div>
+        <table>
+          <tr><th>Servicio</th><th>Características</th><th>Fecha Entrega</th><th>Observaciones</th></tr>
+          ${event.serviciosContratados.map(s => `<tr><td>${s.nombreservicio || '-'}</td><td>${s.caracteristicas || '-'}</td><td>${formatDate(s.fechadeentrega)}</td><td>${s.observaciones || '-'}</td></tr>`).join('')}
+        </table>
+      ` : ''}
+
+      ${event?.layout ? `
+        <div class="section-title">LAYOUT DEL EVENTO</div>
+        <p><strong>${event.layout.nombre || 'Layout'}</strong> ${event.layout.url_imagen ? '(Imagen disponible en la plataforma)' : ''}</p>
+      ` : ''}
+
+      ${event?.comite && event.comite.length > 0 ? `
+        <div class="section-title">6. COMITÉ DEL EVENTO</div>
+        <table>
+          <tr><th>Nombre</th><th>Rol</th><th>Email</th></tr>
+          ${event.comite.map(m => `<tr><td>${[m.nombre, m.apellidopat, m.apellidomat].filter(Boolean).join(' ')}</td><td>${m.role === 'academico' ? 'Académico' : m.role}</td><td>${m.email}</td></tr>`).join('')}
+        </table>
+      ` : ''}
+
+      ${event?.recursos && event.recursos.length > 0 ? `
+        <div class="section-title">7. RECURSOS SOLICITADOS</div>
+        <table>
+          <tr><th>Tipo</th><th>Recurso</th><th>Cantidad</th></tr>
+          ${event.recursos.map(r => `<tr><td>${r.recurso_tipo === 'tecnologico' ? 'Tecnológico' : r.recurso_tipo === 'mobiliario' ? 'Mobiliario' : 'Vajilla'}</td><td>${r.nombre_recurso}</td><td>${r.cantidad || 1}</td></tr>`).join('')}
+        </table>
+      ` : ''}
+
+      ${event?.presupuesto ? `
+        <div class="section-title">8. PRESUPUESTO ESPERADO (PLANIFICADO)</div>
+        ${event.egresos && event.egresos.length > 0 ? `
+          <h2>Egresos Esperados</h2>
+          <table>
+            <tr><th style="width:50%">Descripción</th><th style="width:10%">Cant.</th><th style="width:20%">Precio</th><th style="width:20%">Total</th></tr>
+            ${event.egresos.map(e => `<tr><td>${e.descripcion}</td><td style="text-align:center">${e.cantidad}</td><td style="text-align:right">Bs ${parseFloat(e.precio_unitario).toFixed(2)}</td><td style="text-align:right">Bs ${parseFloat(e.total).toFixed(2)}</td></tr>`).join('')}
+            <tr style="background:#f4f4f4; font-weight:bold"><td colspan="3" style="text-align:right">TOTAL EGRESOS:</td><td style="text-align:right">Bs ${(totalEgresosEsperado || 0).toFixed(2)}</td></tr>
+          </table>
+        ` : ''}
+        ${event.ingresos && event.ingresos.length > 0 ? `
+          <h2>Ingresos Esperados</h2>
+          <table>
+            <tr><th style="width:50%">Descripción</th><th style="width:10%">Cant.</th><th style="width:20%">Precio</th><th style="width:20%">Total</th></tr>
+            ${event.ingresos.map(i => `<tr><td>${i.descripcion}</td><td style="text-align:center">${i.cantidad}</td><td style="text-align:right">Bs ${parseFloat(i.precio_unitario).toFixed(2)}</td><td style="text-align:right">Bs ${parseFloat(i.total).toFixed(2)}</td></tr>`).join('')}
+            <tr style="background:#f4f4f4; font-weight:bold"><td colspan="3" style="text-align:right">TOTAL INGRESOS:</td><td style="text-align:right">Bs ${(totalIngresosEsperado || 0).toFixed(2)}</td></tr>
+          </table>
+        ` : ''}
+        <div class="balance-box">BALANCE ESPERADO: Bs ${(balanceEsperado || 0).toFixed(2)}</div>
+      ` : ''}
+
+      ${event?.resultados ? `
+        <div class="section-title">9. RESULTADOS ESPERADOS</div>
+        <table>
+          <tr><td style="width:30%; background:#f4f4f4;"><strong>Participación Esperada</strong></td><td>${event.resultados.participacion_esperada || '-'}</td></tr>
+          <tr><td style="background:#f4f4f4;"><strong>Satisfacción Esperada</strong></td><td>${event.resultados.satisfaccion_esperada || '-'}</td></tr>
+          <tr><td style="background:#f4f4f4;"><strong>Otros Resultados</strong></td><td>${event.resultados.otros_resultados || '-'}</td></tr>
+        </table>
+      ` : ''}
+
+      <div class="section-title">10. SEGMENTO ALCANZADO (REAL)</div>
       <table>
-        <tr><td>Estudiantes</td><td>${segAlcanzado.estudiantes || 0}</td></tr>
-        <tr><td>Docentes</td><td>${segAlcanzado.docentes || 0}</td></tr>
-        <tr><td>Público Externo</td><td>${segAlcanzado.publico_externo || 0}</td></tr>
-        <tr><td>Influencers</td><td>${segAlcanzado.influencers || 0}</td></tr>
+        <tr><td style="width:30%; background:#f4f4f4;"><strong>Estudiantes</strong></td><td>${segAlcanzado.estudiantes || 0}</td></tr>
+        <tr><td style="background:#f4f4f4;"><strong>Docentes</strong></td><td>${segAlcanzado.docentes || 0}</td></tr>
+        <tr><td style="background:#f4f4f4;"><strong>Público Externo</strong></td><td>${segAlcanzado.publico_externo || 0}</td></tr>
+        <tr><td style="background:#f4f4f4;"><strong>Influencers</strong></td><td>${segAlcanzado.influencers || 0}</td></tr>
+        ${(segAlcanzado.otro_cual || segAlcanzado.otro_cantidad) ? `<tr><td style="background:#f4f4f4;"><strong>Otro (${segAlcanzado.otro_cual || 'Especificar'})</strong></td><td>${segAlcanzado.otro_cantidad || 0}</td></tr>` : ''}
       </table>
-      <div class="section-title">Balance Económico</div>
-      <table><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr>${rowsHtml(egresosReales)}</table>
-      <table><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr>${rowsHtml(ingresosReales)}</table>
-      <div class="balance">Balance: Bs ${balanceReal.toFixed(2)}</div>
-      <div class="section-title">Nota de Prensa</div><p>${infoPrensa || '-'}</p>
-      <div class="section-title">Análisis de Desviaciones</div><p>${analisisDesviaciones || '-'}</p>
-      <div class="section-title">Lecciones Aprendidas</div><p>${leccionesAprendidas || '-'}</p>
+
+      <div class="section-title">11. OBJETIVOS ALCANZADOS</div>
+      <table>
+        <tr><td style="width:70%">Modelo Pedagógico</td><td style="text-align:center">${objAlcanzado.modelo_pedagogico ? 'Sí' : 'No'}</td></tr>
+        <tr><td>Posicionamiento</td><td style="text-align:center">${objAlcanzado.posicionamiento ? 'Sí' : 'No'}</td></tr>
+        <tr><td>Internacionalización</td><td style="text-align:center">${objAlcanzado.internacionalizacion ? 'Sí' : 'No'}</td></tr>
+        <tr><td>RSU (Responsabilidad Social)</td><td style="text-align:center">${objAlcanzado.rsu ? 'Sí' : 'No'}</td></tr>
+        <tr><td>Fidelización</td><td style="text-align:center">${objAlcanzado.fidelizacion ? 'Sí' : 'No'}</td></tr>
+        ${objAlcanzado.otro_cual ? `<tr><td>Otro: ${objAlcanzado.otro_cual}</td><td style="text-align:center">Sí</td></tr>` : ''}
+      </table>
+
+      <div class="section-title">12. INDICADORES REALES (ESPERADO vs REAL)</div>
+      <table>
+        <tr><th style="width:30%">Indicador</th><th style="width:35%">Esperado</th><th style="width:35%">Real</th></tr>
+        <tr><td><strong>Participación</strong></td><td>${event?.resultados?.participacion_esperada || '-'}</td><td>${participacionReal || '-'}</td></tr>
+        <tr><td><strong>Índice de Satisfacción</strong></td><td>${event?.resultados?.satisfaccion_esperada || '-'}</td><td>${satisfaccionReal || '-'}</td></tr>
+        <tr><td><strong>Otros Resultados</strong></td><td>${event?.resultados?.otros_resultados || '-'}</td><td>${otrosResultadosReal || '-'}</td></tr>
+      </table>
+
+      <div class="section-title">13. BALANCE ECONÓMICO REAL</div>
+      ${Array.isArray(egresosReales) && egresosReales.some(e => e.descripcion) ? `
+        <h2>Egresos Reales</h2>
+        <table>
+          <tr><th style="width:50%">Descripción</th><th style="width:10%">Cant.</th><th style="width:20%">Precio</th><th style="width:20%">Total</th></tr>
+          ${egresosReales.filter(e => e.descripcion || e.cantidad || e.precio_unitario).map(e => `<tr><td>${e.descripcion || '-'}</td><td style="text-align:center">${e.cantidad || 0}</td><td style="text-align:right">Bs ${parseFloat(e.precio_unitario || 0).toFixed(2)}</td><td style="text-align:right">Bs ${parseFloat(e.total || 0).toFixed(2)}</td></tr>`).join('')}
+          <tr style="background:#f4f4f4; font-weight:bold"><td colspan="3" style="text-align:right">TOTAL EGRESOS REALES:</td><td style="text-align:right">Bs ${(totalEgresosReal || 0).toFixed(2)}</td></tr>
+        </table>
+      ` : ''}
+      
+      ${Array.isArray(ingresosReales) && ingresosReales.some(i => i.descripcion) ? `
+        <h2>Ingresos Reales</h2>
+        <table>
+          <tr><th style="width:50%">Descripción</th><th style="width:10%">Cant.</th><th style="width:20%">Precio</th><th style="width:20%">Total</th></tr>
+          ${ingresosReales.filter(i => i.descripcion || i.cantidad || i.precio_unitario).map(i => `<tr><td>${i.descripcion || '-'}</td><td style="text-align:center">${i.cantidad || 0}</td><td style="text-align:right">Bs ${parseFloat(i.precio_unitario || 0).toFixed(2)}</td><td style="text-align:right">Bs ${parseFloat(i.total || 0).toFixed(2)}</td></tr>`).join('')}
+          <tr style="background:#f4f4f4; font-weight:bold"><td colspan="3" style="text-align:right">TOTAL INGRESOS REALES:</td><td style="text-align:right">Bs ${(totalIngresosReal || 0).toFixed(2)}</td></tr>
+        </table>
+      ` : ''}
+      <div class="balance-box" style="color: ${balanceReal >= 0 ? '#27ae60' : '#e74c3c'}">BALANCE REAL FINAL: Bs ${balanceReal.toFixed(2)}</div>
+
+      <div class="section-title">14. INFORMACIÓN PARA LA NOTA DE PRENSA</div>
+      <div class="text-block">${infoPrensa || 'Sin información registrada.'}</div>
+
+      <div class="section-title">15. ANÁLISIS DE DESVIACIONES CRÍTICAS/SIGNIFICATIVAS</div>
+      <div class="text-block">${analisisDesviaciones || 'Sin análisis registrado.'}</div>
+
+      <div class="section-title">16. LECCIONES APRENDIDAS</div>
+      <div class="text-block">${leccionesAprendidas || 'Sin lecciones registradas.'}</div>
+
     </body></html>`;
   };
 
