@@ -386,7 +386,7 @@ const UsuariosAdmin = () => {
   };
 
   const renderFilterChips = () => {
-    const roles = ['all', 'admin', 'user', 'daf', 'student', 'academico'];
+    const roles = ['all', 'admin', 'daf', 'student', 'academico'];
     return (
       <View style={styles.filterContainer}>
         {roles.map((role) => (
