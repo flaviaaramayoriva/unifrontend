@@ -452,27 +452,29 @@ const HomeEstudianteScreen = () => {
       return;
     }
 
+    console.log('📡 FRONTEND: Llamando al API con facultad_id:', facultadId);
+    
     const res = await axios.get(`${API_BASE_URL}/eventos/aprobados-por-facultad-y-fecha`, {
       headers: { Authorization: `Bearer ${token}` },
       params: { facultad_id: facultadId },
       timeout: 10000,
     });
 
+    console.log('📥 FRONTEND: Respuesta recibida:', res.data);
+    console.log('📥 FRONTEND: Tipo de dato:', Array.isArray(res.data) ? 'Array' : typeof res.data);
+    console.log('📥 FRONTEND: Cantidad de eventos:', Array.isArray(res.data) ? res.data.length : 'N/A');
+
     const raw = Array.isArray(res.data) ? res.data : [];
-    console.log('📦 Total de eventos recibidos del backend:', raw.length);
     
-    // ✅ LOG DE DEPURACIÓN: Esto te dirá exactamente qué nombres de propiedades está enviando tu backend
     if (raw.length > 0) {
-      console.log('🔍 Muestra del primer evento recibido:', raw[0]);
+      console.log(' FRONTEND: Primer evento recibido:', JSON.stringify(raw[0], null, 2));
     }
 
-    // ✅ PASO 1: Filtrar fase 2 (Más robusto para manejar diferentes formatos o asociaciones faltantes)
     const fase2 = raw.filter(e => {
       // Buscamos el valor de la fase en múltiples posibles nombres de propiedad
       const idFase = e.idfase ?? e.id_fase ?? e.faseId ?? e.fase?.id ?? e.Fase?.id;
       const nroFase = e.nrofase ?? e.nro_fase ?? e.fase?.nrofase ?? e.Fase?.nrofase ?? e.fase?.numero ?? e.Fase?.numero;
       
-      // Usamos == para que coincida tanto con número 2 como con string '2'
       const esFase2 = (idFase == 2) || (nroFase == 2);
       
       // Si el backend ya filtra por fase 2 pero no envía el objeto 'fase' (por error de asociación en Sequelize),
