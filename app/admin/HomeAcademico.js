@@ -12,7 +12,7 @@ import {
   useWindowDimensions,
   Platform,
   ActivityIndicator,
-  Modal, TextInput, KeyboardAvoidingView
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +36,15 @@ let determinedApiBaseUrl;
 const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 const BOT_USERNAME = 'EventUniBot';
+
+// Alerta compatible con web y nativo (patrón establecido en el proyecto)
+const showAlert = (title, message) => {
+  if (Platform.OS === 'web') {
+    window.alert(message ? `${title}\n\n${message}` : title);
+  } else {
+    Alert.alert(title, message);
+  }
+};
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
@@ -246,11 +255,7 @@ const styles = createStyles(colors);
       icon: 'document-text-outline',
       route: '/admin/EventosPendientes',
       color: COLORS.warning,
-      //action: {
-        //pathname: '/admin/EventosPendientes',
-       // params: { area: 'academica'   }
-        //}
-      },
+    },
     {
       id: 'aprobados',
       title: 'Aprobados',
@@ -271,9 +276,9 @@ const styles = createStyles(colors);
     <Animated.View style={[styles.minimalDockContainer, { height: dockHeight, backgroundColor: colors.primary, borderColor: colors.border }]}>
       <TouchableOpacity onPress={onToggleExpanded} style={styles.minimalDockToggle}>
         <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
-          <Ionicons name="chevron-up-outline" size={20} color={COLORS.white} />
+          <Ionicons name="chevron-up-outline" size={20} color={colors.white} />
         </Animated.View>
-        <Text style={[styles.minimalDockToggleText, { color: COLORS.white }]}>Menú</Text>
+        <Text style={[styles.minimalDockToggleText, { color: colors.white }]}>Menú</Text>
       </TouchableOpacity>
 
       {isExpanded && (
@@ -580,15 +585,11 @@ const unlinkTelegram = useCallback(async () => {
 
     setIsTelegramLinked(false);
     setTelegramUsername('');
-    
-    if (Platform.OS === 'web') {
-      window.alert('✓ Telegram desvinculado correctamente');
-    } else {
-      Alert.alert('✓ Éxito', 'Telegram desvinculado correctamente');
-    }
+
+    showAlert('✓ Éxito', 'Telegram desvinculado correctamente');
   } catch (error) {
     console.error('Error al desvincular Telegram:', error);
-    Alert.alert('Error', 'No se pudo desvincular Telegram');
+    showAlert('Error', 'No se pudo desvincular Telegram');
   }
 }, []);
 const fetchNotifications = useCallback(async () => {
@@ -662,7 +663,7 @@ const markAllAsRead = useCallback(async () => {
     console.log('✅ Todas las notificaciones marcadas como leídas');
   } catch (error) {
     console.error('Error al marcar todas como leídas:', error);
-    Alert.alert('Error', 'No se pudieron marcar todas las notificaciones como leídas');
+    showAlert('Error', 'No se pudieron marcar todas las notificaciones como leídas');
   }
 }, []);
 
@@ -816,11 +817,7 @@ const fetchCommitteeEvents = useCallback(async () => {
       console.error('Error al cargar dashboard:', error);
       console.log('❌ Error status:', error.response?.status);
     console.log('❌ Error data:', JSON.stringify(error.response?.data));
-      Alert.alert(
-        'Error',
-        `No se pudieron cargar los datos del panel. ${error.message || ''}`,
-        [{ text: 'Entendido' }]
-      );
+      showAlert('Error', `No se pudieron cargar los datos del panel. ${error.message || ''}`);
     } finally {
       setLoadingDashboard(false);
     }
@@ -888,7 +885,7 @@ const fetchUserProfile = useCallback(async () => {
 }
   } catch (error) {
     console.error('Error al cargar perfil de usuario:', error);
-    Alert.alert('Error', 'No se pudo cargar tu información personal.');
+    showAlert('Error', 'No se pudo cargar tu información personal.');
     setUserProfile((prev) => ({ ...prev, loading: false }));
   }
 }, [setGlobalTheme, setGlobalAccentColor]);
@@ -1028,7 +1025,7 @@ useEffect(() => {
     badgeColor: COLORS.accent,
   },
 
-], [pendingContentCount]);
+], []);
 
 const handleActionPress = (action) => {
   // Si es un string directo
@@ -1038,7 +1035,7 @@ const handleActionPress = (action) => {
   }
 
   if (!action) {
-    Alert.alert('Funcionalidad en Desarrollo', 'Esta característica estará disponible próximamente.');
+    showAlert('Funcionalidad en Desarrollo', 'Esta característica estará disponible próximamente.');
     return;
   }
 
@@ -1063,7 +1060,7 @@ const handleActionPress = (action) => {
     return;
   }
 
-  Alert.alert('Funcionalidad en Desarrollo', 'Esta característica estará disponible próximamente.');
+  showAlert('Funcionalidad en Desarrollo', 'Esta característica estará disponible próximamente.');
 };
 
  const handleLogout = async () => {
@@ -1181,8 +1178,8 @@ const handleActionPress = (action) => {
         backgroundColor: colors.surface,
         backgroundGradientFrom: colors.surface,
         backgroundGradientTo: colors.surface,
-        color: (opacity = 1) => `rgba(233, 90, 12, ${opacity})`,
-        labelColor: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
+        color: (opacity = 1) => colors.primaryRgba ? colors.primaryRgba(opacity) : `rgba(233, 90, 12, ${opacity})`,
+        labelColor: (opacity = 1) => colors.textPrimaryRgba ? colors.textPrimaryRgba(opacity) : `rgba(31, 41, 55, ${opacity})`,
         style: { borderRadius: 16 },
         propsForLabels: { fontSize: 10 },
         barPercentage: 0.7,
@@ -1317,7 +1314,7 @@ const handleActionPress = (action) => {
   {loadingComitee ? (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.loadingText}>Cargando tus eventos como comité...</Text>
+      <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando tus eventos como comité...</Text>
     </View>
   ) : filteredCommitteeEvents.length === 0 ? (
     <View style={styles.emptyState}>
@@ -1330,7 +1327,7 @@ const handleActionPress = (action) => {
     filteredCommitteeEvents.map((item) => (
       <TouchableOpacity
         key={item.idevento}
-        style={styles.tableRow}
+        style={[styles.tableRow, { backgroundColor: colors.surface, borderLeftColor: colors.primary, shadowColor: colors.shadow }]}
         onPress={() => router.push(`/admin/EventDetailComite?eventId=${item.idevento}`)}
         activeOpacity={0.8}
       >
@@ -1363,15 +1360,15 @@ const handleActionPress = (action) => {
         </View>
 
         <View style={styles.tableCellName}>
-  <Text style={styles.tableEventName} numberOfLines={1}>
+  <Text style={[styles.tableEventName, { color: colors.textPrimary }]} numberOfLines={1}>
     {item.nombreevento || 'Sin título'}
   </Text>
   
   {/* Fecha del evento */}
   {(item.fechaevento) && (
     <View style={styles.eventDateRow}>
-      <Ionicons name="calendar-outline" size={14} color={COLORS.textTertiary} />
-      <Text style={styles.eventDateText}>
+      <Ionicons name="calendar-outline" size={14} color={colors.textTertiary} />
+      <Text style={[styles.eventDateText, { color: colors.textTertiary }]}>
         {new Date(item.fechaevento).toLocaleDateString('es-ES', {
           day: '2-digit',
           month: 'short',
@@ -1383,9 +1380,9 @@ const handleActionPress = (action) => {
 </View>
         
         <View style={styles.tableCellRole}>
-          <View style={styles.roleBadge}>
-            <Ionicons name="shield-checkmark" size={16} color={COLORS.primary} />
-            <Text style={styles.roleBadgeText}>Como Comité</Text>
+          <View style={[styles.roleBadge, { backgroundColor: colors.primaryLight }]}>
+            <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
+            <Text style={[styles.roleBadgeText, { color: colors.primary }]}>Como Comité</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -1396,37 +1393,37 @@ const handleActionPress = (action) => {
 
 <View style={styles.committeeSection}>
   <View style={styles.sectionHeaderMinimal}>
-    <Text style={styles.sectionTitleMinimal}>Estudiantes Inscritos</Text>
-    <Text style={styles.sectionSubtitleMinimal}>Inscripciones de tu facultad por evento</Text>
+    <Text style={[styles.sectionTitleMinimal, { color: colors.textPrimary }]}>Estudiantes Inscritos</Text>
+    <Text style={[styles.sectionSubtitleMinimal, { color: colors.textSecondary }]}>Inscripciones de tu facultad por evento</Text>
   </View>
 
   {loadingEventosFacultad ? (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={COLORS.primary} />
-      <Text style={styles.loadingText}>Cargando inscripciones...</Text>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando inscripciones...</Text>
     </View>
   ) : eventosFacultad.length === 0 ? (
     <View style={styles.emptyState}>
-      <Ionicons name="people-outline" size={40} color={COLORS.textTertiary} />
+      <Ionicons name="people-outline" size={40} color={colors.textTertiary} />
       <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>No hay estudiantes inscritos aún.</Text>
     </View>
   ) : (
     eventosFacultad.map((evento) => (
-      <View key={evento.idevento} style={styles.eventCard}>
+      <View key={evento.idevento} style={[styles.eventCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary, shadowColor: colors.shadow }]}>
         <TouchableOpacity
           onPress={() => setExpandedEventoId(expandedEventoId === evento.idevento ? null : evento.idevento)}
           style={styles.eventCardHeader}
         >
           <View style={styles.eventCardTextContainer}>
-            <Text style={styles.eventTitle}>{evento.nombreevento}</Text>
-            <Text style={styles.eventSubtitle}>
+            <Text style={[styles.eventTitle, { color: colors.textPrimary }]}>{evento.nombreevento}</Text>
+            <Text style={[styles.eventSubtitle, { color: colors.textSecondary }]}>
               {evento.estudiantes.length} estudiante{evento.estudiantes.length !== 1 ? 's' : ''} inscrito{evento.estudiantes.length !== 1 ? 's' : ''}
             </Text>
           </View>
           <Ionicons
             name={expandedEventoId === evento.idevento ? 'chevron-up' : 'chevron-down'}
             size={20}
-            color={COLORS.textSecondary}
+            color={colors.textSecondary}
           />
         </TouchableOpacity>
 
@@ -1440,11 +1437,11 @@ const handleActionPress = (action) => {
                   justifyContent: 'space-between',
                   paddingVertical: 8,
                   borderTopWidth: 1,
-                  borderTopColor: COLORS.divider,
+                  borderTopColor: colors.divider,
                 }}
               >
-                <Text style={{ fontSize: 13, color: COLORS.textPrimary }}>{est.nombre}</Text>
-                <Text style={{ fontSize: 12, color: COLORS.textTertiary }}>
+                <Text style={{ fontSize: 13, color: colors.textPrimary }}>{est.nombre}</Text>
+                <Text style={{ fontSize: 12, color: colors.textTertiary }}>
                   {est.fecha_inscripcion ? new Date(est.fecha_inscripcion).toLocaleDateString('es-ES') : ''}
                 </Text>
               </View>
@@ -1723,7 +1720,7 @@ const handleActionPress = (action) => {
         style={styles.telegramRefreshButton}
         onPress={() => {
           checkTelegramStatus();
-          Alert.alert(
+          showAlert(
             'Verificando...',
             'Si ya vinculaste en Telegram, presiona nuevamente para actualizar'
           );
@@ -1792,7 +1789,8 @@ const createStyles = (colors) => StyleSheet.create({
     paddingVertical: 40,
     paddingHorizontal: 20,
   },
-    eventDateContainer: {
+  // Fila con ícono de calendario + fecha (ahora sí referenciada correctamente en el render)
+  eventDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -2064,19 +2062,6 @@ eventStatusText: {
   textTransform: 'capitalize',
 },
 eventRoleBadgeText: {
-  fontSize: 12,
-  fontWeight: '600',
-  color: colors.primary,
-},
-eventRoleBadge: {
-  backgroundColor: colors.primaryLight,
-  borderRadius: 8,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  alignSelf: 'flex-start',
-  marginTop: 8,
-},
-eventRoleBadgeText: {
   fontSize: 10,
   fontWeight: '600',
   color: colors.primary,
@@ -2158,12 +2143,6 @@ cardTrendText: {
   fontWeight: '600',
 },
 
-  minimalHeaderTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   minimalHeaderAdminText: {
     fontSize: 16,
     fontWeight: '600',
@@ -2575,24 +2554,6 @@ telegramInstructions: {
   color: colors.textPrimary,
   marginBottom: 20,
   textAlign: 'center',
-},
-telegramStep: {
-  flexDirection: 'row',
-  gap: 12,
-  marginBottom: 20,
-},
-telegramStepNumber: {
-  width: 32,
-  height: 32,
-  borderRadius: 16,
-  backgroundColor: colors.primary,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-telegramStepNumberText: {
-  fontSize: 16,
-  fontWeight: '700',
-  color: colors.white,
 },
 telegramStepContent: {
   flex: 1,
