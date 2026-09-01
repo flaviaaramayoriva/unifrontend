@@ -336,85 +336,89 @@ const handleAuthError = () => {
   setErrors({});
 };
   const handleAddUser = async () => {
-  if (!validateStep(3)) return;
-  
-  setIsLoading(true);
-  try {
-    const token = await getToken();
+    if (!validateStep(3)) return;
     
-    // ✅ Si no hay token, redirigir al login
-    if (!token) {
-      console.error('❌ Sin token, redirigiendo al login');
-      handleAuthError();
-      setIsLoading(false);
-      return;
-    }
-    
-    const newUserPayload = {
-      username: formData.username.trim(),
-      nombre: formData.nombre.trim(),
-      apellidopat: formData.apellidopat.trim(),
-      apellidomat: formData.apellidomat.trim(),
-      email: formData.email.trim().toLowerCase(),
-      contrasenia: formData.contrasenia,
-      role: role,
-      habilitado: formData.habilitado ? 1 : 0,
-      idcarrera: parseInt(carreraSeleccionada),
-      idfacultad: parseInt(facultadSeleccionada),
-    };
-   
-    console.log('📦 Creando estudiante:', newUserPayload);
-    
-    const config = {
-      timeout: 30000,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+    setIsLoading(true);
+    try {
+      const token = await getToken();
+      
+      if (!token) {
+        console.error('❌ Sin token, redirigiendo al login');
+        handleAuthError();
+        setIsLoading(false);
+        return;
       }
-    };
+      
+      // ✅ PAYLOAD CORREGIDO PARA COINCIDIR CON LA VALIDACIÓN DE SEQUELIZE
+      const newUserPayload = {
+        username: formData.username.trim(),
+        nombre: formData.nombre.trim(),
+        apellidopat: formData.apellidopat.trim(),
+        // Si es opcional, enviar null en lugar de string vacío para evitar errores de validación
+        apellidomat: formData.apellidomat.trim() || null, 
+        email: formData.email.trim().toLowerCase(),
+        contrasenia: formData.contrasenia,
+        role: 'student', // Asegurar que coincida exactamente con el ENUM de la BD
+        habilitado: '1', // ✅ CORRECCIÓN: Enviar como STRING '1', no como número 1
+        idcarrera: carreraSeleccionada ? parseInt(carreraSeleccionada, 10) : null,
+        idfacultad: facultadSeleccionada ? parseInt(facultadSeleccionada, 10) : null,
+      };
+     
+      console.log('📦 Creando estudiante con payload:', newUserPayload);
+      
+      const config = {
+        timeout: 30000,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      };
 
-    const response = await axios.post(`${API_BASE_URL}/auth/registerStudent`, newUserPayload, config);
+      const response = await axios.post(`${API_BASE_URL}/auth/registerStudent`, newUserPayload, config);
 
-    console.log('✅ Estudiante creado:', response.status);
+      console.log('✅ Estudiante creado:', response.status);
 
-    if (response.status === 201 || response.status === 200) {
-      setSuccessMessage('¡Estudiante creado correctamente!');
-      setShowSuccessActions(true);
+      if (response.status === 201 || response.status === 200) {
+        setSuccessMessage('¡Estudiante creado correctamente!');
+        setShowSuccessActions(true);
 
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 2500);
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 2500);
 
-      return;
-    }
-  } catch (error) {
-    console.error('❌ Error al crear estudiante:', error.message);
-    console.error('❌ Status:', error.response?.status);
-    console.error('❌ Data:', error.response?.data);
-    
-    // ✅ Manejar específicamente error 401
-    if (error.response?.status === 401) {
-      handleAuthError();
+        return;
+      }
+    } catch (error) {
+      console.error('❌ Error al crear estudiante:', error.message);
+      console.error('❌ Status:', error.response?.status);
+      console.error('❌ Data:', error.response?.data);
+      
+      // ✅ AGREGADO: Imprimir en consola cuáles son los 3 campos que fallaron
+      if (error.response?.data?.errors) {
+        console.error('🔍 Campos que fallaron la validación:', error.response.data.errors.map(e => e.path || e.message));
+      }
+      
+      if (error.response?.status === 401) {
+        handleAuthError();
+        setIsLoading(false);
+        return;
+      }
+      
+      let errorMessage = 'Error desconocido al crear estudiante.';
+      
+      if (error.response?.data) {
+        errorMessage = typeof error.response.data === 'string' 
+          ? error.response.data 
+          : (error.response.data.message || error.response.data.error || 'Error en el servidor');
+      } else if (error.request) {
+        errorMessage = 'No se pudo conectar con el servidor. Verifica tu internet.';
+      }
+
+      Alert.alert('Error de Validación', errorMessage, [{ text: 'OK' }]);
+    } finally {
       setIsLoading(false);
-      return;
     }
-    
-    let errorMessage = 'Error desconocido al crear estudiante.';
-    
-    if (error.response?.data) {
-      errorMessage = typeof error.response.data === 'string' 
-        ? error.response.data 
-        : (error.response.data.message || error.response.data.error || 'Error en el servidor');
-    } else if (error.request) {
-      errorMessage = 'No se pudo conectar con el servidor. Verifica tu internet.';
-    }
-
-    Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
-  } finally {
-    setIsLoading(false);
-  }
-};
-// ✅ INGRESAR DIRECTO: hace login automático con las credenciales del estudiante recién creado
+  };
 const handleDirectLogin = async () => {
   try {
     setIsLoading(true);
