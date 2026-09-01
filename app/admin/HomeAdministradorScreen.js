@@ -257,40 +257,85 @@ const ChartCard = ({ title, subtitle, children, empty, emptyIcon }) => (
   </View>
 );
 
-// ─── Último Evento Card ───────────────────────────────────────────────────────
 const UltimoEventoCard = ({ evento, onPress }) => {
   if (!evento) return null;
+  
   const estadoColor = {
-    aprobado: COLORS.success, pendiente: COLORS.warning, rechazado: COLORS.accent
+    aprobado: COLORS.success, 
+    pendiente: COLORS.warning, 
+    rechazado: COLORS.accent,
+    cancelado: COLORS.info,
+    vencido: COLORS.secondary
   }[evento.estado?.toLowerCase()] || COLORS.textSecondary;
 
+  // Formatear fecha de manera legible
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '–';
+    try {
+      const date = dayjs(dateStr);
+      if (!date.isValid()) return '–';
+      return date.format('DD [de] MMMM, YYYY'); // Ej: "18 de septiembre, 2026"
+    } catch {
+      return '–';
+    }
+  };
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const date = dayjs(dateStr);
+      if (!date.isValid()) return '';
+      return date.format('HH:mm'); // Ej: "14:30"
+    } catch {
+      return '';
+    }
+  };
+
+  const fechaFormateada = formatDate(evento.fechaevento);
+  const horaFormateada = formatTime(evento.fechaevento);
+
   return (
-    <TouchableOpacity style={styles.ultimoEventoCard} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity 
+      style={styles.ultimoEventoCard} 
+      onPress={onPress} 
+      activeOpacity={0.85}
+    >
       <View style={styles.ultimoEventoLeft}>
         <View style={[styles.ultimoEventoIconBg, { backgroundColor: COLORS.primaryLight }]}>
           <Ionicons name="calendar" size={22} color={COLORS.primary} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={styles.ultimoEventoContent}>
           <Text style={styles.ultimoEventoLabel}>Último evento creado</Text>
-          <Text style={styles.ultimoEventoTitle} numberOfLines={1}>{evento.nombreevento || 'Sin nombre'}</Text>
-          <Text style={styles.ultimoEventoMeta}>
-            {evento.fechaevento?.split('T')[0] || '–'} · {evento.lugarevento || '–'}
+          <Text style={styles.ultimoEventoTitle} numberOfLines={2}>
+            {evento.nombreevento || 'Sin nombre'}
           </Text>
+          <View style={styles.ultimoEventoMetaContainer}>
+            <Ionicons name="time-outline" size={14} color={COLORS.textTertiary} />
+            <Text style={styles.ultimoEventoMeta}>
+              {fechaFormateada}
+              {horaFormateada && ` · ${horaFormateada}`}
+            </Text>
+          </View>
+          {evento.lugarevento && (
+            <View style={styles.ultimoEventoMetaContainer}>
+              <Ionicons name="location-outline" size={14} color={COLORS.textTertiary} />
+              <Text style={styles.ultimoEventoMeta}>{evento.lugarevento}</Text>
+            </View>
+          )}
         </View>
       </View>
-      <View style={{ alignItems: 'flex-end', gap: 6 }}>
+      <View style={styles.ultimoEventoRight}>
         <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '18' }]}>
           <Text style={[styles.estadoBadgeText, { color: estadoColor }]}>
-            {(evento.estado || 'N/A').charAt(0).toUpperCase() + (evento.estado || '').slice(1)}
+            {(evento.estado || 'N/A').charAt(0).toUpperCase() + (evento.estado || '').slice(1).toLowerCase()}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={16} color={COLORS.textTertiary} />
+        <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
       </View>
     </TouchableOpacity>
   );
 };
 
-// ─── Bottom Dock ──────────────────────────────────────────────────────────────
 const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpanded }) => {
   const dockHeight = useRef(new Animated.Value(60)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -1617,22 +1662,82 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
 
-  // Último evento
+  // Último evento - Styles mejorados
   ultimoEventoCard: {
-    backgroundColor: COLORS.surface, borderRadius: 14, padding: 16,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderWidth: 1, borderColor: COLORS.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+    backgroundColor: COLORS.surface, 
+    borderRadius: 16, 
+    padding: 16,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    borderWidth: 1, 
+    borderColor: COLORS.border,
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.08, 
+    shadowRadius: 8, 
+    elevation: 4,
   },
-  ultimoEventoLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  ultimoEventoIconBg: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  ultimoEventoLabel: { fontSize: 11, color: COLORS.textTertiary, fontWeight: '500', marginBottom: 2 },
-  ultimoEventoTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
-  ultimoEventoMeta: { fontSize: 12, color: COLORS.textSecondary },
-  estadoBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
-  estadoBadgeText: { fontSize: 11, fontWeight: '700' },
-
-  // Section
+  ultimoEventoLeft: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-start', 
+    gap: 12, 
+    flex: 1,
+    paddingRight: 8,
+  },
+  ultimoEventoIconBg: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 12, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  ultimoEventoContent: { 
+    flex: 1,
+    gap: 4,
+  },
+  ultimoEventoLabel: { 
+    fontSize: 11, 
+    color: COLORS.textTertiary, 
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  ultimoEventoTitle: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: COLORS.textPrimary,
+    lineHeight: 22,
+  },
+  ultimoEventoMetaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  ultimoEventoMeta: { 
+    fontSize: 13, 
+    color: COLORS.textSecondary,
+    flex: 1,
+  },
+  ultimoEventoRight: { 
+    alignItems: 'flex-end', 
+    gap: 8,
+    paddingLeft: 8,
+  },
+  estadoBadge: { 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 20,
+    alignSelf: 'flex-end',
+  },
+  estadoBadgeText: { 
+    fontSize: 12, 
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+ 
   section: { width: '100%', paddingHorizontal: 20, marginTop: 28 },
   sectionHeader: { marginBottom: 16 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
