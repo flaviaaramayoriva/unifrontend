@@ -443,25 +443,8 @@ const InformeEventoScreen = () => {
         </table>
       ` : ''}
 
-      <div class="section-title">10. SEGMENTO ALCANZADO (REAL)</div>
-      <table>
-        <tr><td style="width:30%; background:#f4f4f4;"><strong>Estudiantes</strong></td><td>${segAlcanzado.estudiantes || 0}</td></tr>
-        <tr><td style="background:#f4f4f4;"><strong>Docentes</strong></td><td>${segAlcanzado.docentes || 0}</td></tr>
-        <tr><td style="background:#f4f4f4;"><strong>Público Externo</strong></td><td>${segAlcanzado.publico_externo || 0}</td></tr>
-        <tr><td style="background:#f4f4f4;"><strong>Influencers</strong></td><td>${segAlcanzado.influencers || 0}</td></tr>
-        ${(segAlcanzado.otro_cual || segAlcanzado.otro_cantidad) ? `<tr><td style="background:#f4f4f4;"><strong>Otro (${segAlcanzado.otro_cual || 'Especificar'})</strong></td><td>${segAlcanzado.otro_cantidad || 0}</td></tr>` : ''}
-      </table>
-
-      <div class="section-title">11. OBJETIVOS ALCANZADOS</div>
-      <table>
-        <tr><td style="width:70%">Modelo Pedagógico</td><td style="text-align:center">${objAlcanzado.modelo_pedagogico ? 'Sí' : 'No'}</td></tr>
-        <tr><td>Posicionamiento</td><td style="text-align:center">${objAlcanzado.posicionamiento ? 'Sí' : 'No'}</td></tr>
-        <tr><td>Internacionalización</td><td style="text-align:center">${objAlcanzado.internacionalizacion ? 'Sí' : 'No'}</td></tr>
-        <tr><td>RSU (Responsabilidad Social)</td><td style="text-align:center">${objAlcanzado.rsu ? 'Sí' : 'No'}</td></tr>
-        <tr><td>Fidelización</td><td style="text-align:center">${objAlcanzado.fidelizacion ? 'Sí' : 'No'}</td></tr>
-        ${objAlcanzado.otro_cual ? `<tr><td>Otro: ${objAlcanzado.otro_cual}</td><td style="text-align:center">Sí</td></tr>` : ''}
-      </table>
-
+     
+     
       <div class="section-title">12. INDICADORES REALES (ESPERADO vs REAL)</div>
       <table>
         <tr><th style="width:30%">Indicador</th><th style="width:35%">Esperado</th><th style="width:35%">Real</th></tr>
@@ -488,7 +471,6 @@ const InformeEventoScreen = () => {
           <tr style="background:#f4f4f4; font-weight:bold"><td colspan="3" style="text-align:right">TOTAL INGRESOS REALES:</td><td style="text-align:right">Bs ${(totalIngresosReal || 0).toFixed(2)}</td></tr>
         </table>
       ` : ''}
-      <div class="balance-box" style="color: ${balanceReal >= 0 ? '#27ae60' : '#e74c3c'}">BALANCE REAL FINAL: Bs ${balanceReal.toFixed(2)}</div>
 
       <div class="section-title">14. INFORMACIÓN PARA LA NOTA DE PRENSA</div>
       <div class="text-block">${infoPrensa || 'Sin información registrada.'}</div>
