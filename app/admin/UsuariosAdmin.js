@@ -440,42 +440,106 @@ const UsuariosAdmin = () => {
     </Modal>
   );
 
-  const renderEditUserModal = () => (
-    <Modal visible={showEditModal} transparent={true} animationType="slide" onRequestClose={() => setShowEditModal(false)}>
-      <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {userToEdit && currentUser && userToEdit.id === currentUser.id ? 'Editar Mi Perfil' : 'Editar Usuario'}
-            </Text>
-            <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.modalCloseButton}>
-              <Ionicons name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
-            <Text style={styles.inputLabel}>Nombre</Text>
-            <TextInput style={styles.input} value={editFormData.nombre} onChangeText={(text) => setEditFormData({ ...editFormData, nombre: text })} placeholder="Tu nombre" />
-            
-            <Text style={styles.inputLabel}>Apellido Paterno</Text>
-            <TextInput style={styles.input} value={editFormData.apellidopat} onChangeText={(text) => setEditFormData({ ...editFormData, apellidopat: text })} placeholder="Apellido paterno" />
-            
-            <Text style={styles.inputLabel}>Apellido Materno</Text>
-            <TextInput style={styles.input} value={editFormData.apellidomat} onChangeText={(text) => setEditFormData({ ...editFormData, apellidomat: text })} placeholder="Apellido materno" />
-            
-            <Text style={styles.inputLabel}>Nombre de Usuario</Text>
-            <TextInput style={styles.input} value={editFormData.username} onChangeText={(text) => setEditFormData({ ...editFormData, username: text })} placeholder="Nombre de usuario" autoCapitalize="none" />
-            
-            <Text style={styles.inputLabel}>Correo Electrónico</Text>
-            <TextInput style={styles.input} value={editFormData.email} onChangeText={(text) => setEditFormData({ ...editFormData, email: text })} placeholder="correo@ejemplo.com" keyboardType="email-address" autoCapitalize="none" />
-            
-            <TouchableOpacity style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]} onPress={handleUpdateUser} disabled={isUpdating}>
-              {isUpdating ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Guardar Cambios</Text>}
-            </TouchableOpacity>
-          </ScrollView>
+ const renderEditUserModal = () => (
+  <Modal 
+    visible={showEditModal} 
+    transparent={true} 
+    animationType="slide" 
+    onRequestClose={() => setShowEditModal(false)}
+  >
+    <View style={styles.modalOverlay}>
+      <Pressable 
+        style={styles.modalOverlay} 
+        onPress={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalContentContainer}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {userToEdit && currentUser && userToEdit.id === currentUser.id ? 'Editar Mi Perfil' : 'Editar Usuario'}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => setShowEditModal(false)} 
+                  style={styles.modalCloseButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView 
+                style={styles.modalBody} 
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={true}
+              >
+                <Text style={styles.inputLabel}>Nombre</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={editFormData.nombre} 
+                  onChangeText={(text) => setEditFormData({ ...editFormData, nombre: text })} 
+                  placeholder="Tu nombre"
+                  placeholderTextColor="#999"
+                />
+                
+                <Text style={styles.inputLabel}>Apellido Paterno</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={editFormData.apellidopat} 
+                  onChangeText={(text) => setEditFormData({ ...editFormData, apellidopat: text })} 
+                  placeholder="Apellido paterno"
+                  placeholderTextColor="#999"
+                />
+                
+                <Text style={styles.inputLabel}>Apellido Materno</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={editFormData.apellidomat} 
+                  onChangeText={(text) => setEditFormData({ ...editFormData, apellidomat: text })} 
+                  placeholder="Apellido materno"
+                  placeholderTextColor="#999"
+                />
+                
+                <Text style={styles.inputLabel}>Nombre de Usuario</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={editFormData.username} 
+                  onChangeText={(text) => setEditFormData({ ...editFormData, username: text })} 
+                  placeholder="Nombre de usuario" 
+                  autoCapitalize="none"
+                  placeholderTextColor="#999"
+                />
+                
+                <Text style={styles.inputLabel}>Correo Electrónico</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={editFormData.email} 
+                  onChangeText={(text) => setEditFormData({ ...editFormData, email: text })} 
+                  placeholder="correo@ejemplo.com" 
+                  keyboardType="email-address" 
+                  autoCapitalize="none"
+                  placeholderTextColor="#999"
+                />
+                
+                <TouchableOpacity 
+                  style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]} 
+                  onPress={handleUpdateUser} 
+                  disabled={isUpdating}
+                  activeOpacity={0.8}
+                >
+                  {isUpdating ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </Pressable>
         </View>
       </Pressable>
-    </Modal>
-  );
+    </View>
+  </Modal>
+);
 
   if (loading && (!users || users.length === 0)) {
     return (
