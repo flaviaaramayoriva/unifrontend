@@ -91,27 +91,42 @@ const STATUS_COLORS = {
 };
 
 const mapEvento = (e) => {
-  // Backend already transforms fields: title, date, time, location, organizer, faculty, category
   const catRaw = (e.category || e.clasificacion?.label || e.categoria || 'evento').toLowerCase();
-  const cat = catRaw === 'general' ? 'evento' : catRaw; // normalize "General" → color lookup
+  const cat = catRaw === 'general' ? 'evento' : catRaw;
   const estado = (e.estado || 'aprobado').toLowerCase();
   const status = STATUS_MAP[estado] || 'Confirmado';
 
-  // Clean up time — remove timezone offset like "00:11:00+00"
   const rawTime = e.time || e.horaevento || e.hora || '–';
   const cleanTime = rawTime.includes('+') ? rawTime.split('+')[0].slice(0, 5) : rawTime.slice(0, 5);
+
+  // ✅ Mejoramos la obtención de la fecha para cubrir todos los posibles nombres del backend
+  const rawDate = e.date || e.fechaevento || e.fecha_inicio || e.fecha || e.submittedDate;
+  let displayDate = '–';
+  
+  if (rawDate && rawDate !== '–') {
+    try {
+      const d = new Date(rawDate);
+      if (!isNaN(d.getTime())) {
+        displayDate = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+      } else {
+        displayDate = rawDate;
+      }
+    } catch {
+      displayDate = rawDate;
+    }
+  }
 
   return {
     id: e.id || e.idevento,
     title: e.title || e.nombreevento || 'Sin título',
-    date: e.date || e.submittedDate || '–',
+    date: displayDate,
     time: cleanTime,
     location: e.location || e.lugarevento || null,
     category: (e.category || cat).charAt(0).toUpperCase() + (e.category || cat).slice(1),
     categoryColor: CATEGORY_COLORS[cat] || COLORS.info,
     status,
     statusColor: STATUS_COLORS[status] || COLORS.success,
-    organizador: e.organizer || e.organizer || e.responsable_evento || null,
+    organizador: e.organizer || e.responsable_evento || null,
     facultad: e.faculty || e.facultad?.nombre || null,
     modalidad: e.modalidad || null,
     duracion: e.duracion ? `${e.duracion} min` : null,
@@ -430,9 +445,6 @@ const HomeEstudianteScreen = () => {
     if (!token) throw new Error('Token no disponible');
 
     let facultadId = user.facultad_id;
-    let facultadNombre = user.facultad_nombre || user.facultad?.nombre;
-
-    
 
     if (!facultadId) {
       setError('Tu perfil no tiene facultad asignada. Contacta al administrador.');
@@ -447,57 +459,73 @@ const HomeEstudianteScreen = () => {
     });
 
     const raw = Array.isArray(res.data) ? res.data : [];
+    console.log('📦 Total de eventos recibidos del backend:', raw.length);
+    
+    // ✅ LOG DE DEPURACIÓN: Esto te dirá exactamente qué nombres de propiedades está enviando tu backend
+    if (raw.length > 0) {
+      console.log('🔍 Muestra del primer evento recibido:', raw[0]);
+    }
 
-    // ✅ PASO 1: Filtrar fase 2
-    const fase2 = raw.filter(e =>
-      e.idfase === 2 || e.idfase === '2' ||
-      e.fase?.nrofase === 2 || e.fase?.nrofase === '2'
-    );
+    // ✅ PASO 1: Filtrar fase 2 (Más robusto para manejar diferentes formatos o asociaciones faltantes)
+    const fase2 = raw.filter(e => {
+      // Buscamos el valor de la fase en múltiples posibles nombres de propiedad
+      const idFase = e.idfase ?? e.id_fase ?? e.faseId ?? e.fase?.id ?? e.Fase?.id;
+      const nroFase = e.nrofase ?? e.nro_fase ?? e.fase?.nrofase ?? e.Fase?.nrofase ?? e.fase?.numero ?? e.Fase?.numero;
+      
+      // Usamos == para que coincida tanto con número 2 como con string '2'
+      const esFase2 = (idFase == 2) || (nroFase == 2);
+      
+      // Si el backend ya filtra por fase 2 pero no envía el objeto 'fase' (por error de asociación en Sequelize),
+      // es mejor no descartarlo por error. Lo incluimos si no tenemos datos de fase.
+      if (idFase === undefined && nroFase === undefined) {
+        console.warn('⚠️ Evento sin datos explícitos de fase, se asume que pasa el filtro:', e.nombreevento || e.title);
+        return true; 
+      }
+      
+      return esFase2;
+    });
+
+    console.log(`📅 Eventos tras filtrar fase 2: ${fase2.length}`);
 
     // ✅ PASO 2: Filtrar solo eventos futuros o de hoy
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-   console.log('🔍 FECHA ACTUAL:', hoy.toISOString());
+    console.log('🔍 FECHA ACTUAL (hoy):', hoy.toISOString());
 
     const eventosFuturos = fase2.filter(e => {
-  const fechaStr = e.date || e.fechaevento || e.fecha_inicio;
-  console.log(`\n📅 Evento: "${e.nombreevento || e.title}"`);
-  console.log('   Fecha raw:', fechaStr);
+      const fechaStr = e.date || e.fechaevento || e.fecha_inicio || e.fecha; // Agregado e.fecha
+      console.log(`\n📅 Evento: "${e.nombreevento || e.title}"`);
+      console.log('   Fecha raw:', fechaStr);
 
-  if (!fechaStr || fechaStr === '–') {
-    console.log('SIN FECHA - Se muestra');
-    return true;
-  }
+      if (!fechaStr || fechaStr === '–') {
+        console.log('   SIN FECHA - Se muestra por defecto');
+        return true;
+      }
 
-  const fechaEvento = new Date(fechaStr);
-  const esValida = !isNaN(fechaEvento.getTime());
-  console.log('Es válida:', esValida);
+      const fechaEvento = new Date(fechaStr);
+      const esValida = !isNaN(fechaEvento.getTime());
+      console.log('   Es válida:', esValida);
 
-  if (!esValida) {
-    console.log('FECHA INVÁLIDA - Se muestra');
-    return true;
-  }
+      if (!esValida) {
+        console.log('   FECHA INVÁLIDA - Se muestra por defecto');
+        return true;
+      }
 
-  console.log('Fecha parseada:', fechaEvento.toISOString());
-  fechaEvento.setHours(0, 0, 0, 0);
-  const esFuturo = fechaEvento >= hoy;
+      console.log('   Fecha parseada:', fechaEvento.toISOString());
+      fechaEvento.setHours(0, 0, 0, 0);
+      const esFuturo = fechaEvento >= hoy;
 
-  console.log('Fecha evento (normalizada):', fechaEvento.toISOString());
-  console.log('¿Es futuro?', esFuturo ? '✅ SÍ' : '❌ NO');
-  return esFuturo;
-});
+      console.log('   Fecha evento (normalizada):', fechaEvento.toISOString());
+      console.log('   ¿Es futuro o hoy?', esFuturo ? '✅ SÍ' : '❌ NO');
+      return esFuturo;
+    });
 
-    console.log(`📅 Eventos: ${raw.length} total → ${fase2.length} fase 2 → ${eventosFuturos.length} futuros`);
-
+    console.log(`✅ Eventos finales a mostrar: ${eventosFuturos.length}`);
 
     const mapped = eventosFuturos.map(mapEvento);
 
-    const proximos = mapped.filter(e => 
-      e.status === 'Próximo' || e.status === 'Confirmado'
-    ).length;
-    const completados = mapped.filter(e => 
-      e.status === 'Completado'
-    ).length;
+    const proximos = mapped.filter(e => e.status === 'Próximo' || e.status === 'Confirmado').length;
+    const completados = mapped.filter(e => e.status === 'Completado').length;
 
     setEvents(mapped);
     setStats({ total: mapped.length, proximos, completados });
