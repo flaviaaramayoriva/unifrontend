@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
@@ -197,13 +196,22 @@ console.log('objetivos_pdi del backend:', eventData.objetivos_pdi);
         throw new Error('Datos de evento vacíos o inválidos del servidor.');
       }
 
+      // Nombre completo del creador (si existe), usado también como Organizador
+      const creadorNombreCompleto = eventData.creador
+        ? [eventData.creador.nombre, eventData.creador.apellidopat, eventData.creador.apellidomat]
+            .filter(Boolean)
+            .join(' ')
+            .trim()
+        : null;
+
       const transformedEvent = {
   id: eventData.idevento || null,
   title: eventData.nombreevento || 'Sin título',
   date: formatDate(eventData.fechaevento),
   time: formatTime(eventData.horaevento),
   location: eventData.lugarevento || 'Ubicación no especificada',
-  organizer: eventData.responsable_evento || 'Organizador no especificado',
+  // El organizador mostrado ahora es el creador del evento; si no hay creador, cae al responsable_evento
+  organizer: creadorNombreCompleto || eventData.responsable_evento || 'Organizador no especificado',
   attendees: eventData.participantes_esperados || 'No especificado',
   status: (eventData.estado || 'pendiente').toLowerCase(),
   imageUrl: eventData.imagenUrl || null,
@@ -240,7 +248,7 @@ console.log('objetivos_pdi del backend:', eventData.objetivos_pdi);
   tags: eventData.tags || [],
   
   creador: eventData.creador ? {
-    nombre: `${eventData.creador.nombre} ${eventData.creador.apellidopat} ${eventData.creador.apellidomat}`,
+    nombre: creadorNombreCompleto,
     email: eventData.creador.email,
     role: eventData.creador.role
   } : null

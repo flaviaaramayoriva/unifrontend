@@ -25,7 +25,8 @@
       "permissons": [
         "WRITE_EXTERNAL_STORAGE",
         "READ_EXTERNAL_STORAGE"
-      ]
+      ],
+      "package": "com.flavia63.frontend"
     },
     "web": {
       "bundler": "metro",
@@ -41,6 +42,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6c4cc71a-7f5d-49c7-bbab-a46003ee0b49"
+      }
+    },
+    "owner": "flavia63"
   }
 }

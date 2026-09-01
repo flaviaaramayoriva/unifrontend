@@ -213,7 +213,7 @@ const telegramData = {
             try {
               const token = await getToken();
               await axios.post(
-                `${API_BASE_URL}/telegram/desvincular`,
+                `${API_BASE_URL}/desvincular`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
               );
