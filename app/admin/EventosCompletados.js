@@ -59,30 +59,22 @@ const deleteTokenAsync = async () => {
   }
 };
 
-// ✅ PARSEO DE FECHA MEJORADO E INFALIBLE
 const parseEventDate = (dateStr) => {
   if (!dateStr) return new Date(0);
   if (dateStr instanceof Date) return dateStr;
   
   if (typeof dateStr === 'string') {
     const cleanStr = dateStr.trim();
-    const parts = cleanStr.split(/[-/]/); // Divide por '-' o '/'
+    const parts = cleanStr.split(/[-/]/);
     
     if (parts.length === 3) {
       const [p1, p2, p3] = parts.map(Number);
       if (!isNaN(p1) && !isNaN(p2) && !isNaN(p3)) {
-        // Formato YYYY-MM-DD o YYYY/MM/DD
-        if (p1 > 31) {
-          return new Date(p1, p2 - 1, p3);
-        }
-        // Formato DD/MM/YYYY
-        if (p3 > 31) {
-          return new Date(p3, p2 - 1, p1);
-        }
+        if (p1 > 31) return new Date(p1, p2 - 1, p3);
+        if (p3 > 31) return new Date(p3, p2 - 1, p1);
       }
     }
     
-    // Fallback al parser nativo (maneja ISO strings como "2023-10-25T15:30:00Z")
     const parsed = new Date(cleanStr);
     if (!isNaN(parsed.getTime())) return parsed;
   }
@@ -95,7 +87,6 @@ const parseEventDate = (dateStr) => {
   return new Date(0);
 };
 
-// ✅ HELPER PARA OBTENER LA FECHA SIN IMPORTAR EL NOMBRE DEL CAMPO EN EL BACKEND
 const getEventDateStr = (event) => {
   return event.date || event.fecha || event.fecha_inicio || event.fechaEvento || '';
 };
@@ -119,15 +110,6 @@ const isEventPast = (dateStr) => {
   return eventDate < today;
 };
 
-const isEventToday = (dateStr) => {
-  if (!dateStr) return false;
-  const eventDate = parseEventDate(dateStr);
-  const today = new Date();
-  eventDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  return eventDate.getTime() === today.getTime();
-};
-
 const getMonthBadge = (dateStr) => {
   const eventDate = parseEventDate(dateStr);
   const now = new Date();
@@ -146,11 +128,12 @@ const getMonthBadge = (dateStr) => {
   }
 };
 
+// ✅ CORRECCIÓN PRINCIPAL: Ahora 'activos' incluye eventos futuros y de hoy
 const groupEventsByStatusAndFaculty = (events) => {
-  // ✅ FILTRO ACTUALIZADO A FASE 3
   const eventosFase3 = events.filter(e => e.idfase === 3 || String(e.idfase) === '3');
   
-  const activos = eventosFase3.filter(e => isEventToday(getEventDateStr(e)));
+  // Cualquier evento que NO sea pasado se considera activo/próximo
+  const activos = eventosFase3.filter(e => !isEventPast(getEventDateStr(e)));
   const pasados = eventosFase3.filter(e => isEventPast(getEventDateStr(e)));
   
   const sections = [];
@@ -164,7 +147,7 @@ const groupEventsByStatusAndFaculty = (events) => {
     });
     
     sections.push({
-      title: '📅 Eventos Activos (Fase 3)',
+      title: '📅 Eventos Próximos o Activos (Fase 3)',
       type: 'activos',
       isPastSection: false,
       data: Object.keys(groupedActivos).sort().flatMap(faculty => 
@@ -236,10 +219,9 @@ const EventosCompletados = () => {
         },
       });
 
-      console.log('✅ Total de eventos recibidos:', response.data.length);
-      if (response.data.length > 0) {
-        console.log('🔍 Ejemplo de estructura del primer evento:', response.data[0]);
-      }
+      console.log('✅ Total de eventos recibidos del backend:', response.data.length);
+      const fase3Debug = response.data.filter(e => e.idfase === 3 || String(e.idfase) === '3');
+      console.log('✅ Eventos de Fase 3 recibidos:', fase3Debug.length, fase3Debug);
 
       setEvents(response.data);
 
@@ -383,14 +365,13 @@ const EventosCompletados = () => {
     );
   }
 
-  // ✅ FILTRO ACTUALIZADO A FASE 3
   const eventosFase3 = events.filter(e => e.idfase === 3 || String(e.idfase) === '3');
   const sections = groupEventsByStatusAndFaculty(events);
   
   const finalizedCount = eventosFase3.filter(e => isEventPast(getEventDateStr(e))).length;
   const uniqueFaculties = new Set(eventosFase3.map(e => e.faculty || 'Sin facultad')).size;
   const totalFase3 = eventosFase3.length;
-  const eventosFuturos = eventosFase3.filter(e => !isEventToday(getEventDateStr(e)) && !isEventPast(getEventDateStr(e)));
+  const eventosPróximos = eventosFase3.filter(e => !isEventPast(getEventDateStr(e)));
 
   return (
     <View style={styles.container}>
@@ -456,12 +437,12 @@ const EventosCompletados = () => {
                 />
               </View>
               <Text style={styles.emptyTitle}>
-                {totalFase3 === 0 ? 'No hay eventos de Fase 3' : 'Ningún evento completado aún'}
+                {totalFase3 === 0 ? 'No hay eventos de Fase 3' : 'Ningún evento en esta vista'}
               </Text>
               <Text style={styles.emptyText}>
                 {totalFase3 === 0 
                   ? 'No se encontraron eventos de Fase 3 organizados por facultad'
-                  : `Tienes ${eventosFuturos.length} evento${eventosFuturos.length !== 1 ? 's' : ''} de Fase 3 programado${eventosFuturos.length !== 1 ? 's' : ''}, pero aún ${eventosFuturos.length !== 1 ? 'no llegan' : 'no llega'} a su fecha (o no se recibieron eventos pasados desde el backend).`}
+                  : `Hay ${eventosPróximos.length} evento${eventosPróximos.length !== 1 ? 's' : ''} próximo${eventosPróximos.length !== 1 ? 's' : ''} y ${finalizedCount} completado${finalizedCount !== 1 ? 's' : ''}.`}
               </Text>
             </View>
           }
