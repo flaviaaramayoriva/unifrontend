@@ -147,11 +147,11 @@ const getMonthBadge = (dateStr) => {
 };
 
 const groupEventsByStatusAndFaculty = (events) => {
-  const eventosFase2 = events.filter(e => e.idfase === 2 || String(e.idfase) === '2');
+  // ✅ FILTRO ACTUALIZADO A FASE 3
+  const eventosFase3 = events.filter(e => e.idfase === 3 || String(e.idfase) === '3');
   
-  // ✅ Usamos el helper getEventDateStr para garantizar que leemos la fecha
-  const activos = eventosFase2.filter(e => isEventToday(getEventDateStr(e)));
-  const pasados = eventosFase2.filter(e => isEventPast(getEventDateStr(e)));
+  const activos = eventosFase3.filter(e => isEventToday(getEventDateStr(e)));
+  const pasados = eventosFase3.filter(e => isEventPast(getEventDateStr(e)));
   
   const sections = [];
   
@@ -164,7 +164,7 @@ const groupEventsByStatusAndFaculty = (events) => {
     });
     
     sections.push({
-      title: '📅 Eventos Activos (Fase 2)',
+      title: '📅 Eventos Activos (Fase 3)',
       type: 'activos',
       isPastSection: false,
       data: Object.keys(groupedActivos).sort().flatMap(faculty => 
@@ -187,7 +187,7 @@ const groupEventsByStatusAndFaculty = (events) => {
     });
     
     sections.push({
-      title: '🏆 Eventos Completados (Fase 2)',
+      title: '🏆 Eventos Completados (Fase 3)',
       type: 'pasados',
       isPastSection: true,
       data: Object.keys(groupedPasados).sort().flatMap(faculty => 
@@ -236,7 +236,6 @@ const EventosCompletados = () => {
         },
       });
 
-      // ✅ LOGS DE DEPURACIÓN: Revisa la consola para ver si el backend envía los eventos pasados
       console.log('✅ Total de eventos recibidos:', response.data.length);
       if (response.data.length > 0) {
         console.log('🔍 Ejemplo de estructura del primer evento:', response.data[0]);
@@ -384,14 +383,14 @@ const EventosCompletados = () => {
     );
   }
 
-  const eventosFase2 = events.filter(e => e.idfase === 2 || String(e.idfase) === '2');
+  // ✅ FILTRO ACTUALIZADO A FASE 3
+  const eventosFase3 = events.filter(e => e.idfase === 3 || String(e.idfase) === '3');
   const sections = groupEventsByStatusAndFaculty(events);
   
-  // ✅ Usamos el helper aquí también para cálculos precisos
-  const finalizedCount = eventosFase2.filter(e => isEventPast(getEventDateStr(e))).length;
-  const uniqueFaculties = new Set(eventosFase2.map(e => e.faculty || 'Sin facultad')).size;
-  const totalFase2 = eventosFase2.length;
-  const eventosFuturos = eventosFase2.filter(e => !isEventToday(getEventDateStr(e)) && !isEventPast(getEventDateStr(e)));
+  const finalizedCount = eventosFase3.filter(e => isEventPast(getEventDateStr(e))).length;
+  const uniqueFaculties = new Set(eventosFase3.map(e => e.faculty || 'Sin facultad')).size;
+  const totalFase3 = eventosFase3.length;
+  const eventosFuturos = eventosFase3.filter(e => !isEventToday(getEventDateStr(e)) && !isEventPast(getEventDateStr(e)));
 
   return (
     <View style={styles.container}>
@@ -402,7 +401,7 @@ const EventosCompletados = () => {
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>Eventos Fase 2 por Facultad</Text>
+          <Text style={styles.headerTitle}>Eventos Fase 3 por Facultad</Text>
           <Text style={styles.headerSubtitle}>
             {uniqueFaculties} {uniqueFaculties === 1 ? 'facultad' : 'facultades'}
           </Text>
@@ -422,12 +421,12 @@ const EventosCompletados = () => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {totalFase2 > 0 && (
+        {totalFase3 > 0 && (
           <View style={styles.topStatsContainer}>
             <View style={[styles.topStatCard, { backgroundColor: COLORS.primary }]}>
               <Ionicons name="calendar" size={24} color={COLORS.white} />
-              <Text style={styles.topStatNumber}>{totalFase2}</Text>
-              <Text style={styles.topStatLabel}>Eventos totales (Fase 2)</Text>
+              <Text style={styles.topStatNumber}>{totalFase3}</Text>
+              <Text style={styles.topStatLabel}>Eventos totales (Fase 3)</Text>
             </View>
             
             <View style={[styles.topStatCard, { backgroundColor: COLORS.accent }]}>
@@ -451,29 +450,29 @@ const EventosCompletados = () => {
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconContainer}>
                 <Ionicons 
-                  name={totalFase2 === 0 ? 'filter-outline' : 'time-outline'} 
+                  name={totalFase3 === 0 ? 'filter-outline' : 'time-outline'} 
                   size={80} 
                   color={COLORS.grayMedium} 
                 />
               </View>
               <Text style={styles.emptyTitle}>
-                {totalFase2 === 0 ? 'No hay eventos de Fase 2' : 'Ningún evento completado aún'}
+                {totalFase3 === 0 ? 'No hay eventos de Fase 3' : 'Ningún evento completado aún'}
               </Text>
               <Text style={styles.emptyText}>
-                {totalFase2 === 0 
-                  ? 'No se encontraron eventos de Fase 2 organizados por facultad'
-                  : `Tienes ${eventosFuturos.length} evento${eventosFuturos.length !== 1 ? 's' : ''} de Fase 2 programado${eventosFuturos.length !== 1 ? 's' : ''}, pero aún ${eventosFuturos.length !== 1 ? 'no llegan' : 'no llega'} a su fecha (o no se recibieron eventos pasados desde el backend).`}
+                {totalFase3 === 0 
+                  ? 'No se encontraron eventos de Fase 3 organizados por facultad'
+                  : `Tienes ${eventosFuturos.length} evento${eventosFuturos.length !== 1 ? 's' : ''} de Fase 3 programado${eventosFuturos.length !== 1 ? 's' : ''}, pero aún ${eventosFuturos.length !== 1 ? 'no llegan' : 'no llega'} a su fecha (o no se recibieron eventos pasados desde el backend).`}
               </Text>
             </View>
           }
         />
 
-        {totalFase2 > 0 && (
+        {totalFase3 > 0 && (
           <View style={styles.bottomStatsContainer}>
             <View style={[styles.bottomStatCard, { backgroundColor: COLORS.primary }]}>
               <Ionicons name="layers" size={20} color={COLORS.white} />
-              <Text style={styles.bottomStatNumber}>{totalFase2}</Text>
-              <Text style={styles.bottomStatLabel}>Total Fase 2</Text>
+              <Text style={styles.bottomStatNumber}>{totalFase3}</Text>
+              <Text style={styles.bottomStatLabel}>Total Fase 3</Text>
             </View>
             
             <View style={[styles.bottomStatCard, { backgroundColor: COLORS.accent }]}>
@@ -494,7 +493,6 @@ const EventosCompletados = () => {
   );
 };
 
-// ... (El objeto `styles` se mantiene exactamente igual que en tu código original)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
