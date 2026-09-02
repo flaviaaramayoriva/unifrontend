@@ -524,11 +524,7 @@ const ReportesAvanzadosScreen = () => {
               </span>
             </td>
             
-            <!-- 6. Organizador (ANTES: Observaciones/Hora) -->
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">
-              <strong>${ev.responsable_evento || ev.organizador || '–'}</strong><br>
-              <span style="color:#6b7280;font-size:11px;">${ev.facultad || 'Sin facultad'}</span>
-            </td>
+           
           </tr>
         `;
       }).join('');
@@ -577,7 +573,6 @@ const ReportesAvanzadosScreen = () => {
               <th style="width:10%">Hora</th>
               <th style="width:30%">Tema</th>
               <th style="width:15%">Estado</th>
-              <th style="width:15%">Organizador</th>
             </tr>
           </thead>
           <tbody>
