@@ -1354,17 +1354,15 @@ const ProyectoEvento = () => {
     
      const nuevoEstado = { ...prev };
     
-    // Buscar y deseleccionar otros recursos del mismo tipo
     Object.keys(nuevoEstado).forEach(key => {
       const recursoExistente = recursosDisponibles.find(r => String(r.idrecurso) === key);
       if (recursoExistente && recursoExistente.recurso_tipo === recurso.recurso_tipo) {
         delete nuevoEstado[key];
+        console.log(`Deseleccionando recurso del mismo tipo: ${recursoExistente.nombre_recurso}`);
       }
     });
     
-    // Seleccionar el nuevo recurso
     nuevoEstado[idString] = 1;
-    
     return nuevoEstado;
   });
 }, [recursosDisponibles]);
