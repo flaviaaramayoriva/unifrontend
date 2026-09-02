@@ -10,7 +10,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { PieChart } from 'react-native-chart-kit';
-import Svg, { Rect, Text as SvgText, G, Line } from 'react-native-svg';
+import Svg, { Rect, Text as SvgText, G } from 'react-native-svg';
 
 const COLORS = {
   primary: '#E95A0C',
@@ -31,11 +31,9 @@ const COLORS = {
   white: '#FFFFFF',
 };
 
-//const API_BASE_URL =  'https://evento.cidtec-uc.com';
 const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
-// ✅ getTokenAsync — sin las líneas sueltas de "reporte" que causaban el crash
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
@@ -47,73 +45,6 @@ const getTokenAsync = async () => {
 const MONTH_NAMES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MONTH_NAMES_FULL  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-const HorizontalBarChart = ({ data, width }) => {
-  if (!data?.length) return null;
-  const max = Math.max(...data.map(d => d.value), 1);
-  const barHeight = 32;
-  const spacing = 12;
-  const totalHeight = data.length * (barHeight + spacing) + 20;
-  const CHART_COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF', '#EC4899'];
-  const labelWidth = 110; // Espacio reservado para el nombre a la izquierda
-
-  return (
-    <Svg width={width} height={totalHeight}>
-      {data.map((d, i) => {
-        const barMaxWidth = width - labelWidth - 50; // espacio para el número a la derecha
-        const barWidth = (d.value / max) * barMaxWidth;
-        const y = 10 + i * (barHeight + spacing);
-        const color = CHART_COLORS[i % CHART_COLORS.length];
-
-        return (
-          <G key={i}>
-            {/* Nombre de la facultad (izquierda) */}
-            <SvgText
-              x={0}
-              y={y + barHeight / 2 + 4}
-              fontSize="11"
-              fill={COLORS.textPrimary}
-              fontWeight="500"
-            >
-              {d.label.length > 22 ? d.label.slice(0, 22) + '…' : d.label}
-            </SvgText>
-
-            {/* Barra de fondo */}
-            <Rect
-              x={labelWidth}
-              y={y}
-              width={barMaxWidth}
-              height={barHeight}
-              fill={COLORS.divider}
-              rx={6}
-            />
-
-            {/* Barra de valor */}
-            <Rect
-              x={labelWidth}
-              y={y}
-              width={barWidth}
-              height={barHeight}
-              fill={color}
-              rx={6}
-            />
-
-            {/* Número a la derecha */}
-            <SvgText
-              x={width - 10}
-              y={y + barHeight / 2 + 4}
-              fontSize="13"
-              fill={color}
-              fontWeight="700"
-              textAnchor="end"
-            >
-              {d.value}
-            </SvgText>
-          </G>
-        );
-      })}
-    </Svg>
-  );
-};
 const KpiCard = ({ label, value, icon, color, sub }) => (
   <View style={[styles.kpiCard, { borderTopColor: color }]}>
     <View style={[styles.kpiIconWrap, { backgroundColor: color + '15' }]}>
@@ -155,12 +86,6 @@ const ReportesAvanzadosScreen = () => {
   const [selectedMonth, setSelectedMonth]     = useState(new Date().getMonth() + 1);
   const [showYearPicker, setShowYearPicker]   = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [showEventSelector, setShowEventSelector] = useState(false);
-  const [eventosDelMesSeleccionado, setEventosDelMesSeleccionado] = useState([]);
-  const [eventosSeleccionados, setEventosSeleccionados] = useState([]);
-  const [mesParaReporte, setMesParaReporte] = useState(null);
-  
-  // 🆕 ESTADOS PARA REPORTE POR EVENTO
   const [showEventPicker, setShowEventPicker] = useState(false);
   const [todosLosEventos, setTodosLosEventos] = useState([]);
 
@@ -183,7 +108,6 @@ const ReportesAvanzadosScreen = () => {
       const data = statsRes.data;
       setStats(data);
 
-      // Pie chart estados
       if (data.estadoCounts) {
         const colorMap = { aprobado: COLORS.success, pendiente: COLORS.warning, rechazado: COLORS.accent };
         const pie = Object.entries(data.estadoCounts)
@@ -201,7 +125,7 @@ const ReportesAvanzadosScreen = () => {
       if (Array.isArray(data.eventosPorFacultad)) {
         setRankingFacultades(
           data.eventosPorFacultad
-            .map(f => ({ label: f.facultad || 'N/A', value: f.aprobados || 0 })) // ← Cambia f.total por f.aprobados
+            .map(f => ({ label: f.facultad || 'N/A', value: f.aprobados || 0 }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 6)
         );
@@ -220,41 +144,35 @@ const ReportesAvanzadosScreen = () => {
     }
   }, []);
 
-const cargarEventos = useCallback(async () => {
-  setLoadingEvents(true);
-  try {
-    const token = await getTokenAsync();
-    if (!token) return;
-    const params = filtroEstado !== 'todos' ? { estado: filtroEstado } : {};
-    const res = await axios.get(`${API_BASE_URL}/eventos`, {
-      headers: { Authorization: `Bearer ${token}` },
-      params,
-    });
-    const lista = Array.isArray(res.data) ? res.data : [];
-    
-    const anioActual = new Date().getFullYear();
-    const eventosFiltrados = lista.filter(ev => {
-      if (!ev.fechaevento) return false;
+  const cargarEventos = useCallback(async () => {
+    setLoadingEvents(true);
+    try {
+      const token = await getTokenAsync();
+      if (!token) return;
+      const params = filtroEstado !== 'todos' ? { estado: filtroEstado } : {};
+      const res = await axios.get(`${API_BASE_URL}/eventos`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      const lista = Array.isArray(res.data) ? res.data : [];
       
-      const fechaEvento = new Date(ev.fechaevento);
-      const anioEvento = fechaEvento.getFullYear();
-      return anioEvento === anioActual;
-      const fechaCreacion = ev.created_at ? new Date(ev.created_at) : fechaEvento;
+      const anioActual = new Date().getFullYear();
+      const eventosFiltrados = lista.filter(ev => {
+        if (!ev.fechaevento) return false;
+        const fechaEvento = new Date(ev.fechaevento);
+        return fechaEvento.getFullYear() === anioActual;
+      });
       
-      
-    });
-    
-    console.log(`✅ Eventos recientes: ${eventosFiltrados.length} de ${lista.length} (solo ${anioActual})`);
-    setEventosRecientes(eventosFiltrados.slice(0, 10));
-  } catch (err) {
-    console.error(err);
-    setEventosRecientes([]);
-  } finally {
-    setLoadingEvents(false);
-  }
-}, [filtroEstado]);
+      setEventosRecientes(eventosFiltrados.slice(0, 10));
+    } catch (err) {
+      console.error(err);
+      setEventosRecientes([]);
+    } finally {
+      setLoadingEvents(false);
+    }
+  }, [filtroEstado]);
 
-  useEffect(() => { cargarDatos(); },   [cargarDatos]);
+  useEffect(() => { cargarDatos(); }, [cargarDatos]);
   useEffect(() => { cargarEventos(); }, [cargarEventos]);
 
   const exportarCSV = async () => {
@@ -297,238 +215,184 @@ const cargarEventos = useCallback(async () => {
     }
   };
 
-  const cargarEventosDelMes = async (mesFormato) => {
+  const cargarEventosParaPicker = async () => {
     setLoading(true);
     try {
       const token = await getTokenAsync();
       if (!token) return;
-
-      const [yearStr, monthStr] = mesFormato.split('-');
-      const yearNum = parseInt(yearStr);
-      const monthNum = parseInt(monthStr);
-      
       const res = await axios.get(`${API_BASE_URL}/eventos`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const todosEventos = Array.isArray(res.data) ? res.data : [];
-      
-      // Filtrar eventos del mes seleccionado
-      const eventosFiltrados = todosEventos.filter(ev => {
-        if (!ev.fechaevento) return false;
-        const fechaEvento = new Date(ev.fechaevento);
-        return fechaEvento.getFullYear() === yearNum && 
-              (fechaEvento.getMonth() + 1) === monthNum;
-      });
-      
-      setEventosDelMesSeleccionado(eventosFiltrados);
-      setEventosSeleccionados(eventosFiltrados.map(e => e.idevento)); // Seleccionar todos por defecto
-      setMesParaReporte(mesFormato);
-      setShowEventSelector(true);
+      const lista = Array.isArray(res.data) ? res.data : [];
+      const eventosFase2 = lista.filter(ev => ev.idfase === 2);
+      eventosFase2.sort((a, b) => new Date(b.fechaevento || 0) - new Date(a.fechaevento || 0));
+      setTodosLosEventos(eventosFase2);
+      setShowEventPicker(true);
     } catch (err) {
       console.error(err);
-      showError('Error al cargar eventos del mes');
+      showError('Error al cargar eventos');
     } finally {
       setLoading(false);
     }
   };
 
-const cargarEventosParaPicker = async () => {
-  setLoading(true);
-  try {
-    const token = await getTokenAsync();
-    if (!token) return;
-    const res = await axios.get(`${API_BASE_URL}/eventos`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const lista = Array.isArray(res.data) ? res.data : [];
-
-    const eventosFase2 = lista.filter(ev => ev.idfase === 2);
-
-    eventosFase2.sort((a, b) => new Date(b.fechaevento || 0) - new Date(a.fechaevento || 0));
-    setTodosLosEventos(eventosFase2);
-    setShowEventPicker(true);
-  } catch (err) {
-    console.error(err);
-    showError('Error al cargar eventos');
-  } finally {
-    setLoading(false);
-  }
-};
-
   const navegarADetalleEvento = (evento) => {
     setShowEventPicker(false);
-    // Navegar a la pantalla de detalles del evento
     router.push(`/admin/EventoDetalleImp?eventId=${evento.idevento}`);
   };
 
-const generarPDF = async (mesFormato) => {
-  setLoading(true);
-  try {
-    const token = await getTokenAsync();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+  const generarPDF = async (mesFormato) => {
+    setLoading(true);
+    try {
+      const token = await getTokenAsync();
+      if (!token) { setLoading(false); return; }
 
-    const reporte = reportesMensuales.find(r => r.mes === mesFormato);
-    if (!reporte) { 
-      setLoading(false);
-      showError(`Sin datos para ${mesFormato}.`); 
-      return; 
-    }
-
-    const [year, monthNum] = mesFormato.split('-');
-    const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
-
-    // ✅ 1. Obtener todos los eventos
-    const res = await axios.get(`${API_BASE_URL}/eventos`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const todosEventos = Array.isArray(res.data) ? res.data : [];
-    
-    const yearNum = parseInt(year);
-    const monthNum2 = parseInt(monthNum);
-    
-    // ✅ 2. Filtrar eventos del mes seleccionado
-    const eventosDelMes = todosEventos.filter(ev => {
-      if (!ev.fechaevento) return false;
-      const fechaEvento = new Date(ev.fechaevento);
-      return fechaEvento.getFullYear() === yearNum && 
-             (fechaEvento.getMonth() + 1) === monthNum2;
-    });
-    
-    console.log(`✅ Eventos filtrados para ${mesNombre} ${year}:`, eventosDelMes.length);
-
-    // ✅ 3. AHORA sí podemos usar eventosDelMes
-    const filasReporte = eventosDelMes.map(ev => {
-      const fecha = ev.fechaevento
-        ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { 
-            day: '2-digit', 
-            month: '2-digit',
-            year: 'numeric'
-          })
-        : '–';
-      
-      return `
-        <tr>
-          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${fecha}</td>
-          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.lugarevento || '–'}</td>
-          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.publicoMeta || ev.descripcion || '–'}</td>
-          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.nombreevento || '–'}</td>
-          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">&nbsp;</td>
-        </tr>
-      `;
-    }).join('');
-
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-      <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:Arial,sans-serif;padding:40px;background:#fff}
-        .wrap{max-width:1200px;margin:0 auto}
-        .header-table{width:100%;border:2px solid #2d5016;margin-bottom:20px;}
-        .header-table td{padding:15px;text-align:center;}
-        .reporte-title{font-size:32px;font-weight:bold;color:#000;text-transform:lowercase;}
-        .info-row{display:flex;justify-content:space-between;margin-bottom:20px;border:1px solid #ddd;}
-        .info-field{flex:1;padding:10px;border-right:1px solid #ddd;}
-        .info-field:last-child{border-right:none;}
-        .info-label{font-weight:bold;background:#f0f0f0;padding:5px 10px;display:inline-block;margin-bottom:5px;}
-        .info-value{padding:5px 10px;min-height:30px;}
-        .main-table{width:100%;border-collapse:collapse;margin-top:20px;}
-        .main-table th{background:#ccc;padding:12px;border:1px solid #999;text-align:left;font-weight:bold;font-size:14px;}
-        .main-table td{padding:10px;border:1px solid #ddd;vertical-align:top;font-size:13px;}
-        .main-table tr:nth-child(even){background:#f9f9f9;}
-        .footer{margin-top:30px;text-align:center;font-size:12px;color:#666;padding-top:20px;border-top:1px solid #ddd;}
-        @media print{body{padding:0}.wrap{box-shadow:none}}
-      </style></head><body><div class="wrap">
-      
-      <table class="header-table">
-        <tr><td><div class="reporte-title">reporte</div></td></tr>
-      </table>
-      
-      <div class="info-row">
-        <div class="info-field">
-          <div class="info-label">Periodo</div>
-          <div class="info-value">${mesNombre} ${year}</div>
-        </div>
-        <div class="info-field">
-          <div class="info-label">Responsable de la Informacion</div>
-          <div class="info-value">&nbsp;</div>
-        </div>
-      </div>
-      
-      <table class="main-table">
-        <thead>
-          <tr>
-            <th style="width:15%">Fecha</th>
-            <th style="width:20%">Lugar</th>
-            <th style="width:25%">Publico Meta</th>
-            <th style="width:25%">Tema</th>
-            <th style="width:15%">Observaciones y Sugerencias</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${filasReporte}
-        </tbody>
-      </table>
-      
-      <div class="footer">
-        <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos
-      </div>
-      
-      </div></body></html>`;
-
-    if (Platform.OS === 'web') {
-      const w = window.open('', '_blank');
-      if (w) { 
-        w.document.write(html); 
-        w.document.close(); 
-        setTimeout(() => w.print(), 800); 
-      } else {
-        showError('Permite ventanas emergentes para ver el reporte.');
+      const reporte = reportesMensuales.find(r => r.mes === mesFormato);
+      if (!reporte) { 
+        setLoading(false);
+        showError(`Sin datos para ${mesFormato}.`); 
+        return; 
       }
-    } else {
-      const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
+
+      const [year, monthNum] = mesFormato.split('-');
+      const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
+
+      const res = await axios.get(`${API_BASE_URL}/eventos`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const todosEventos = Array.isArray(res.data) ? res.data : [];
+      
+      const yearNum = parseInt(year);
+      const monthNum2 = parseInt(monthNum);
+      
+      // ✅ Filtrar eventos del mes seleccionado
+      const eventosDelMes = todosEventos.filter(ev => {
+        if (!ev.fechaevento) return false;
+        const fechaEvento = new Date(ev.fechaevento);
+        return fechaEvento.getFullYear() === yearNum && (fechaEvento.getMonth() + 1) === monthNum2;
+      });
+
+      // ✅ Generar filas DENTRO de la función donde eventosDelMes sí existe
+      const filasReporte = eventosDelMes.map(ev => {
+        const fecha = ev.fechaevento
+          ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          : '–';
+        
+        return `
+          <tr>
+            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${fecha}</td>
+            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.lugarevento || '–'}</td>
+            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.publicoMeta || ev.descripcion || '–'}</td>
+            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.nombreevento || '–'}</td>
+            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">&nbsp;</td>
+          </tr>
+        `;
+      }).join('');
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+        <style>
+          *{margin:0;padding:0;box-sizing:border-box}
+          body{font-family:Arial,sans-serif;padding:40px;background:#fff}
+          .wrap{max-width:1200px;margin:0 auto}
+          .header-table{width:100%;border:2px solid #2d5016;margin-bottom:20px;}
+          .header-table td{padding:15px;text-align:center;}
+          .reporte-title{font-size:32px;font-weight:bold;color:#000;text-transform:lowercase;}
+          .info-row{display:flex;justify-content:space-between;margin-bottom:20px;border:1px solid #ddd;}
+          .info-field{flex:1;padding:10px;border-right:1px solid #ddd;}
+          .info-field:last-child{border-right:none;}
+          .info-label{font-weight:bold;background:#f0f0f0;padding:5px 10px;display:inline-block;margin-bottom:5px;}
+          .info-value{padding:5px 10px;min-height:30px;}
+          .main-table{width:100%;border-collapse:collapse;margin-top:20px;}
+          .main-table th{background:#ccc;padding:12px;border:1px solid #999;text-align:left;font-weight:bold;font-size:14px;}
+          .main-table td{padding:10px;border:1px solid #ddd;vertical-align:top;font-size:13px;}
+          .main-table tr:nth-child(even){background:#f9f9f9;}
+          .footer{margin-top:30px;text-align:center;font-size:12px;color:#666;padding-top:20px;border-top:1px solid #ddd;}
+          @media print{body{padding:0}.wrap{box-shadow:none}}
+        </style></head><body><div class="wrap">
+        
+        <table class="header-table">
+          <tr><td><div class="reporte-title">reporte</div></td></tr>
+        </table>
+        
+        <div class="info-row">
+          <div class="info-field">
+            <div class="info-label">Periodo</div>
+            <div class="info-value">${mesNombre} ${year}</div>
+          </div>
+          <div class="info-field">
+            <div class="info-label">Responsable de la Informacion</div>
+            <div class="info-value">&nbsp;</div>
+          </div>
+        </div>
+        
+        <table class="main-table">
+          <thead>
+            <tr>
+              <th style="width:15%">Fecha</th>
+              <th style="width:20%">Lugar</th>
+              <th style="width:25%">Publico Meta</th>
+              <th style="width:25%">Tema</th>
+              <th style="width:15%">Observaciones y Sugerencias</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filasReporte}
+          </tbody>
+        </table>
+        
+        <div class="footer">
+          <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos
+        </div>
+        </div></body></html>`;
+
+      if (Platform.OS === 'web') {
+        const w = window.open('', '_blank');
+        if (w) { 
+          w.document.write(html); 
+          w.document.close(); 
+          setTimeout(() => w.print(), 800); 
+        } else {
+          showError('Permite ventanas emergentes para ver el reporte.');
+        }
+      } else {
+        const { uri } = await Print.printToFileAsync({ html });
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
+      }
+    } catch (err) {
+      console.error('Error al generar PDF:', err);
+      showError('Error al generar PDF: ' + err.message);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error('Error al generar PDF:', err);
-    showError('Error al generar PDF: ' + err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
   const generarReporteAnual = async (year) => {
     setLoading(true);
     try {
       const token = await getTokenAsync();
       if (!token) return;
 
-      // Obtener TODOS los eventos del año
       const res = await axios.get(`${API_BASE_URL}/eventos`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { year: year }
       });
       const todosEventos = Array.isArray(res.data) ? res.data : [];
 
-      // Filtrar solo los del año seleccionado
       const eventosAnuales = todosEventos.filter(ev => {
         if (!ev.fechaevento) return false;
         return new Date(ev.fechaevento).getFullYear() === year;
       });
 
-      // Contar por estado
       const aprobados = eventosAnuales.filter(e => e.estado === 'aprobado').length;
       const pendientes = eventosAnuales.filter(e => e.estado === 'pendiente').length;
       const rechazados = eventosAnuales.filter(e => e.estado === 'rechazado').length;
       const total = eventosAnuales.length;
 
-      // Obtener TODAS las facultades (sin límite)
       const statsRes = await axios.get(`${API_BASE_URL}/dashboard/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const todasFacultades = statsRes.data.eventosPorFacultad || [];
 
-      // Generar filas de facultades
       const facultadesRows = todasFacultades.map((f, i) => {
         const maxVal = todasFacultades[0]?.aprobados || 1;
         const width = Math.round((f.aprobados / maxVal) * 100);
@@ -549,7 +413,6 @@ const generarPDF = async (mesFormato) => {
         `;
       }).join('');
 
-      // Generar filas de eventos (todos)
       const eventosRows = eventosAnuales.map(ev => {
         const estadoColors = {
           aprobado: { bg: '#d1fae5', text: '#059669' },
@@ -687,7 +550,6 @@ const generarPDF = async (mesFormato) => {
         <div class="footer">
           <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos · Año ${year}
         </div>
-        
         </div></body></html>`;
 
       if (Platform.OS === 'web') {
@@ -696,8 +558,9 @@ const generarPDF = async (mesFormato) => {
           w.document.write(html); 
           w.document.close(); 
           setTimeout(() => w.print(), 800); 
+        } else {
+          showError('Permite ventanas emergentes para ver el reporte.');
         }
-        else showError('Permite ventanas emergentes para ver el reporte.');
       } else {
         const { uri } = await Print.printToFileAsync({ html });
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Reporte Anual Completo' });
@@ -708,38 +571,12 @@ const generarPDF = async (mesFormato) => {
       setLoading(false);
     }
   };
-  const estadoBadgeHtml = (estado) => {
-  const map = {
-    aprobado:  { cls: 'b-aprobado',  label: 'Aprobado'  },
-    pendiente: { cls: 'b-pendiente', label: 'Pendiente' },
-    rechazado: { cls: 'b-rechazado', label: 'Rechazado' },
-  };
-  const s = map[(estado || '').toLowerCase()] || { cls: '', label: estado || 'N/A' };
-  return `<span class="badge ${s.cls}">${s.label}</span>`;
-};
-
-const filasReporte = eventosDelMes.map(ev => {
-  const fecha = ev.fechaevento
-    ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' })
-    : '–';
-  return `
-    <tr>
-      <td>${fecha}</td>
-      <td>${ev.lugarevento || '–'}</td>
-      <td class="col-publico">${estadoBadgeHtml(ev.estado)}</td>
-      <td>${ev.nombreevento || 'Sin nombre'}</td>
-      <td class="col-obs-cell">&nbsp;</td>
-    </tr>
-  `;
-}).join('');
 
   const chartW = windowWidth - 48;
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* ── HEADER ── */}
         <View style={styles.topHeader}>
           <Text style={styles.topTitle}>Reportes</Text>
           <Text style={styles.topSub}>Análisis y métricas del sistema</Text>
@@ -752,7 +589,6 @@ const filasReporte = eventosDelMes.map(ev => {
           </View>
         ) : (
           <>
-            {/* ── KPIs ── */}
             <View style={styles.section}>
               <SectionHeader icon="pulse-outline" title="Indicadores Clave" />
               <View style={styles.kpiGrid}>
@@ -765,7 +601,6 @@ const filasReporte = eventosDelMes.map(ev => {
               </View>
             </View>
 
-            {/* ── DISTRIBUCIÓN PIE ── */}
             <View style={styles.section}>
               <SectionHeader icon="pie-chart-outline" title="Distribución por Estado" />
               <View style={styles.card}>
@@ -800,8 +635,6 @@ const filasReporte = eventosDelMes.map(ev => {
                       const RANK_COLORS = ['#28B8CE', '#FFCC00', '#E84E0F', '#D3D800', '#E6007E'];
                       const colorIndex = i % RANK_COLORS.length;
                       const rankColor = RANK_COLORS[colorIndex];
-                      
-                      // ✅ Corrección: Texto oscuro para fondos claros (índices 1 y 3 son amarillos/verdes claros)
                       const isLightColor = colorIndex === 1 || colorIndex === 3;
                       const textColor = isLightColor ? COLORS.textPrimary : COLORS.white;
 
@@ -829,7 +662,7 @@ const filasReporte = eventosDelMes.map(ev => {
                 )}
               </View>
             </View>
-            {/* ── HISTÓRICO MENSUAL ── */}
+
             {reportesMensuales.length > 0 && (
               <View style={styles.section}>
                 <SectionHeader icon="bar-chart-outline" title="Histórico Mensual" subtitle="Últimos períodos" />
@@ -850,7 +683,6 @@ const filasReporte = eventosDelMes.map(ev => {
 
                     return (
                       <View key={i} style={[styles.tableRow, i % 2 === 0 && { backgroundColor: COLORS.divider }]}>
-                        {/* ✅ Corrección: Limitar a 1 línea con puntos suspensivos si es muy largo */}
                         <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.tableCell, { flex: 2 }]}>
                           {mesTexto}
                         </Text>
@@ -867,7 +699,6 @@ const filasReporte = eventosDelMes.map(ev => {
               </View>
             )}
 
-            {/* ── EVENTOS RECIENTES ── */}
             <View style={styles.section}>
               <SectionHeader icon="list-outline" title="Eventos Recientes" />
               <View style={styles.filterRow}>
@@ -892,24 +723,38 @@ const filasReporte = eventosDelMes.map(ev => {
                     <Text style={styles.emptyText}>Sin eventos para mostrar</Text>
                   </View>
                 ) : (
-                  eventosRecientes.map((ev, i) => (
-                    <View key={i} style={[styles.eventRow, i < eventosRecientes.length - 1 && styles.eventRowBorder]}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.eventName} numberOfLines={1}>{ev.nombreevento || 'Sin nombre'}</Text>
-                        <Text style={styles.eventMeta}>
-                          {ev.fechaevento?.split('T')[0] || '–'} · {ev.lugarevento || '–'}
-                        </Text>
+                  eventosRecientes.map((ev, i) => {
+                    const estadoColors = {
+                      aprobado: { bg: '#d1fae5', text: '#059669' },
+                      pendiente: { bg: '#fef3c7', text: '#d97706' },
+                      rechazado: { bg: '#fee2e2', text: '#dc2626' },
+                    };
+                    const est = (ev.estado || '').toLowerCase();
+                    const color = estadoColors[est] || { bg: '#f3f4f6', text: '#6b7280' };
+                    
+                    return (
+                      <View key={i} style={[styles.eventRow, i < eventosRecientes.length - 1 && styles.eventRowBorder]}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.eventName} numberOfLines={1}>{ev.nombreevento || 'Sin nombre'}</Text>
+                          <Text style={styles.eventMeta}>
+                            {ev.fechaevento?.split('T')[0] || '–'} · {ev.lugarevento || '–'}
+                          </Text>
+                        </View>
+                        <View style={{ backgroundColor: color.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                          <Text style={{ color: color.text, fontSize: 11, fontWeight: '700' }}>
+                            {(ev.estado || 'N/A').charAt(0).toUpperCase() + (ev.estado || '').slice(1)}
+                          </Text>
+                        </View>
                       </View>
-                      {estadoBadge(ev.estado)}
-                    </View>
-                  ))
+                    );
+                  })
                 )}
               </View>
             </View>
 
             <View style={styles.section}>
               <SectionHeader icon="settings-outline" title="Exportar y Reportes" />
-               <TouchableOpacity 
+              <TouchableOpacity 
                 style={[styles.actionBtn, { backgroundColor: '#FEF3C7', borderColor: '#F59E0B' }]} 
                 onPress={() => generarReporteAnual(new Date().getFullYear())}
               >
@@ -922,7 +767,6 @@ const filasReporte = eventosDelMes.map(ev => {
                 <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
               </TouchableOpacity>
 
-              {/* 🆕 BOTÓN REPORTE POR EVENTO - AHORA NAVEGA A DETALLES */}
               <TouchableOpacity 
                 style={[styles.actionBtn, { backgroundColor: '#F3E8FF', borderColor: '#8B5CF6' }]} 
                 onPress={cargarEventosParaPicker}
@@ -945,6 +789,7 @@ const filasReporte = eventosDelMes.map(ev => {
                 {loading && <ActivityIndicator size="small" color={COLORS.primary} />}
                 <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
               </TouchableOpacity>
+              
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#EFF6FF' }]} onPress={exportarCSV}>
                 <Ionicons name="download-outline" size={22} color={COLORS.info} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
@@ -960,7 +805,6 @@ const filasReporte = eventosDelMes.map(ev => {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* ── MODAL SELECTOR PDF MENSUAL ── */}
       {showSelector && (
         <View style={styles.overlay}>
           <View style={styles.modal}>
@@ -1017,7 +861,6 @@ const filasReporte = eventosDelMes.map(ev => {
         </View>
       )}
 
-      {/* 🆕 MODAL SELECTOR DE EVENTO - AHORA NAVEGA A DETALLES */}
       {showEventPicker && (
         <View style={styles.overlay}>
           <View style={[styles.modal, { width: '90%', maxWidth: 420, maxHeight: '85%' }]}>
@@ -1033,29 +876,39 @@ const filasReporte = eventosDelMes.map(ev => {
                   <Text style={styles.emptyText}>No hay eventos disponibles</Text>
                 </View>
               ) : (
-                todosLosEventos.map((ev, i) => (
-                  <TouchableOpacity
-                    key={ev.idevento || i}
-                    style={[
-                      styles.dropItem, 
-                      { paddingVertical: 12, paddingHorizontal: 14 },
-                      i === todosLosEventos.length - 1 && { borderBottomWidth: 0 }
-                    ]}
-                    onPress={() => navegarADetalleEvento(ev)}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%' }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.dropText, { fontWeight: '700', marginBottom: 4, fontSize: 14 }]} numberOfLines={1}>
-                          {ev.nombreevento || 'Sin nombre'}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: COLORS.textSecondary }} numberOfLines={1}>
-                          {ev.fechaevento ? new Date(ev.fechaevento).toLocaleDateString('es-ES') : 'Sin fecha'} · {ev.lugarevento || 'Sin lugar'}
-                        </Text>
+                todosLosEventos.map((ev, i) => {
+                  const estadoColors = {
+                    aprobado: { bg: '#d1fae5', text: '#059669' },
+                    pendiente: { bg: '#fef3c7', text: '#d97706' },
+                    rechazado: { bg: '#fee2e2', text: '#dc2626' },
+                  };
+                  const est = (ev.estado || '').toLowerCase();
+                  const color = estadoColors[est] || { bg: '#f3f4f6', text: '#6b7280' };
+
+                  return (
+                    <TouchableOpacity
+                      key={ev.idevento || i}
+                      style={[styles.dropItem, { paddingVertical: 12, paddingHorizontal: 14 }, i === todosLosEventos.length - 1 && { borderBottomWidth: 0 }]}
+                      onPress={() => navegarADetalleEvento(ev)}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.dropText, { fontWeight: '700', marginBottom: 4, fontSize: 14 }]} numberOfLines={1}>
+                            {ev.nombreevento || 'Sin nombre'}
+                          </Text>
+                          <Text style={{ fontSize: 11, color: COLORS.textSecondary }} numberOfLines={1}>
+                            {ev.fechaevento ? new Date(ev.fechaevento).toLocaleDateString('es-ES') : 'Sin fecha'} · {ev.lugarevento || 'Sin lugar'}
+                          </Text>
+                        </View>
+                        <View style={{ backgroundColor: color.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 }}>
+                          <Text style={{ color: color.text, fontSize: 10, fontWeight: '700' }}>
+                            {(ev.estado || 'N/A').charAt(0).toUpperCase() + (ev.estado || '').slice(1)}
+                          </Text>
+                        </View>
                       </View>
-                      {estadoBadge(ev.estado)}
-                    </View>
-                  </TouchableOpacity>
-                ))
+                    </TouchableOpacity>
+                  );
+                })
               )}
             </ScrollView>
 
@@ -1096,12 +949,6 @@ const styles = StyleSheet.create({
   kpiLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
   kpiSub: { fontSize: 11, color: COLORS.textTertiary, marginTop: 2 },
 
-  rankRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderColor: COLORS.divider, gap: 10 },
-  rankBadge: { width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.divider, justifyContent: 'center', alignItems: 'center' },
-  rankNum: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
-  rankLabel: { flex: 1, fontSize: 13, color: COLORS.textPrimary },
-  rankValue: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
-
   tableRow: { flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center' },
   tableHead: { borderBottomWidth: 2, borderColor: COLORS.border, marginBottom: 2 },
   tableHeadText: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary, textTransform: 'uppercase' },
@@ -1112,6 +959,7 @@ const styles = StyleSheet.create({
   filterBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   filterText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
   filterTextActive: { color: COLORS.white, fontWeight: '700' },
+  
   eventRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
   eventRowBorder: { borderBottomWidth: 1, borderColor: COLORS.divider },
   eventName: { fontSize: 14, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 3 },
@@ -1137,49 +985,14 @@ const styles = StyleSheet.create({
   modalBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
   modalBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
   modalBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 14 },
-  rankRowNew: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderColor: COLORS.divider,
-    gap: 12,
-  },
-  rankBadgeNew: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rankNumNew: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: COLORS.white,
-  },
-  rankLabelNew: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  rankBarBg: {
-    height: 6,
-    backgroundColor: COLORS.divider,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  rankBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  rankValueNew: {
-    fontSize: 15,
-    fontWeight: '800',
-    minWidth: 36,
-    textAlign: 'right',
-  },
+  
+  rankRowNew: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 1, borderColor: COLORS.divider, gap: 12 },
+  rankBadgeNew: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  rankNumNew: { fontSize: 13, fontWeight: '800', color: COLORS.white },
+  rankLabelNew: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 4 },
+  rankBarBg: { height: 6, backgroundColor: COLORS.divider, borderRadius: 3, overflow: 'hidden' },
+  rankBarFill: { height: '100%', borderRadius: 3 },
+  rankValueNew: { fontSize: 15, fontWeight: '800', minWidth: 36, textAlign: 'right' },
 });
 
 export default ReportesAvanzadosScreen;
