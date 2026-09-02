@@ -339,7 +339,46 @@ const ReportesAvanzadosScreen = () => {
   useEffect(() => { cargarDatos(); }, [cargarDatos]);
   useEffect(() => { cargarEventos(); }, [cargarEventos]);
 
-  // 🔥 NUEVO: Exportar a Excel (XLSX)
+    const exportarCSV = async () => {
+    try {
+      const token = await getTokenAsync();
+      if (!token) return;
+      const res = await axios.get(`${API_BASE_URL}/eventos`, { headers: { Authorization: `Bearer ${token}` } });
+      const eventos = Array.isArray(res.data) ? res.data : [];
+      if (!eventos.length) { showError('No hay eventos para exportar.'); return; }
+
+      const headers = ['ID', 'Nombre', 'Fecha', 'Lugar', 'Estado', 'Responsable'];
+      const rows = eventos.map(e => [
+        e.idevento,
+        `"${e.nombreevento || ''}"`,
+        e.fechaevento?.split('T')[0] || '',
+        `"${e.lugarevento || ''}"`,
+        e.estado || '',
+        `"${e.responsable_evento || ''}"`,
+      ].join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `eventos_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        Alert.alert('Éxito', 'Archivo CSV descargado correctamente.');
+      } else {
+        const path = FileSystem.documentDirectory + `eventos_${Date.now()}.csv`;
+        await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'Exportar CSV' });
+      }
+    } catch (err) {
+      console.error(err);
+      showError('Error al exportar: ' + err.message);
+    }
+  };
+
+ 
   const exportarExcel = async () => {
     try {
       const token = await getTokenAsync();
