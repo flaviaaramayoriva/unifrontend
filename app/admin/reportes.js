@@ -380,51 +380,52 @@ const ReportesAvanzadosScreen = () => {
 
  
   const exportarExcel = async () => {
-    try {
-      const token = await getTokenAsync();
-      if (!token) return;
-      
-      const res = await axios.get(`${API_BASE_URL}/eventos`, { 
-        headers: { Authorization: `Bearer ${token}` } 
-      });
-      const eventos = Array.isArray(res.data) ? res.data : [];
-      
-      if (!eventos.length) { showError('No hay eventos para exportar.'); return; }
+  try {
+    const token = await getTokenAsync();
+    if (!token) return;
+    
+    const res = await axios.get(`${API_BASE_URL}/eventos`, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    });
+    const eventos = Array.isArray(res.data) ? res.data : [];
+    
+    if (!eventos.length) { showError('No hay eventos para exportar.'); return; }
 
-      // Crear CSV mejorado (compatible con Excel)
-      const headers = ['ID', 'Nombre del Evento', 'Fecha', 'Lugar', 'Estado', 'Facultad', 'Responsable', 'Descripción'];
-      const rows = eventos.map(e => [
-        e.idevento,
-        `"${(e.nombreevento || '').replace(/"/g, '""')}"`,
-        e.fechaevento?.split('T')[0] || '',
-        `"${(e.lugarevento || '').replace(/"/g, '""')}"`,
-        e.estado || '',
-        `"${(e.facultad || '').replace(/"/g, '""')}"`,
-        `"${(e.responsable_evento || '').replace(/"/g, '""')}"`,
-        `"${(e.descripcion || '').replace(/"/g, '""')}"`,
-      ].join(','));
-      
-      const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+    // Crear CSV con punto y coma para Excel en español
+    const headers = ['ID', 'Nombre del Evento', 'Fecha', 'Lugar', 'Estado', 'Facultad', 'Responsable', 'Descripción'];
+    const rows = eventos.map(e => [
+      e.idevento || '',
+      `"${(e.nombreevento || '').replace(/"/g, '""')}"`,
+      e.fechaevento ? e.fechaevento.split('T')[0] : '',
+      `"${(e.lugarevento || '').replace(/"/g, '""')}"`,
+      e.estado || '',
+      `"${(e.facultad || '').replace(/"/g, '""')}"`,
+      `"${(e.responsable_evento || '').replace(/"/g, '""')}"`,
+      `"${(e.descripcion || '').replace(/"/g, '""')}"`,
+    ].join(';')); // ✅ PUNTO Y COMA en lugar de coma
+    
+    // Agregar BOM para UTF-8 y usar punto y coma
+    const csv = '\uFEFF' + [headers.join(';'), ...rows].join('\n'); // ✅ PUNTO Y COMA
 
-      if (Platform.OS === 'web') {
-        const blob = new Blob([csv], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `eventos_${new Date().toISOString().split('T')[0]}.xls`;
-        a.click();
-        URL.revokeObjectURL(url);
-        Alert.alert('Éxito', 'Archivo Excel descargado correctamente.');
-      } else {
-        const path = FileSystem.documentDirectory + `eventos_${Date.now()}.xls`;
-        await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
-        await Sharing.shareAsync(path, { mimeType: 'application/vnd.ms-excel', dialogTitle: 'Exportar Excel' });
-      }
-    } catch (err) {
-      console.error(err);
-      showError('Error al exportar: ' + err.message);
+    if (Platform.OS === 'web') {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `eventos_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      Alert.alert('Éxito', 'Archivo CSV descargado. Ábrelo con Excel.');
+    } else {
+      const path = FileSystem.documentDirectory + `eventos_${Date.now()}.csv`;
+      await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
+      await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'Exportar a Excel' });
     }
-  };
+  } catch (err) {
+    console.error(err);
+    showError('Error al exportar: ' + err.message);
+  }
+};
 
   const cargarEventosParaPicker = async () => {
     setLoading(true);
