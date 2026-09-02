@@ -452,128 +452,301 @@ const ReportesAvanzadosScreen = () => {
     router.push(`/admin/EventoDetalleImp?eventId=${evento.idevento}`);
   };
 
-    const generarPDF = async (mesFormato) => {
-    setLoading(true);
-    try {
-      const token = await getTokenAsync();
-      if (!token) { setLoading(false); return; }
+  const generarPDF = async (mesFormato) => {
+  setLoading(true);
+  try {
+    const token = await getTokenAsync();
+    if (!token) { setLoading(false); return; }
 
-      const reporte = reportesMensuales.find(r => r.mes === mesFormato);
-      if (!reporte) { 
-        setLoading(false);
-        showError(`Sin datos para ${mesFormato}.`); 
-        return; 
-      }
-
-      const [year, monthNum] = mesFormato.split('-');
-      const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
-
-      const res = await axios.get(`${API_BASE_URL}/eventos`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const todosEventos = Array.isArray(res.data) ? res.data : [];
-      
-      const yearNum = parseInt(year);
-      const monthNum2 = parseInt(monthNum);
-      
-      const eventosDelMes = todosEventos.filter(ev => {
-        if (!ev.fechaevento) return false;
-        const fechaEvento = new Date(ev.fechaevento);
-        return fechaEvento.getFullYear() === yearNum && (fechaEvento.getMonth() + 1) === monthNum2;
-      });
-
-      const filasReporte = eventosDelMes.map(ev => {
-        const fecha = ev.fechaevento
-          ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-          : '–';
-        
-        return `
-          <tr>
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${fecha}</td>
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.lugarevento || '–'}</td>
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.publicoMeta || ev.descripcion || '–'}</td>
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.nombreevento || '–'}</td>
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">&nbsp;</td>
-          </tr>
-        `;
-      }).join('');
-
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-        <style>
-          *{margin:0;padding:0;box-sizing:border-box}
-          body{font-family:Arial,sans-serif;padding:40px;background:#fff}
-          .wrap{max-width:1200px;margin:0 auto}
-          .header-table{width:100%;border:2px solid #2d5016;margin-bottom:20px;}
-          .header-table td{padding:15px;text-align:center;}
-          .reporte-title{font-size:32px;font-weight:bold;color:#000;text-transform:lowercase;}
-          .info-row{display:flex;justify-content:space-between;margin-bottom:20px;border:1px solid #ddd;}
-          .info-field{flex:1;padding:10px;border-right:1px solid #ddd;}
-          .info-field:last-child{border-right:none;}
-          .info-label{font-weight:bold;background:#f0f0f0;padding:5px 10px;display:inline-block;margin-bottom:5px;}
-          .info-value{padding:5px 10px;min-height:30px;}
-          .main-table{width:100%;border-collapse:collapse;margin-top:20px;}
-          .main-table th{background:#ccc;padding:12px;border:1px solid #999;text-align:left;font-weight:bold;font-size:14px;}
-          .main-table td{padding:10px;border:1px solid #ddd;vertical-align:top;font-size:13px;}
-          .main-table tr:nth-child(even){background:#f9f9f9;}
-          .footer{margin-top:30px;text-align:center;font-size:12px;color:#666;padding-top:20px;border-top:1px solid #ddd;}
-          @media print{body{padding:0}.wrap{box-shadow:none}}
-        </style></head><body><div class="wrap">
-        
-        <table class="header-table">
-          <tr><td><div class="reporte-title">reporte</div></td></tr>
-        </table>
-        
-        <div class="info-row">
-          <div class="info-field">
-            <div class="info-label">Periodo</div>
-            <div class="info-value">${mesNombre} ${year}</div>
-          </div>
-          <div class="info-field">
-            <div class="info-label">Responsable de la Informacion</div>
-            <div class="info-value">&nbsp;</div>
-          </div>
-        </div>
-        
-        <table class="main-table">
-          <thead>
-            <tr>
-              <th style="width:15%">Fecha</th>
-              <th style="width:20%">Lugar</th>
-              <th style="width:25%">Publico Meta</th>
-              <th style="width:25%">Tema</th>
-              <th style="width:15%">Observaciones y Sugerencias</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filasReporte}
-          </tbody>
-        </table>
-        
-        <div class="footer">
-          <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos
-        </div>
-        </div></body></html>`;
-
-      if (Platform.OS === 'web') {
-        const w = window.open('', '_blank');
-        if (w) { 
-          w.document.write(html); 
-          w.document.close(); 
-          setTimeout(() => w.print(), 800); 
-        } else {
-          showError('Permite ventanas emergentes para ver el reporte.');
-        }
-      } else {
-        const { uri } = await Print.printToFileAsync({ html });
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
-      }
-    } catch (err) {
-      console.error('Error al generar PDF:', err);
-      showError('Error al generar PDF: ' + err.message);
-    } finally {
+    const reporte = reportesMensuales.find(r => r.mes === mesFormato);
+    if (!reporte) { 
       setLoading(false);
+      showError(`Sin datos para ${mesFormato}.`); 
+      return; 
     }
-  };
+
+    const [year, monthNum] = mesFormato.split('-');
+    const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
+
+    const res = await axios.get(`${API_BASE_URL}/eventos`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const todosEventos = Array.isArray(res.data) ? res.data : [];
+    
+    const yearNum = parseInt(year);
+    const monthNum2 = parseInt(monthNum);
+    
+    const eventosDelMes = todosEventos.filter(ev => {
+      if (!ev.fechaevento) return false;
+      const fechaEvento = new Date(ev.fechaevento);
+      return fechaEvento.getFullYear() === yearNum && (fechaEvento.getMonth() + 1) === monthNum2;
+    });
+
+    // Función para formatear fecha
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '–';
+      return new Date(dateStr).toLocaleDateString('es-BO', { 
+        day: '2-digit', month: 'long', year: 'numeric' 
+      });
+    };
+
+    // Generar HTML para cada evento con TODA la información
+    const eventosHTML = eventosDelMes.map((ev, index) => {
+      const estadoColors = {
+        aprobado: { bg: '#d1fae5', text: '#059669', border: '#10b981' },
+        pendiente: { bg: '#fef3c7', text: '#d97706', border: '#f59e0b' },
+        rechazado: { bg: '#fee2e2', text: '#dc2626', border: '#ef4444' },
+      };
+      const estadoStyle = estadoColors[(ev.estado || '').toLowerCase()] || { bg: '#f3f4f6', text: '#6b7280', border: '#9ca3af' };
+
+      // Actividades Previas
+      const actividadesPrevias = ev.actividades_previas || ev.actividadesPrevias || [];
+      const actPreviasHTML = actividadesPrevias.length > 0 
+        ? actividadesPrevias.map(act => `
+          <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:15px;color:#1f2937;margin-bottom:8px;"> ${act.nombre || act.name || 'Sin nombre'}</div>
+            <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">👤 Responsable: ${act.responsable || '–'}</div>
+            <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">📅 Inicio: ${formatDate(act.fecha_inicio || act.inicio)}</div>
+            <div style="font-size:13px;color:#6b7280;">📅 Fin: ${formatDate(act.fecha_fin || act.fin)}</div>
+          </div>
+        `).join('')
+        : '<p style="color:#9ca3af;font-size:13px;">Sin actividades previas registradas</p>';
+
+      // Actividades Durante
+      const actividadesDurante = ev.actividades_durante || ev.actividadesDurante || [];
+      const actDuranteHTML = actividadesDurante.length > 0
+        ? actividadesDurante.map(act => `
+          <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:15px;color:#1f2937;">▶️ ${act.nombre || act.name || 'Sin nombre'}</div>
+          </div>
+        `).join('')
+        : '<p style="color:#9ca3af;font-size:13px;">Sin actividades durante el evento</p>';
+
+      // Servicios Contratados
+      const servicios = ev.servicios_contratados || ev.serviciosContratados || [];
+      const serviciosHTML = servicios.length > 0
+        ? servicios.map(srv => `
+          <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:15px;color:#1f2937;margin-bottom:8px;">🔧 ${srv.nombre || srv.name || 'Sin nombre'}</div>
+            <div style="font-size:13px;color:#6b7280;margin-bottom:4px;"> Características: ${srv.caracteristicas || srv.descripcion || '–'}</div>
+            <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">📅 Fecha Entrega: ${formatDate(srv.fecha_entrega || srv.fechaEntrega)}</div>
+            <div style="font-size:13px;color:#6b7280;">📄 Obs: ${srv.observaciones || srv.obs || '–'}</div>
+          </div>
+        `).join('')
+        : '<p style="color:#9ca3af;font-size:13px;">Sin servicios contratados</p>';
+
+      // Comité del Evento
+      const comite = ev.comite || ev.comite_evento || ev.comiteEvento || [];
+      const comiteHTML = comite.length > 0
+        ? comite.map(miembro => `
+          <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:15px;color:#1f2937;margin-bottom:4px;">${miembro.nombre || miembro.name || 'Sin nombre'}</div>
+            <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Rol: ${miembro.rol || '–'}</div>
+            <div style="font-size:13px;color:#6b7280;font-style:italic;">Email: ${miembro.email || '–'}</div>
+          </div>
+        `).join('')
+        : '<p style="color:#9ca3af;font-size:13px;">Sin comité registrado</p>';
+
+      // Presupuesto - Egresos
+      const egresos = ev.egresos || ev.presupuesto_egresos || [];
+      const totalEgresos = egresos.reduce((sum, e) => sum + (parseFloat(e.total) || (parseFloat(e.cantidad) * parseFloat(e.precio)) || 0), 0);
+      const egresosHTML = egresos.length > 0
+        ? egresos.map(e => `
+          <tr>
+            <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${e.descripcion || '–'}</td>
+            <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:center;">${e.cantidad || '–'}</td>
+            <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;">Bs ${parseFloat(e.precio || 0).toFixed(2)}</td>
+            <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;color:#ea580c;font-weight:600;">Bs ${parseFloat(e.total || (e.cantidad * e.precio) || 0).toFixed(2)}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="4" style="padding:10px;text-align:center;color:#9ca3af;">Sin egresos registrados</td></tr>';
+
+      // Presupuesto - Ingresos
+      const ingresos = ev.ingresos || ev.presupuesto_ingresos || [];
+      const totalIngresos = ingresos.reduce((sum, i) => sum + (parseFloat(i.total) || (parseFloat(i.cantidad) * parseFloat(i.precio)) || 0), 0);
+      const ingresosHTML = ingresos.length > 0
+        ? ingresos.map(i => `
+          <tr>
+            <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${i.descripcion || '–'}</td>
+            <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:center;">${i.cantidad || '–'}</td>
+            <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;">Bs ${parseFloat(i.precio || 0).toFixed(2)}</td>
+            <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;color:#16a34a;font-weight:600;">Bs ${parseFloat(i.total || (i.cantidad * i.precio) || 0).toFixed(2)}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="4" style="padding:10px;text-align:center;color:#9ca3af;">Sin ingresos registrados</td></tr>';
+
+      const balance = totalIngresos - totalEgresos;
+
+      return `
+        <!-- EVENTO ${index + 1} -->
+        <div style="margin-bottom:40px;page-break-inside:avoid;">
+          <div style="background:linear-gradient(135deg,#E95A0C 0%,#f97316 100%);color:white;padding:20px;border-radius:12px;margin-bottom:20px;">
+            <div style="font-size:22px;font-weight:800;margin-bottom:8px;">${index + 1}. ${ev.nombreevento || 'Sin nombre'}</div>
+            <div style="font-size:13px;opacity:0.9;">
+              ${ev.facultad ? `️ ${ev.facultad} · ` : ''}
+              📅 ${formatDate(ev.fechaevento)} ${ev.horaevento ? `·  ${ev.horaevento}` : ''}
+            </div>
+          </div>
+
+          <!-- DATOS GENERALES -->
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;">
+            <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:16px;border-bottom:2px solid #E95A0C;padding-bottom:8px;">📊 Datos Generales</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div style="font-size:14px;color:#374151;"><strong>📅 Fecha:</strong> ${formatDate(ev.fechaevento)}</div>
+              <div style="font-size:14px;color:#374151;"><strong> Hora:</strong> ${ev.horaevento || '–'}</div>
+              <div style="font-size:14px;color:#374151;"><strong>📍 Ubicación:</strong> ${ev.lugarevento || '–'}</div>
+              <div style="font-size:14px;color:#374151;"><strong>👤 Organizador:</strong> ${ev.responsable_evento || ev.organizador || '–'}</div>
+              <div style="font-size:14px;color:#374151;"><strong>🏛️ Facultad:</strong> ${ev.facultad || '–'}</div>
+              <div style="font-size:14px;color:#374151;">
+                <strong>Estado:</strong> 
+                <span style="background:${estadoStyle.bg};color:${estadoStyle.text};padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-left:8px;">
+                  ${(ev.estado || 'N/A').charAt(0).toUpperCase() + (ev.estado || '').slice(1)}
+                </span>
+              </div>
+            </div>
+            ${ev.descripcion ? `<div style="margin-top:12px;font-size:14px;color:#374151;"><strong>📝 Descripción:</strong> ${ev.descripcion}</div>` : ''}
+          </div>
+
+          <!-- ACTIVIDADES PREVIAS -->
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;">
+            <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:16px;border-bottom:2px solid #E95A0C;padding-bottom:8px;">📋 Actividades Previas</h3>
+            ${actPreviasHTML}
+          </div>
+
+          <!-- ACTIVIDADES DURANTE -->
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;">
+            <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:16px;border-bottom:2px solid #E95A0C;padding-bottom:8px;">▶️ Actividades Durante el Evento</h3>
+            ${actDuranteHTML}
+          </div>
+
+          <!-- SERVICIOS CONTRATADOS -->
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;">
+            <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:16px;border-bottom:2px solid #E95A0C;padding-bottom:8px;">🔧 Servicios Contratados</h3>
+            ${serviciosHTML}
+          </div>
+
+          <!-- CLASIFICACIÓN Y TIPO -->
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;">
+            <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:16px;border-bottom:2px solid #E95A0C;padding-bottom:8px;">️ Clasificación</h3>
+            <div style="font-size:14px;color:#374151;margin-bottom:8px;"><strong>Clasificación Estratégica:</strong> ${ev.clasificacion || ev.clasificacion_estrategica || '–'}</div>
+            <div style="font-size:14px;color:#374151;"><strong>Tipo de Evento:</strong> ${ev.tipo_evento || ev.tipoEvento || '–'}</div>
+          </div>
+
+          <!-- RESULTADOS ESPERADOS -->
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;">
+            <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:16px;border-bottom:2px solid #E95A0C;padding-bottom:8px;">🎯 Resultados Esperados</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div style="font-size:14px;color:#374151;"><strong>👥 Participación:</strong> ${ev.participacion_esperada || ev.resultados?.participacion || '–'}</div>
+              <div style="font-size:14px;color:#374151;"><strong>😊 Satisfacción:</strong> ${ev.satisfaccion_esperada || ev.resultados?.satisfaccion || '–'}</div>
+              <div style="font-size:14px;color:#374151;"><strong> Otros:</strong> ${ev.otros_resultados || ev.resultados?.otros || '–'}</div>
+            </div>
+          </div>
+
+          <!-- COMITÉ DEL EVENTO -->
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;">
+            <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:16px;border-bottom:2px solid #E95A0C;padding-bottom:8px;">👥 Comité del Evento</h3>
+            ${comiteHTML}
+          </div>
+
+          <!-- PRESUPUESTO -->
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:20px;">
+            <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:16px;border-bottom:2px solid #E95A0C;padding-bottom:8px;">💰 Presupuesto del Evento</h3>
+            
+            <h4 style="color:#dc2626;font-size:16px;font-weight:700;margin-bottom:12px;margin-top:16px;">⬇️ Egresos</h4>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+              <thead>
+                <tr style="background:#f3f4f6;">
+                  <th style="padding:10px;text-align:left;font-size:13px;color:#6b7280;border-bottom:2px solid #e5e7eb;">Descripción</th>
+                  <th style="padding:10px;text-align:center;font-size:13px;color:#6b7280;border-bottom:2px solid #e5e7eb;">Cant.</th>
+                  <th style="padding:10px;text-align:right;font-size:13px;color:#6b7280;border-bottom:2px solid #e5e7eb;">Precio</th>
+                  <th style="padding:10px;text-align:right;font-size:13px;color:#6b7280;border-bottom:2px solid #e5e7eb;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${egresosHTML}
+              </tbody>
+              <tfoot>
+                <tr style="border-top:2px solid #dc2626;">
+                  <td colspan="3" style="padding:10px;font-weight:700;font-size:14px;">TOTAL EGRESOS:</td>
+                  <td style="padding:10px;text-align:right;font-weight:700;font-size:14px;color:#dc2626;">Bs ${totalEgresos.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <h4 style="color:#16a34a;font-size:16px;font-weight:700;margin-bottom:12px;margin-top:16px;">️ Ingresos</h4>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+              <thead>
+                <tr style="background:#f3f4f6;">
+                  <th style="padding:10px;text-align:left;font-size:13px;color:#6b7280;border-bottom:2px solid #e5e7eb;">Descripción</th>
+                  <th style="padding:10px;text-align:center;font-size:13px;color:#6b7280;border-bottom:2px solid #e5e7eb;">Cant.</th>
+                  <th style="padding:10px;text-align:right;font-size:13px;color:#6b7280;border-bottom:2px solid #e5e7eb;">Precio</th>
+                  <th style="padding:10px;text-align:right;font-size:13px;color:#6b7280;border-bottom:2px solid #e5e7eb;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${ingresosHTML}
+              </tbody>
+              <tfoot>
+                <tr style="border-top:2px solid #16a34a;">
+                  <td colspan="3" style="padding:10px;font-weight:700;font-size:14px;">TOTAL INGRESOS:</td>
+                  <td style="padding:10px;text-align:right;font-weight:700;font-size:14px;color:#16a34a;">Bs ${totalIngresos.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-size:16px;font-weight:700;color:#1f2937;">BALANCE ECONÓMICO:</div>
+              <div style="font-size:20px;font-weight:800;color:${balance >= 0 ? '#16a34a' : '#dc2626'};">Bs ${balance.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:40px;background:#f9fafb;line-height:1.5}
+        .wrap{max-width:900px;margin:0 auto;background:white;border-radius:16px;padding:40px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+        .header{text-align:center;margin-bottom:32px;padding-bottom:24px;border-bottom:3px solid #E95A0C}
+        h1{color:#E95A0C;font-size:32px;margin-bottom:8px;font-weight:800}
+        .sub{color:#6b7280;font-size:14px}
+        .footer{margin-top:32px;text-align:center;color:#9ca3af;font-size:12px;padding-top:16px;border-top:1px solid #e5e7eb}
+        @media print{body{padding:0}.wrap{box-shadow:none}}
+      </style></head><body><div class="wrap">
+      
+      <div class="header">
+        <h1>📊 Reporte Mensual Detallado</h1>
+        <p class="sub">${mesNombre} ${year} · ${eventosDelMes.length} evento(s) · Generado el ${new Date().toLocaleDateString('es-ES', {day:'2-digit',month:'long',year:'numeric'})}</p>
+      </div>
+
+      ${eventosHTML}
+
+      <div class="footer">
+        <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos
+      </div>
+      </div></body></html>`;
+
+    if (Platform.OS === 'web') {
+      const w = window.open('', '_blank');
+      if (w) { 
+        w.document.write(html); 
+        w.document.close(); 
+        setTimeout(() => w.print(), 800); 
+      } else {
+        showError('Permite ventanas emergentes para ver el reporte.');
+      }
+    } else {
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
+    }
+  } catch (err) {
+    console.error('Error al generar PDF:', err);
+    showError('Error al generar PDF: ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const generarReporteAnual = async (year) => {
     setLoading(true);
