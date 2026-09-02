@@ -1352,13 +1352,22 @@ const ProyectoEvento = () => {
       return nuevoEstado;
     }
     
-    // Si no está seleccionado, lo añadimos con cantidad 1
-    return { 
-      ...prev, 
-      [idString]: 1 
-    };
+     const nuevoEstado = { ...prev };
+    
+    // Buscar y deseleccionar otros recursos del mismo tipo
+    Object.keys(nuevoEstado).forEach(key => {
+      const recursoExistente = recursosDisponibles.find(r => String(r.idrecurso) === key);
+      if (recursoExistente && recursoExistente.recurso_tipo === recurso.recurso_tipo) {
+        delete nuevoEstado[key];
+      }
+    });
+    
+    // Seleccionar el nuevo recurso
+    nuevoEstado[idString] = 1;
+    
+    return nuevoEstado;
   });
-}, []);
+}, [recursosDisponibles]);
 
   
  const getCantidadDisponible = useCallback((recurso) => {
