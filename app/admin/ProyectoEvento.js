@@ -1338,36 +1338,43 @@ const ProyectoEvento = () => {
     if (items.length > 1) setItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleRecursoChange = (idrecurso, recurso) => {
-    if (idrecurso == null) return;
-    const idString = String(idrecurso);
-
-    setRecursosSeleccionadosCount(prev => {
+ const handleRecursoChange = useCallback((idrecurso, recurso) => {
+  if (idrecurso == null) return;
+  const idString = String(idrecurso);
+  
+  setRecursosSeleccionadosCount(prev => {
     const currentCount = prev[idString] || 0;
-    const nuevaCantidad = currentCount > 0 ? currentCount - 1 : currentCount + 1;
     
-    if (nuevaCantidad <= 0) {
-      const { [idString]: _, ...rest } = prev;
-      return rest;
+    // Si ya está seleccionado, lo deseleccionamos
+    if (currentCount > 0) {
+      const nuevoEstado = { ...prev };
+      delete nuevoEstado[idString];
+      return nuevoEstado;
     }
     
-    return { ...prev, [idString]: nuevaCantidad };
+    // Si no está seleccionado, lo añadimos con cantidad 1
+    return { 
+      ...prev, 
+      [idString]: 1 
+    };
   });
-  };
+}, []);
 
   
-  const getCantidadDisponible = (recurso) => {
+ const getCantidadDisponible = useCallback((recurso) => {
+  if (!recurso || !recurso.idrecurso) return 0;
   const idString = String(recurso.idrecurso);
   const seleccionados = recursosSeleccionadosCount[idString] || 0;
-  const disponibleOriginal = recurso.cantidad || 0;
-  return disponibleOriginal - seleccionados;
-};
+  const disponibleOriginal = recurso.cantidad || recurso.disponibles || 0;
+  return Math.max(0, disponibleOriginal - seleccionados);
+}, [recursosSeleccionadosCount]);
 
-// 4. Función para verificar si se puede seleccionar más
-const puedeSeleccionarRecurso = (recurso) => {
+// Y puedeSeleccionarRecurso:
+const puedeSeleccionarRecurso = useCallback((recurso) => {
+  if (!recurso || !recurso.idrecurso) return false;
   const disponible = getCantidadDisponible(recurso);
   return disponible > 0;
-};
+}, [getCantidadDisponible]);
 
 // 5. En el renderizado de recursos disponibles, modificar esto:
 {recursosDisponibles.map((recurso) => {
