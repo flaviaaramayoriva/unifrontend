@@ -1267,8 +1267,171 @@ const ReportesAvanzadosScreen = () => {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Modales de filtros (fecha, facultad, selector mes, etc.) */}
-      {/* ... (código de modales similar al anterior) ... */}
+      {showSelector && (
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Seleccionar Mes y Año</Text>
+            
+            <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>Año</Text>
+            <TouchableOpacity style={[styles.pickerBtn, { borderColor: theme.border, backgroundColor: theme.divider }]} onPress={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false); }}>
+              <Text style={[styles.pickerBtnText, { color: theme.textPrimary }]}>{selectedYear}</Text>
+              <Ionicons name={showYearPicker ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textPrimary} />
+            </TouchableOpacity>
+            {showYearPicker && (
+              <View style={[styles.dropdown, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+                {years.map(y => (
+                  <TouchableOpacity key={y} style={[styles.dropItem, { borderColor: theme.divider }, selectedYear === y && styles.dropItemActive]}
+                    onPress={() => { setSelectedYear(y); setShowYearPicker(false); }}>
+                    <Text style={[styles.dropText, { color: theme.textPrimary }, selectedYear === y && { color: COLORS.primary, fontWeight: '700' }]}>{y}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <Text style={[styles.pickerLabel, { marginTop: 12, color: theme.textSecondary }]}>Mes</Text>
+            <TouchableOpacity style={[styles.pickerBtn, { borderColor: theme.border, backgroundColor: theme.divider }]} onPress={() => { setShowMonthPicker(!showMonthPicker); setShowYearPicker(false); }}>
+              <Text style={[styles.pickerBtnText, { color: theme.textPrimary }]}>{MONTH_NAMES_FULL[selectedMonth - 1]}</Text>
+              <Ionicons name={showMonthPicker ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textPrimary} />
+            </TouchableOpacity>
+            {showMonthPicker && (
+              <ScrollView style={[styles.dropdown, { borderColor: theme.border, backgroundColor: theme.surface }]} nestedScrollEnabled>
+                {months.map(mo => (
+                  <TouchableOpacity key={mo.value} style={[styles.dropItem, { borderColor: theme.divider }, selectedMonth === mo.value && styles.dropItemActive]}
+                    onPress={() => { setSelectedMonth(mo.value); setShowMonthPicker(false); }}>
+                    <Text style={[styles.dropText, { color: theme.textPrimary }, selectedMonth === mo.value && { color: COLORS.primary, fontWeight: '700' }]}>{mo.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: COLORS.secondary }]} onPress={() => setShowSelector(false)}>
+                <Text style={styles.modalBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: COLORS.primary }]} onPress={() => {
+                const mes = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+                setShowSelector(false);
+                generarPDF(mes);
+              }}>
+                <Text style={styles.modalBtnText}>Generar PDF</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* 2. MODAL: Selector de Evento para Detalle */}
+      {showEventPicker && (
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { width: '90%', maxWidth: 420, maxHeight: '80%' }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Seleccionar Evento</Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 12, textAlign: 'center' }}>
+              Toca un evento para ver todos sus detalles completos
+            </Text>
+            
+            <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
+              {todosLosEventos.length === 0 ? (
+                <View style={styles.emptyChart}>
+                  <Ionicons name="calendar-outline" size={40} color={COLORS.textTertiary} />
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No hay eventos disponibles</Text>
+                </View>
+              ) : (
+                todosLosEventos.map((ev, i) => (
+                  <TouchableOpacity
+                    key={ev.idevento || i}
+                    style={[styles.dropItem, { paddingVertical: 12, paddingHorizontal: 14, borderColor: theme.divider }]}
+                    onPress={() => navegarADetalleEvento(ev)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.dropText, { color: theme.textPrimary, fontWeight: '700', marginBottom: 4, fontSize: 14 }]} numberOfLines={1}>
+                          {ev.nombreevento || 'Sin nombre'}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: theme.textSecondary }} numberOfLines={1}>
+                          {ev.fechaevento ? new Date(ev.fechaevento).toLocaleDateString('es-ES') : 'Sin fecha'} · {ev.lugarevento || 'Sin lugar'}
+                        </Text>
+                      </View>
+                      <View style={[styles.badge, ev.estado === 'aprobado' ? styles.badgeaprobado : ev.estado === 'pendiente' ? styles.badgependiente : styles.badgerechazado]}>
+                        <Text style={styles.badgeText}>{(ev.estado || 'N/A').charAt(0).toUpperCase() + (ev.estado || '').slice(1)}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: COLORS.secondary }]} onPress={() => setShowEventPicker(false)}>
+                <Text style={styles.modalBtnText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* 3. MODAL: Filtro de Fechas */}
+      {showDateFilter && (
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Filtrar por Fechas</Text>
+            <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>Fecha Inicio (YYYY-MM-DD)</Text>
+            <TextInput
+              style={[styles.pickerBtn, { color: theme.textPrimary, borderColor: theme.border, backgroundColor: theme.divider }]}
+              placeholder="2024-01-01"
+              placeholderTextColor={COLORS.textTertiary}
+              value={fechaInicio}
+              onChangeText={setFechaInicio}
+            />
+            <Text style={[styles.pickerLabel, { marginTop: 12, color: theme.textSecondary }]}>Fecha Fin (YYYY-MM-DD)</Text>
+            <TextInput
+              style={[styles.pickerBtn, { color: theme.textPrimary, borderColor: theme.border, backgroundColor: theme.divider }]}
+              placeholder="2024-12-31"
+              placeholderTextColor={COLORS.textTertiary}
+              value={fechaFin}
+              onChangeText={setFechaFin}
+            />
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: COLORS.secondary }]} onPress={() => setShowDateFilter(false)}>
+                <Text style={styles.modalBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: COLORS.primary }]} onPress={() => setShowDateFilter(false)}>
+                <Text style={styles.modalBtnText}>Aplicar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* 4. MODAL: Filtro de Facultad */}
+      {showFacultadFilter && (
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Seleccionar Facultad</Text>
+            <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled>
+              <TouchableOpacity 
+                style={[styles.dropItem, { borderColor: theme.divider }, selectedFacultad === 'todas' && styles.dropItemActive]}
+                onPress={() => { setSelectedFacultad('todas'); setShowFacultadFilter(false); }}
+              >
+                <Text style={[styles.dropText, { color: theme.textPrimary }, selectedFacultad === 'todas' && { color: COLORS.primary, fontWeight: '700' }]}>Todas las facultades</Text>
+              </TouchableOpacity>
+              {todasFacultades.map((fac, i) => (
+                <TouchableOpacity 
+                  key={i} 
+                  style={[styles.dropItem, { borderColor: theme.divider }, selectedFacultad === fac && styles.dropItemActive]}
+                  onPress={() => { setSelectedFacultad(fac); setShowFacultadFilter(false); }}
+                >
+                  <Text style={[styles.dropText, { color: theme.textPrimary }, selectedFacultad === fac && { color: COLORS.primary, fontWeight: '700' }]} numberOfLines={1}>{fac}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: COLORS.secondary }]} onPress={() => setShowFacultadFilter(false)}>
+                <Text style={styles.modalBtnText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
