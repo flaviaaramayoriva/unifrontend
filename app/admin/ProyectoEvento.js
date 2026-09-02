@@ -1221,6 +1221,18 @@ const ProyectoEvento = () => {
           recurso_tipo: recurso.recurso_tipo || 'otro'
         }))
         .filter(r => r.idrecurso != null && r.nombre_recurso?.trim() !== '');
+         const idsVistos = {};
+    validResources.forEach(r => {
+      const id = String(r.idrecurso);
+      idsVistos[id] = (idsVistos[id] || 0) + 1;
+    });
+    const duplicados = Object.entries(idsVistos).filter(([id, count]) => count > 1);
+    if (duplicados.length > 0) {
+      console.warn('⚠️ IDs DUPLICADOS:', duplicados);
+      console.warn('Recursos:', validResources.map(r => ({ id: r.idrecurso, nombre: r.nombre_recurso })));
+    } else {
+      console.log('✅ IDs únicos:', validResources.map(r => r.idrecurso));
+    }
       setRecursosDisponibles(validResources);
     } catch (error) {
       console.error("❌ Error recursos:", error.response?.status, error.response?.data);
@@ -1344,28 +1356,19 @@ const ProyectoEvento = () => {
   
   setRecursosSeleccionadosCount(prev => {
     const currentCount = prev[idString] || 0;
-    
+    const nuevoEstado = { ...prev };
     // Si ya está seleccionado, lo deseleccionamos
-    if (currentCount > 0) {
-      const nuevoEstado = { ...prev };
-      delete nuevoEstado[idString];
-      return nuevoEstado;
+     if (currentCount > 0) {
+      delete nuevoEstado[idString]; // deseleccionar
+    } else {
+      nuevoEstado[idString] = 1; // seleccionar solo este, sin tocar los demás
     }
-    
-     const nuevoEstado = { ...prev };
-    
-    Object.keys(nuevoEstado).forEach(key => {
-      const recursoExistente = recursosDisponibles.find(r => String(r.idrecurso) === key);
-      if (recursoExistente && recursoExistente.recurso_tipo === recurso.recurso_tipo) {
-        delete nuevoEstado[key];
-        console.log(`Deseleccionando recurso del mismo tipo: ${recursoExistente.nombre_recurso}`);
-      }
-    });
-    
-    nuevoEstado[idString] = 1;
     return nuevoEstado;
   });
-}, [recursosDisponibles]);
+}, []);
+    
+    
+    
 
   
  const getCantidadDisponible = useCallback((recurso) => {
