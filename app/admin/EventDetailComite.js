@@ -211,7 +211,6 @@ console.log('objetivos_pdi del backend:', eventData.objetivos_pdi);
   time: formatTime(eventData.horaevento),
   location: eventData.lugarevento || 'Ubicación no especificada',
   // El organizador mostrado ahora es el creador del evento; si no hay creador, cae al responsable_evento
-  organizer: creadorNombreCompleto || eventData.responsable_evento || 'Organizador no especificado',
   attendees: eventData.participantes_esperados || 'No especificado',
   status: (eventData.estado || 'pendiente').toLowerCase(),
   imageUrl: eventData.imagenUrl || null,
@@ -455,14 +454,7 @@ console.log('objetivos_pdi del backend:', eventData.objetivos_pdi);
             <Ionicons name="location-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
             <Text style={styles.detailText}>Ubicación: {event.location}</Text>
           </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="business-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Organizador: {event.organizer}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="people-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Asistentes: {event.attendees}</Text>
-          </View>
+         
         </View>
 
         {/* Creador */}
