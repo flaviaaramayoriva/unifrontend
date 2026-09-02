@@ -282,7 +282,7 @@ const EventDetailScreen = () => {
       if (!token) throw new Error('Token inválido');
       await axios.put(`${API_BASE_URL}/eventos/${event.id}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
       Alert.alert('Éxito', 'Evento aprobado correctamente');
-      router.replace('./eventosPendientes');
+      router.replace('./EventosPendientes');
     } catch (error) {
       Alert.alert('Error', 'No se pudo aprobar el evento: ' + error.message);
     }

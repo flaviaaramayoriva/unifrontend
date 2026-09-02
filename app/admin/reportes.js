@@ -361,268 +361,215 @@ const cargarEventosParaPicker = async () => {
     router.push(`/admin/EventoDetalleImp?eventId=${evento.idevento}`);
   };
 
-    const generarPDF = async (mesFormato) => {
-    setLoading(true);
-    try {
-      const token = await getTokenAsync();
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      const reporte = reportesMensuales.find(r => r.mes === mesFormato);
-      if (!reporte) { 
-        setLoading(false);
-        showError(`Sin datos para ${mesFormato}.`); 
-        return; 
-      }
-
-      const [year, monthNum] = mesFormato.split('-');
-      const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
-
-      // ✅ 1. Inicializar la variable ANTES de usarla
-      let eventosDelMes = [];
-      
-      // ✅ 2. Obtener todos los eventos
-      const res = await axios.get(`${API_BASE_URL}/eventos`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const todosEventos = Array.isArray(res.data) ? res.data : [];
-      
-      const yearNum = parseInt(year);
-      const monthNum2 = parseInt(monthNum);
-      
-      // ✅ 3. Filtrar limpiamente por año y mes
-      eventosDelMes = todosEventos.filter(ev => {
-        if (!ev.fechaevento) return false;
-        const fechaEvento = new Date(ev.fechaevento);
-        return fechaEvento.getFullYear() === yearNum && 
-               (fechaEvento.getMonth() + 1) === monthNum2;
-      });
-      
-      // ✅ 4. Ahora sí podemos hacer el console.log de forma segura
-      console.log(`✅ Eventos filtrados para ${mesNombre} ${year}:`, eventosDelMes.length);
-
-      const aprobado       = reporte.aprobado  || 0;
-      const pendiente      = reporte.pendiente || 0;
-      const rechazado      = reporte.rechazado || 0;
-      const totalEvents    = reporte.totalEvents || (aprobado + pendiente + rechazado);
-      const tasaAprobacion = reporte.tasaAprobacion || (totalEvents > 0 ? Math.round((aprobado / totalEvents) * 100) : 0);
-      const activeUsers    = reporte.activeUsers || stats?.activeUsers || 0;
-      const usuariosNuevos = reporte.usuariosNuevosEsteMes || stats?.usuariosNuevosEsteMes || 0;
-      const tiempoPromedio = reporte.tiempoPromedioAprobacion || stats?.tiempoPromedioAprobacion || 0;
-
-      const rankingRows = rankingFacultades.map((f, i) => {
-        const maxVal = rankingFacultades[0]?.value || 1;
-        const width = Math.round((f.value / maxVal) * 100);
-        return `
-          <tr>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">
-              <span style="display:inline-block;width:24px;height:24px;border-radius:12px;background:${i === 0 ? '#E95A0C' : '#f3f4f6'};color:${i === 0 ? 'white' : '#6b7280'};text-align:center;line-height:24px;font-weight:bold;font-size:12px;">${i + 1}</span>
-            </td>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${f.label}</td>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;width:120px;">
-              <div style="background:#f3f4f6;border-radius:4px;height:8px;overflow:hidden;">
-                <div style="background:#E95A0C;height:100%;width:${width}%;border-radius:4px;"></div>
-              </div>
-            </td>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;">${f.value}</td>
-          </tr>
-        `;
-      }).join('');
-
-      const eventosRows = eventosDelMes.slice(0, 10).map(ev => {
-        const estadoColors = {
-          aprobado: { bg: '#d1fae5', text: '#059669' },
-          pendiente: { bg: '#fef3c7', text: '#d97706' },
-          rechazado: { bg: '#fee2e2', text: '#dc2626' },
-        };
-        const estadoStyle = estadoColors[(ev.estado || '').toLowerCase()] || { bg: '#f3f4f6', text: '#6b7280' };
-        const fecha = ev.fechaevento?.split('T')[0] || '–';
-        
-        return `
-          <tr>
-            <td style="padding:10px;border-bottom:1px solid #e5e7eb;">
-              <div style="font-weight:600;color:#1f2937;">${ev.nombreevento || 'Sin nombre'}</div>
-              <div style="font-size:12px;color:#6b7280;margin-top:2px;">${fecha} · ${ev.lugarevento || '–'}</div>
-            </td>
-            <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:center;">
-              <span style="background:${estadoStyle.bg};color:${estadoStyle.text};padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;">
-                ${(ev.estado || 'N/A').charAt(0).toUpperCase() + (ev.estado || '').slice(1)}
-              </span>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      const totalEstados = aprobado + pendiente + rechazado;
-      const pctAprobado = totalEstados > 0 ? Math.round((aprobado / totalEstados) * 100) : 0;
-      const pctPendiente = totalEstados > 0 ? Math.round((pendiente / totalEstados) * 100) : 0;
-      const pctRechazado = totalEstados > 0 ? Math.round((rechazado / totalEstados) * 100) : 0;
-
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-        <style>
-          *{margin:0;padding:0;box-sizing:border-box}
-          body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:40px;background:#f9fafb;line-height:1.5}
-          .wrap{max-width:800px;margin:0 auto;background:#fff;border-radius:16px;padding:40px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
-          .header{text-align:center;margin-bottom:32px;padding-bottom:24px;border-bottom:3px solid #E95A0C}
-          h1{color:#E95A0C;font-size:28px;margin-bottom:8px;font-weight:800}
-          .sub{color:#6b7280;font-size:14px}
-          .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
-          .card{background:#f9fafb;border-radius:12px;padding:20px;border-left:4px solid #E95A0C}
-          .card-label{font-size:12px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
-          .card-value{font-size:32px;font-weight:800;color:#1f2937}
-          .section{margin-bottom:32px}
-          .section-title{font-size:18px;font-weight:700;color:#1f2937;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-          .section-title::before{content:'';width:4px;height:20px;background:#E95A0C;border-radius:2px}
-          table{width:100%;border-collapse:collapse}
-          th{background:#f9fafb;padding:12px;text-align:left;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e5e7eb}
-          .estado-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
-          .estado-card{background:#f9fafb;border-radius:8px;padding:16px;text-align:center}
-          .estado-num{font-size:28px;font-weight:800;margin-bottom:4px}
-          .estado-label{font-size:12px;color:#6b7280}
-          .aprobado{color:#10b981;border-top:3px solid #10b981}
-          .pendiente{color:#f59e0b;border-top:3px solid #f59e0b}
-          .rechazado{color:#ef4444;border-top:3px solid #ef4444}
-          .bar-container{background:#f3f4f6;border-radius:4px;height:12px;overflow:hidden;margin:4px 0}
-          .bar{height:100%;border-radius:4px;transition:width .3s}
-          .bar-aprobado{background:#10b981}
-          .bar-pendiente{background:#f59e0b}
-          .bar-rechazado{background:#ef4444}
-          .footer{text-align:center;color:#9ca3af;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb}
-          .badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700}
-          @media print{body{padding:0}.wrap{box-shadow:none}}
-        </style></head><body><div class="wrap">
-        
-        <div class="header">
-          <h1>Reporte Mensual de Actividad</h1>
-          <p class="sub">${mesNombre} ${year} · Generado el ${new Date().toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'})}</p>
-        </div>
-
-        <div class="grid">
-          <div class="card">
-            <div class="card-label">Eventos Totales</div>
-            <div class="card-value">${totalEvents}</div>
-          </div>
-          <div class="card">
-            <div class="card-label">Tasa Aprobación</div>
-            <div class="card-value">${tasaAprobacion}%</div>
-          </div>
-          <div class="card">
-            <div class="card-label">Usuarios Activos</div>
-            <div class="card-value">${activeUsers}</div>
-          </div>
-          <div class="card">
-            <div class="card-label">Nuevos Usuarios</div>
-            <div class="card-value">${usuariosNuevos}</div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Distribución por Estado</div>
-          <div class="estado-grid">
-            <div class="estado-card aprobado">
-              <div class="estado-num">${aprobado}</div>
-              <div class="estado-label">Aprobados (${pctAprobado}%)</div>
-              <div class="bar-container"><div class="bar bar-aprobado" style="width:${pctAprobado}%"></div></div>
-            </div>
-            <div class="estado-card pendiente">
-              <div class="estado-num">${pendiente}</div>
-              <div class="estado-label">Pendientes (${pctPendiente}%)</div>
-              <div class="bar-container"><div class="bar bar-pendiente" style="width:${pctPendiente}%"></div></div>
-            </div>
-            <div class="estado-card rechazado">
-              <div class="estado-num">${rechazado}</div>
-              <div class="estado-label">Rechazados (${pctRechazado}%)</div>
-              <div class="bar-container"><div class="bar bar-rechazado" style="width:${pctRechazado}%"></div></div>
-            </div>
-          </div>
-        </div>
-
-        ${rankingFacultades.length > 0 ? `
-        <div class="section">
-          <div class="section-title">Ranking de Facultades</div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width:40px">#</th>
-                <th>Facultad</th>
-                <th style="width:120px">Progreso</th>
-                <th style="width:80px;text-align:right">Eventos</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rankingRows}
-            </tbody>
-          </table>
-        </div>
-        ` : ''}
-
-        <div class="section">
-          <div class="section-title">Métricas Adicionales</div>
-          <table>
-            <tr>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#6b7280">Tiempo Promedio de Aprobación</td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700">${tiempoPromedio} horas</td>
-            </tr>
-            <tr>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#6b7280">Eventos Aprobados</td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;color:#10b981">${aprobado}</td>
-            </tr>
-            <tr>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;color:#6b7280">Eventos Pendientes</td>
-              <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;color:#f59e0b">${pendiente}</td>
-            </tr>
-            <tr>
-              <td style="padding:12px;color:#6b7280">Eventos Rechazados</td>
-              <td style="padding:12px;text-align:right;font-weight:700;color:#ef4444">${rechazado}</td>
-            </tr>
-          </table>
-        </div>
-
-        ${eventosDelMes.length > 0 ? `
-        <div class="section">
-          <div class="section-title">Eventos del Período (${eventosDelMes.length} eventos)</div>
-          <table>
-            <thead>
-              <tr>
-                <th>Evento</th>
-                <th style="width:120px;text-align:center">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${eventosRows}
-            </tbody>
-          </table>
-        </div>
-        ` : ''}
-
-        <div class="footer">
-          Panel de Administración UFT · Sistema de Gestión de Eventos
-        </div>
-        
-        </div></body></html>`;
-
-      if (Platform.OS === 'web') {
-        const w = window.open('', '_blank');
-        if (w) { 
-          w.document.write(html); 
-          w.document.close(); 
-          setTimeout(() => w.print(), 800); 
-        } else {
-          showError('Permite ventanas emergentes para ver el reporte.');
-        }
-      } else {
-        const { uri } = await Print.printToFileAsync({ html });
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
-      }
-    } catch (err) {
-      console.error('Error al generar PDF:', err);
-      showError('Error al generar PDF: ' + err.message);
-    } finally {
+  const generarPDF = async (mesFormato) => {
+  setLoading(true);
+  try {
+    const token = await getTokenAsync();
+    if (!token) {
       setLoading(false);
+      return;
     }
-  };
+
+    const reporte = reportesMensuales.find(r => r.mes === mesFormato);
+    if (!reporte) { 
+      setLoading(false);
+      showError(`Sin datos para ${mesFormato}.`); 
+      return; 
+    }
+
+    const [year, monthNum] = mesFormato.split('-');
+    const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
+
+    // Obtener eventos del mes
+    let eventosDelMes = [];
+    const res = await axios.get(`${API_BASE_URL}/eventos`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const todosEventos = Array.isArray(res.data) ? res.data : [];
+    
+    const yearNum = parseInt(year);
+    const monthNum2 = parseInt(monthNum);
+    
+    eventosDelMes = todosEventos.filter(ev => {
+      if (!ev.fechaevento) return false;
+      const fechaEvento = new Date(ev.fechaevento);
+      return fechaEvento.getFullYear() === yearNum && 
+             (fechaEvento.getMonth() + 1) === monthNum2;
+    });
+
+    // ✅ FORMATO DE TABLA SIMPLE COMO LA IMAGEN
+    const filasReporte = eventosDelMes.map(ev => {
+      const fecha = ev.fechaevento
+        ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { 
+            day: '2-digit', 
+            month: '2-digit',
+            year: 'numeric'
+          })
+        : '–';
+      
+      return `
+        <tr>
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${fecha}</td>
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.lugarevento || '–'}</td>
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.publicoMeta || ev.descripcion || '–'}</td>
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">${ev.nombreevento || '–'}</td>
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;">&nbsp;</td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Arial,sans-serif;padding:40px;background:#fff}
+        .wrap{max-width:1200px;margin:0 auto}
+        
+        /* Header estilo imagen */
+        .header-table{
+          width:100%;
+          border:2px solid #2d5016;
+          margin-bottom:20px;
+        }
+        .header-table td{
+          padding:15px;
+          text-align:center;
+        }
+        .reporte-title{
+          font-size:32px;
+          font-weight:bold;
+          color:#000;
+          text-transform:lowercase;
+        }
+        
+        /* Info periodo y responsable */
+        .info-row{
+          display:flex;
+          justify-content:space-between;
+          margin-bottom:20px;
+          border:1px solid #ddd;
+        }
+        .info-field{
+          flex:1;
+          padding:10px;
+          border-right:1px solid #ddd;
+        }
+        .info-field:last-child{
+          border-right:none;
+        }
+        .info-label{
+          font-weight:bold;
+          background:#f0f0f0;
+          padding:5px 10px;
+          display:inline-block;
+          margin-bottom:5px;
+        }
+        .info-value{
+          padding:5px 10px;
+          min-height:30px;
+        }
+        
+        /* Tabla principal estilo imagen */
+        .main-table{
+          width:100%;
+          border-collapse:collapse;
+          margin-top:20px;
+        }
+        .main-table th{
+          background:#ccc;
+          padding:12px;
+          border:1px solid #999;
+          text-align:left;
+          font-weight:bold;
+          font-size:14px;
+        }
+        .main-table td{
+          padding:10px;
+          border:1px solid #ddd;
+          vertical-align:top;
+          font-size:13px;
+        }
+        .main-table tr:nth-child(even){
+          background:#f9f9f9;
+        }
+        
+        .footer{
+          margin-top:30px;
+          text-align:center;
+          font-size:12px;
+          color:#666;
+          padding-top:20px;
+          border-top:1px solid #ddd;
+        }
+        
+        @media print{
+          body{padding:0}
+          .wrap{box-shadow:none}
+        }
+      </style></head><body><div class="wrap">
+      
+      <!-- Header con título "reporte" -->
+      <table class="header-table">
+        <tr>
+          <td>
+            <div class="reporte-title">reporte</div>
+          </td>
+        </tr>
+      </table>
+      
+      <!-- Periodo y Responsable -->
+      <div class="info-row">
+        <div class="info-field">
+          <div class="info-label">Periodo</div>
+          <div class="info-value">${mesNombre} ${year}</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Responsable de la Informacion</div>
+          <div class="info-value">&nbsp;</div>
+        </div>
+      </div>
+      
+      <!-- Tabla principal -->
+      <table class="main-table">
+        <thead>
+          <tr>
+            <th style="width:15%">Fecha</th>
+            <th style="width:20%">Lugar</th>
+            <th style="width:25%">Publico Meta</th>
+            <th style="width:25%">Tema</th>
+            <th style="width:15%">Observaciones y Sugerencias</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filasReporte}
+        </tbody>
+      </table>
+      
+      <div class="footer">
+        <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos
+      </div>
+      
+      </div></body></html>`;
+
+    if (Platform.OS === 'web') {
+      const w = window.open('', '_blank');
+      if (w) { 
+        w.document.write(html); 
+        w.document.close(); 
+        setTimeout(() => w.print(), 800); 
+      } else {
+        showError('Permite ventanas emergentes para ver el reporte.');
+      }
+    } else {
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
+    }
+  } catch (err) {
+    console.error('Error al generar PDF:', err);
+    showError('Error al generar PDF: ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+};
   const generarReporteAnual = async (year) => {
     setLoading(true);
     try {
@@ -834,21 +781,30 @@ const cargarEventosParaPicker = async () => {
       setLoading(false);
     }
   };
-  const estadoBadge = (estado) => {
-    const map = {
-      aprobado:  { bg: '#D1FAE5', text: '#059669' },
-      pendiente: { bg: '#FEF3C7', text: '#D97706' },
-      rechazado: { bg: '#FEE2E2', text: '#DC2626' },
-    };
-    const s = map[(estado || '').toLowerCase()] || { bg: COLORS.divider, text: COLORS.textSecondary };
-    return (
-      <View style={{ backgroundColor: s.bg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: s.text }}>
-          {(estado || 'N/A').charAt(0).toUpperCase() + (estado || '').slice(1)}
-        </Text>
-      </View>
-    );
+  const estadoBadgeHtml = (estado) => {
+  const map = {
+    aprobado:  { cls: 'b-aprobado',  label: 'Aprobado'  },
+    pendiente: { cls: 'b-pendiente', label: 'Pendiente' },
+    rechazado: { cls: 'b-rechazado', label: 'Rechazado' },
   };
+  const s = map[(estado || '').toLowerCase()] || { cls: '', label: estado || 'N/A' };
+  return `<span class="badge ${s.cls}">${s.label}</span>`;
+};
+
+const filasReporte = eventosDelMes.map(ev => {
+  const fecha = ev.fechaevento
+    ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' })
+    : '–';
+  return `
+    <tr>
+      <td>${fecha}</td>
+      <td>${ev.lugarevento || '–'}</td>
+      <td class="col-publico">${estadoBadgeHtml(ev.estado)}</td>
+      <td>${ev.nombreevento || 'Sin nombre'}</td>
+      <td class="col-obs-cell">&nbsp;</td>
+    </tr>
+  `;
+}).join('');
 
   const chartW = windowWidth - 48;
 
