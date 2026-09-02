@@ -90,39 +90,57 @@ const HorizontalBarChart = ({ data, width, height = 300 }) => {
   );
 };
 
-// 🔥 NUEVO: Componente Heatmap Calendar
-const CalendarHeatmap = ({ data, width }) => {
-  const cellSize = 16;
-  const cellGap = 3;
+// 🔥 MEJORADO: Componente Heatmap Calendar con fechas alineadas correctamente
+const CalendarHeatmap = ({ data, width, darkMode }) => {
+  const cellSize = 14;
+  const cellGap = 4;
   const weeks = 52;
   const days = 7;
   
   const getColor = (value) => {
-    if (!value || value === 0) return COLORS.divider;
+    if (!value || value === 0) return darkMode ? '#374151' : COLORS.divider;
     if (value <= 2) return '#BBF7D0';
     if (value <= 5) return '#86EFAC';
     if (value <= 10) return '#22C55E';
     return '#16A34A';
   };
 
+  // Calcular la fecha de inicio (hace 52 semanas, alineado al domingo)
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - (weeks * 7) + today.getDay());
+
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <Svg width={weeks * (cellSize + cellGap) + 40} height={days * (cellSize + cellGap) + 30}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingBottom: 10 }}>
+      <Svg width={weeks * (cellSize + cellGap) + 40} height={days * (cellSize + cellGap) + 20}>
+        {/* Días de la semana (eje Y) */}
         {DAYS_SHORT.map((day, i) => (
-          <SvgText key={i} x={0} y={i * (cellSize + cellGap) + 12} fontSize="8" fill={COLORS.textTertiary}>{day}</SvgText>
+          <SvgText 
+            key={i} 
+            x={0} 
+            y={i * (cellSize + cellGap) + cellSize + 6} 
+            fontSize="9" 
+            fill={darkMode ? COLORS.darkTextSecondary : COLORS.textTertiary}
+            fontWeight="500"
+          >
+            {day}
+          </SvgText>
         ))}
+        
+        {/* Celdas del heatmap */}
         {Array.from({ length: weeks }).map((_, week) => 
           Array.from({ length: days }).map((_, day) => {
-            const date = new Date();
-            date.setDate(date.getDate() - (weeks - week) * 7 + day);
-            const dateStr = date.toISOString().split('T')[0];
+            // Calcular la fecha exacta para cada celda
+            const cellDate = new Date(startDate);
+            cellDate.setDate(startDate.getDate() + (week * 7) + day);
+            const dateStr = cellDate.toISOString().split('T')[0];
             const value = data[dateStr] || 0;
             
             return (
               <Rect
                 key={`${week}-${day}`}
                 x={week * (cellSize + cellGap) + 25}
-                y={day * (cellSize + cellGap) + 15}
+                y={day * (cellSize + cellGap)}
                 width={cellSize}
                 height={cellSize}
                 fill={getColor(value)}
@@ -136,7 +154,6 @@ const CalendarHeatmap = ({ data, width }) => {
   );
 };
 
-// 🔥 NUEVO: KPI con tendencia
 const KpiCard = ({ label, value, icon, color, sub, trend }) => (
   <View style={[styles.kpiCard, { borderTopColor: color }]}>
     <View style={styles.kpiHeader}>
