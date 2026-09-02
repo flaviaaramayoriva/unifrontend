@@ -361,7 +361,7 @@ const cargarEventosParaPicker = async () => {
     router.push(`/admin/EventoDetalleImp?eventId=${evento.idevento}`);
   };
 
-  const generarPDF = async (mesFormato) => {
+const generarPDF = async (mesFormato) => {
   setLoading(true);
   try {
     const token = await getTokenAsync();
@@ -380,8 +380,7 @@ const cargarEventosParaPicker = async () => {
     const [year, monthNum] = mesFormato.split('-');
     const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
 
-    // Obtener eventos del mes
-    let eventosDelMes = [];
+    // ✅ 1. Obtener todos los eventos
     const res = await axios.get(`${API_BASE_URL}/eventos`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -390,14 +389,17 @@ const cargarEventosParaPicker = async () => {
     const yearNum = parseInt(year);
     const monthNum2 = parseInt(monthNum);
     
-    eventosDelMes = todosEventos.filter(ev => {
+    // ✅ 2. Filtrar eventos del mes seleccionado
+    const eventosDelMes = todosEventos.filter(ev => {
       if (!ev.fechaevento) return false;
       const fechaEvento = new Date(ev.fechaevento);
       return fechaEvento.getFullYear() === yearNum && 
              (fechaEvento.getMonth() + 1) === monthNum2;
     });
+    
+    console.log(`✅ Eventos filtrados para ${mesNombre} ${year}:`, eventosDelMes.length);
 
-    // ✅ FORMATO DE TABLA SIMPLE COMO LA IMAGEN
+    // ✅ 3. AHORA sí podemos usar eventosDelMes
     const filasReporte = eventosDelMes.map(ev => {
       const fecha = ev.fechaevento
         ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { 
@@ -423,100 +425,26 @@ const cargarEventosParaPicker = async () => {
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:Arial,sans-serif;padding:40px;background:#fff}
         .wrap{max-width:1200px;margin:0 auto}
-        
-        /* Header estilo imagen */
-        .header-table{
-          width:100%;
-          border:2px solid #2d5016;
-          margin-bottom:20px;
-        }
-        .header-table td{
-          padding:15px;
-          text-align:center;
-        }
-        .reporte-title{
-          font-size:32px;
-          font-weight:bold;
-          color:#000;
-          text-transform:lowercase;
-        }
-        
-        /* Info periodo y responsable */
-        .info-row{
-          display:flex;
-          justify-content:space-between;
-          margin-bottom:20px;
-          border:1px solid #ddd;
-        }
-        .info-field{
-          flex:1;
-          padding:10px;
-          border-right:1px solid #ddd;
-        }
-        .info-field:last-child{
-          border-right:none;
-        }
-        .info-label{
-          font-weight:bold;
-          background:#f0f0f0;
-          padding:5px 10px;
-          display:inline-block;
-          margin-bottom:5px;
-        }
-        .info-value{
-          padding:5px 10px;
-          min-height:30px;
-        }
-        
-        /* Tabla principal estilo imagen */
-        .main-table{
-          width:100%;
-          border-collapse:collapse;
-          margin-top:20px;
-        }
-        .main-table th{
-          background:#ccc;
-          padding:12px;
-          border:1px solid #999;
-          text-align:left;
-          font-weight:bold;
-          font-size:14px;
-        }
-        .main-table td{
-          padding:10px;
-          border:1px solid #ddd;
-          vertical-align:top;
-          font-size:13px;
-        }
-        .main-table tr:nth-child(even){
-          background:#f9f9f9;
-        }
-        
-        .footer{
-          margin-top:30px;
-          text-align:center;
-          font-size:12px;
-          color:#666;
-          padding-top:20px;
-          border-top:1px solid #ddd;
-        }
-        
-        @media print{
-          body{padding:0}
-          .wrap{box-shadow:none}
-        }
+        .header-table{width:100%;border:2px solid #2d5016;margin-bottom:20px;}
+        .header-table td{padding:15px;text-align:center;}
+        .reporte-title{font-size:32px;font-weight:bold;color:#000;text-transform:lowercase;}
+        .info-row{display:flex;justify-content:space-between;margin-bottom:20px;border:1px solid #ddd;}
+        .info-field{flex:1;padding:10px;border-right:1px solid #ddd;}
+        .info-field:last-child{border-right:none;}
+        .info-label{font-weight:bold;background:#f0f0f0;padding:5px 10px;display:inline-block;margin-bottom:5px;}
+        .info-value{padding:5px 10px;min-height:30px;}
+        .main-table{width:100%;border-collapse:collapse;margin-top:20px;}
+        .main-table th{background:#ccc;padding:12px;border:1px solid #999;text-align:left;font-weight:bold;font-size:14px;}
+        .main-table td{padding:10px;border:1px solid #ddd;vertical-align:top;font-size:13px;}
+        .main-table tr:nth-child(even){background:#f9f9f9;}
+        .footer{margin-top:30px;text-align:center;font-size:12px;color:#666;padding-top:20px;border-top:1px solid #ddd;}
+        @media print{body{padding:0}.wrap{box-shadow:none}}
       </style></head><body><div class="wrap">
       
-      <!-- Header con título "reporte" -->
       <table class="header-table">
-        <tr>
-          <td>
-            <div class="reporte-title">reporte</div>
-          </td>
-        </tr>
+        <tr><td><div class="reporte-title">reporte</div></td></tr>
       </table>
       
-      <!-- Periodo y Responsable -->
       <div class="info-row">
         <div class="info-field">
           <div class="info-label">Periodo</div>
@@ -528,7 +456,6 @@ const cargarEventosParaPicker = async () => {
         </div>
       </div>
       
-      <!-- Tabla principal -->
       <table class="main-table">
         <thead>
           <tr>
