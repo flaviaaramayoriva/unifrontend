@@ -532,8 +532,7 @@ const fetchEstudiantesInscritosFacultad = useCallback(async () => {
     const token = await getTokenAsync();
     if (!token) return;
 
-    // ✅ CORREGIDO: Agregado el prefijo '/estudiantes/' que coincide con app.js
-    const response = await axios.get(`${API_BASE_URL}/estudiantes/estudiantes-inscritos-facultad`, {
+    const response = await axios.get(`${API_BASE_URL}/estudiantes/estudiantes-inscritos-facultad?_t=${Date.now()}`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     
