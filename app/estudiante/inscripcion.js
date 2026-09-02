@@ -38,10 +38,15 @@ const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const getToken = async () => {
   try {
-    return Platform.OS === 'web'
+    const token = Platform.OS === 'web'
       ? localStorage.getItem(TOKEN_KEY)
       : await SecureStore.getItemAsync(TOKEN_KEY);
-  } catch { return null; }
+    console.log('🔑 Token obtenido:', token ? 'EXISTS' : 'NULL');
+    return token;
+  } catch (error) {
+    console.error('❌ Error al obtener token:', error);
+    return null;
+  }
 };
 
 const InscripcionCard = ({ evento, isNext, isPast, onPress }) => {
@@ -59,7 +64,6 @@ const InscripcionCard = ({ evento, isNext, isPast, onPress }) => {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Fecha */}
       <View style={[styles.dateBox, isNext && styles.dateBoxNext]}>
         <Text style={[styles.dateDayName, isNext && styles.dateDayNameNext]}>
           {diaSemana}
@@ -72,10 +76,8 @@ const InscripcionCard = ({ evento, isNext, isPast, onPress }) => {
         </Text>
       </View>
 
-      {/* Separador vertical */}
       <View style={[styles.cardDivider, isNext && styles.cardDividerNext]} />
 
-      {/* Contenido principal */}
       <View style={styles.cardContent}>
         {isNext && !isPast && (
           <View style={styles.nextBadge}>
@@ -107,7 +109,6 @@ const InscripcionCard = ({ evento, isNext, isPast, onPress }) => {
         </View>
       </View>
 
-      {/* Icono de estado */}
       <View style={styles.statusIcon}>
         {isPast ? (
           <View style={styles.pastBadge}>
@@ -133,9 +134,6 @@ const EmptyState = () => (
       Aún no estás inscrito en ningún evento.{'\n'}
       Explora los eventos disponibles y únete.
     </Text>
-    <TouchableOpacity style={styles.emptyButton}>
-      <Text style={styles.emptyButtonText}>Ver eventos disponibles</Text>
-    </TouchableOpacity>
   </View>
 );
 
@@ -168,49 +166,71 @@ const InscripcionScreen = () => {
   const [error, setError] = useState(null);
 
   const fetchMisInscripciones = useCallback(async () => {
+    console.log('🔄 [FETCH] Iniciando carga de inscripciones...');
     setError(null);
+    setLoading(true);
+    
     try {
       const token = await getToken();
+      console.log(' [FETCH] Token:', token ? 'OBTENIDO' : 'NO EXISTE');
+      
       if (!token) {
+        console.error('❌ [FETCH] No hay token, redirigiendo...');
         setError('Sesión expirada. Inicia sesión nuevamente.');
+        setLoading(false); // ← IMPORTANTE: Detener loading
         return;
       }
 
+      console.log('📡 [FETCH] Llamando a API...');
       const res = await axios.get(`${API_BASE_URL}/estudiantes/mis-inscripciones`, {
         headers: { Authorization: `Bearer ${token}` },
         timeout: 10000,
       });
 
+      console.log('✅ [FETCH] Respuesta recibida:', res.data);
       const raw = Array.isArray(res.data.eventos) ? res.data.eventos : [];
+      console.log('📦 [FETCH] Eventos raw:', raw.length);
+      
       const mapped = raw.map(ev => ({ ...ev, id: ev.idevento }));
-
-      // Ordenar por fecha ascendente
       mapped.sort((a, b) => new Date(a.fechaevento) - new Date(b.fechaevento));
 
+      console.log('✅ [FETCH] Eventos mapeados:', mapped.length);
       setEventos(mapped);
+      
     } catch (err) {
-      console.error('Error al cargar mis inscripciones:', err);
+      console.error('❌ [FETCH] Error completo:', err);
+      console.error('❌ [FETCH] Error response:', err.response);
+      console.error('❌ [FETCH] Error message:', err.message);
+      
       if (err.response?.status === 404) {
         setError('No se encontró el endpoint de inscripciones.');
+      } else if (err.response?.status === 401) {
+        setError('Sesión inválida. Por favor inicia sesión nuevamente.');
       } else if (err.code === 'ECONNABORTED') {
         setError('La conexión tardó demasiado. Verifica tu internet.');
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('Error de conexión. Verifica tu internet.');
       } else {
-        setError('No se pudieron cargar tus eventos. Verifica tu conexión.');
+        setError(err.response?.data?.message || 'No se pudieron cargar tus eventos.');
       }
+    } finally {
+      console.log('⏹️ [FETCH] Terminando carga, loading = false');
+      setLoading(false); // ← SIEMPRE se ejecuta
     }
   }, []);
 
   const onRefresh = useCallback(async () => {
+    console.log('🔄 [REFRESH] Iniciando refresh...');
     setRefreshing(true);
     await fetchMisInscripciones();
     setRefreshing(false);
   }, [fetchMisInscripciones]);
 
   useFocusEffect(useCallback(() => {
+    console.log('🎯 [FOCUS] Pantalla enfocada, cargando datos...');
     fetchMisInscripciones();
   }, [fetchMisInscripciones]));
 
-  // Determinar próximo evento y contar
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
   const nextEventId = eventos.find(ev => ev.fechaevento && new Date(ev.fechaevento) >= hoy)?.id;
@@ -220,6 +240,8 @@ const InscripcionScreen = () => {
   const handleCardPress = (evento) => {
     router.push(`/estudiante/eventos/${evento.id}`);
   };
+
+  console.log(' [RENDER] loading:', loading, 'error:', error, 'eventos:', eventos.length);
 
   return (
     <View style={styles.container}>
@@ -244,7 +266,6 @@ const InscripcionScreen = () => {
           />
         }
       >
-        {/* Header con estadísticas */}
         {!loading && !error && eventos.length > 0 && (
           <View style={styles.statsHeader}>
             <View style={styles.statItem}>
@@ -278,7 +299,6 @@ const InscripcionScreen = () => {
           </View>
         )}
 
-        {/* Contenido */}
         {loading ? (
           <LoadingState />
         ) : error ? (
@@ -312,8 +332,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-
-  // Stats Header
   statsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -350,13 +368,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.divider,
     marginHorizontal: 12,
   },
-
-  // Cards Container
   cardsContainer: {
     gap: 14,
   },
-
-  // Card
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
@@ -383,7 +397,6 @@ const styles = StyleSheet.create({
   cardPast: {
     opacity: 0.65,
   },
-
   dateBox: {
     width: 56,
     alignItems: 'center',
@@ -422,7 +435,6 @@ const styles = StyleSheet.create({
   dateMonthNext: {
     color: COLORS.primary,
   },
-
   cardDivider: {
     width: 1,
     height: '80%',
@@ -431,7 +443,6 @@ const styles = StyleSheet.create({
   cardDividerNext: {
     backgroundColor: COLORS.primary + '30',
   },
-
   cardContent: {
     flex: 1,
     gap: 6,
@@ -481,7 +492,6 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontWeight: '500',
   },
-
   statusIcon: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -504,8 +514,6 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textTransform: 'uppercase',
   },
-
-  // Empty State
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 60,
@@ -533,19 +541,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 24,
   },
-  emptyButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-  },
-  emptyButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-
-  // Error State
   errorContainer: {
     alignItems: 'center',
     paddingVertical: 60,
@@ -588,8 +583,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.white,
   },
-
-  // Loading State
   loadingContainer: {
     alignItems: 'center',
     paddingVertical: 60,
