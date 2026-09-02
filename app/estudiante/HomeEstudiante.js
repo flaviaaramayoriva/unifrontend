@@ -290,7 +290,7 @@ const HomeEstudianteScreen = () => {
 
   const registrarEnEvento = async (eventId) => {
     const token = await getToken();
-    await axios.post(`${API_BASE_URL}/eventos/${eventId}/registrar`, {}, {
+    await axios.post(`${API_BASE_URL}/estudiantes/${eventId}/registrar`, {}, {
       headers: { Authorization: `Bearer ${token}` },
     });
   };
@@ -548,11 +548,9 @@ const fetchMisInscripciones = useCallback(async () => {
     const res = await axios.get(`${API_BASE_URL}/estudiantes/mis-inscripciones`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-     const eventos = Array.isArray(res.data) 
-      ? res.data 
-      : (res.data?.eventosInscritos || []);
-      
-    setInscritos(new Set(eventos));
+     const eventos = res.data?.eventos || [];
+    const idsInscritos = eventos.map(e => e.idevento);
+    setInscritos(new Set(idsInscritos));
   } catch (err) {
     console.error('Error al cargar mis inscripciones:', err);
   }
