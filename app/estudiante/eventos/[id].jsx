@@ -71,9 +71,6 @@ const formatDate = (dateString) => {
   }
 };
 
-// Deriva el estado real comparando la fecha del evento contra hoy,
-// igual que en la lista de "Mis Eventos". Si ya pasó, se considera
-// Completado sin importar lo que diga el backend (salvo Cancelado).
 const resolveStatus = (rawStatus, rawDateString) => {
   const s = (rawStatus || '').toLowerCase();
   if (['cancelado', 'rechazado'].includes(s)) return 'cancelado';
@@ -99,8 +96,6 @@ const EventDetailStudentScreen = () => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isEnrolled, setIsEnrolled] = useState(false);
-  const [checkingEnrollment, setCheckingEnrollment] = useState(true);
 
   useEffect(() => {
     const loadEventData = async () => {
@@ -114,12 +109,10 @@ const EventDetailStudentScreen = () => {
         const token = await getTokenAsync();
         if (!token) throw new Error('Token no disponible');
 
-        // Obtener detalles del evento
         const eventRes = await axios.get(`${API_BASE_URL}/eventos/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        // Procesar datos del evento (evitar objetos anidados)
         const eventData = eventRes.data;
         const rawDateString = eventData.fecha_inicio || eventData.fechaevento || null;
         const processedEvent = {
@@ -135,7 +128,6 @@ const EventDetailStudentScreen = () => {
           category: eventData.tipo_evento || eventData.categoria || 'Evento',
           status: resolveStatus(eventData.estado, rawDateString),
           modalidad: eventData.modalidad || 'presencial',
-          // ✅ Evitar renderizar objetos directamente
           objetivos: Array.isArray(eventData.objetivos) 
             ? eventData.objetivos 
             : (typeof eventData.objetivos === 'string' ? [eventData.objetivos] : []),
@@ -146,17 +138,6 @@ const EventDetailStudentScreen = () => {
 
         setEvent(processedEvent);
 
-        // Verificar inscripción
-        try {
-          const enrollmentRes = await axios.get(
-            `${API_BASE_URL}/inscripciones/evento/${id}/estudiante`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          setIsEnrolled(enrollmentRes.data.isEnrolled || false);
-        } catch (err) {
-          console.warn('No se pudo verificar inscripción:', err.message);
-        }
-
       } catch (err) {
         console.error('Error:', err);
         setError(err.response?.data?.message || 'Error al cargar el evento');
@@ -166,91 +147,11 @@ const EventDetailStudentScreen = () => {
         }
       } finally {
         setLoading(false);
-        setCheckingEnrollment(false);
       }
     };
 
     loadEventData();
   }, [id, router]);
-
-  const handleEnroll = async () => {
-    Alert.alert(
-      'Inscribirse al Evento',
-      `¿Deseas inscribirte a "${event.title}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          onPress: async () => {
-            try {
-              const token = await getTokenAsync();
-              if (!token) throw new Error('Token no disponible');
-
-              if (event.capacity && event.attendees >= event.capacity) {
-                Alert.alert('Evento lleno', 'Capacidad máxima alcanzada');
-                return;
-              }
-
-              await axios.post(
-                `${API_BASE_URL}/inscripciones`,
-                { idevento: event.id, fecha_inscripcion: new Date().toISOString() },
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-              );
-
-              Alert.alert('¡Éxito!', 'Te has inscrito correctamente', [
-                { 
-                  text: 'OK', 
-                  onPress: () => {
-                    setIsEnrolled(true);
-                    setEvent(prev => prev ? { ...prev, attendees: prev.attendees + 1 } : null);
-                  }
-                }
-              ]);
-            } catch (err) {
-              Alert.alert('Error', err.response?.data?.message || 'No se pudo inscribir');
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const handleCancel = async () => {
-    Alert.alert(
-      'Cancelar inscripción',
-      '¿Seguro que deseas cancelar tu inscripción?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Sí',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const token = await getTokenAsync();
-              if (!token) throw new Error('Token no disponible');
-
-              await axios.delete(
-                `${API_BASE_URL}/inscripciones/evento/${event.id}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-
-              Alert.alert('Cancelado', 'Inscripción eliminada', [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    setIsEnrolled(false);
-                    setEvent(prev => prev ? { ...prev, attendees: Math.max(0, prev.attendees - 1) } : null);
-                  }
-                }
-              ]);
-            } catch (err) {
-              Alert.alert('Error', 'No se pudo cancelar la inscripción');
-            }
-          }
-        }
-      ]
-    );
-  };
 
   const openMap = () => {
     if (event?.location && event.location !== 'Ubicación no especificada') {
@@ -392,38 +293,8 @@ const EventDetailStudentScreen = () => {
             </Text>
           </View>
 
-          {/* Botones de acción */}
+          {/* Botón de acción (Solo Volver) */}
           <View style={styles.actions}>
-            {checkingEnrollment ? (
-              <ActivityIndicator color={COLORS.primary} />
-            ) : event.status === 'completado' || event.status === 'cancelado' ? (
-              // Evento ya pasado o cancelado: no tiene sentido ofrecer inscribirse/cancelar
-              <View style={[styles.button, styles.disabledButton]}>
-                <Ionicons name="information-circle-outline" size={20} color={COLORS.grayText} />
-                <Text style={[styles.buttonText, { color: COLORS.grayText }]}>
-                  {event.status === 'cancelado' ? 'Evento cancelado' : 'Este evento ya finalizó'}
-                </Text>
-              </View>
-            ) : isEnrolled ? (
-              <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCancel}>
-                <Ionicons name="close-circle-outline" size={20} color={COLORS.white} />
-                <Text style={styles.buttonText}>Cancelar Inscripción</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity 
-                style={[styles.button, styles.enrollButton]} 
-                onPress={handleEnroll}
-                disabled={event.capacity && event.attendees >= event.capacity}
-              >
-                <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.white} />
-                <Text style={styles.buttonText}>
-                  {event.capacity && event.attendees >= event.capacity 
-                    ? 'Evento Lleno' 
-                    : 'Inscribirme al Evento'}
-                </Text>
-              </TouchableOpacity>
-            )}
-            
             <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
               <Text style={[styles.buttonText, { color: COLORS.primary }]}>Volver</Text>
@@ -458,8 +329,6 @@ const getCategoryColor = (cat) => {
   return colors[cat?.toLowerCase()] || '#6B7280';
 };
 
-// Estos tres helpers ahora reciben el status YA resuelto por resolveStatus()
-// ('confirmado' | 'programado' | 'completado' | 'cancelado' | 'pendiente')
 const getStatusText = (status) => {
   const map = {
     confirmado: 'Confirmado',
@@ -589,9 +458,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 10,
   },
-  enrollButton: { backgroundColor: COLORS.success },
-  cancelButton: { backgroundColor: COLORS.accent },
-  disabledButton: { backgroundColor: COLORS.grayLight },
   backButton: { 
     backgroundColor: COLORS.surface, 
     borderWidth: 1, 
