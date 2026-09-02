@@ -399,12 +399,8 @@ const ReportesAvanzadosScreen = () => {
       e.fechaevento ? e.fechaevento.split('T')[0] : '',
       `"${(e.lugarevento || '').replace(/"/g, '""')}"`,
       e.estado || '',
-      `"${(e.facultad || '').replace(/"/g, '""')}"`,
-      `"${(e.responsable_evento || '').replace(/"/g, '""')}"`,
-      `"${(e.descripcion || '').replace(/"/g, '""')}"`,
-    ].join(';')); // ✅ PUNTO Y COMA en lugar de coma
+    ].join(';'));
     
-    // Agregar BOM para UTF-8 y usar punto y coma
     const csv = '\uFEFF' + [headers.join(';'), ...rows].join('\n'); // ✅ PUNTO Y COMA
 
     if (Platform.OS === 'web') {
