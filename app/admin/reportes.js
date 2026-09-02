@@ -452,159 +452,187 @@ const ReportesAvanzadosScreen = () => {
     router.push(`/admin/EventoDetalleImp?eventId=${evento.idevento}`);
   };
 
-    const generarPDF = async (mesFormato) => {
-    setLoading(true);
-    try {
-      const token = await getTokenAsync();
-      if (!token) { setLoading(false); return; }
+   const generarPDF = async (mesFormato) => {
+  setLoading(true);
+  try {
+    const token = await getTokenAsync();
+    if (!token) { setLoading(false); return; }
 
-      const reporte = reportesMensuales.find(r => r.mes === mesFormato);
-      if (!reporte) { 
-        setLoading(false);
-        showError(`Sin datos para ${mesFormato}.`); 
-        return; 
-      }
-
-      const [year, monthNum] = mesFormato.split('-');
-      const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
-
-      const res = await axios.get(`${API_BASE_URL}/eventos`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const todosEventos = Array.isArray(res.data) ? res.data : [];
-      
-      const yearNum = parseInt(year);
-      const monthNum2 = parseInt(monthNum);
-      
-      const eventosDelMes = todosEventos.filter(ev => {
-        if (!ev.fechaevento) return false;
-        const fechaEvento = new Date(ev.fechaevento);
-        return fechaEvento.getFullYear() === yearNum && (fechaEvento.getMonth() + 1) === monthNum2;
-      });
-
-      const filasReporte = eventosDelMes.map(ev => {
-        const fecha = ev.fechaevento
-          ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { 
-              day: '2-digit', 
-              month: '2-digit', 
-              year: 'numeric' 
-            })
-          : '–';
-        
-        const estadoColors = {
-          aprobado: { bg: '#d1fae5', text: '#059669' },
-          pendiente: { bg: '#fef3c7', text: '#d97706' },
-          rechazado: { bg: '#fee2e2', text: '#dc2626' },
-        };
-        const estadoStyle = estadoColors[(ev.estado || '').toLowerCase()] || { bg: '#f3f4f6', text: '#6b7280' };
-        
-        return `
-          <tr>
-            <!-- 1. Fecha -->
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${fecha}</td>
-            
-            <!-- 2. Lugar -->
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${ev.lugarevento || '–'}</td>
-            
-            <!-- 3. Hora (ANTES: Organizador) -->
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;text-align:center;">
-              <strong>${ev.horaevento || '–'}</strong>
-            </td>
-            
-            <!-- 4. Tema -->
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">
-              <strong>${ev.nombreevento || '–'}</strong><br>
-              <span style="color:#6b7280;font-size:11px;">${ev.tipo_evento || ev.tipoEvento || ''}</span>
-            </td>
-            
-            <!-- 5. Estado -->
-            <td style="padding:10px;border:1px solid #ddd;vertical-align:top;text-align:center;">
-              <span style="background:${estadoStyle.bg};color:${estadoStyle.text};padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;display:inline-block;min-width:80px;">
-                ${(ev.estado || 'N/A').charAt(0).toUpperCase() + (ev.estado || '').slice(1)}
-              </span>
-            </td>
-            
-           
-          </tr>
-        `;
-      }).join('');
-
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-        <style>
-          *{margin:0;padding:0;box-sizing:border-box}
-          body{font-family:Arial,sans-serif;padding:40px;background:#fff}
-          .wrap{max-width:1200px;margin:0 auto}
-          .header-table{width:100%;border:2px solid #2d5016;margin-bottom:20px;}
-          .header-table td{padding:15px;text-align:center;}
-          .reporte-title{font-size:32px;font-weight:bold;color:#000;text-transform:lowercase;}
-          .info-row{display:flex;justify-content:space-between;margin-bottom:20px;border:1px solid #ddd;}
-          .info-field{flex:1;padding:10px;border-right:1px solid #ddd;}
-          .info-field:last-child{border-right:none;}
-          .info-label{font-weight:bold;background:#f0f0f0;padding:5px 10px;display:inline-block;margin-bottom:5px;}
-          .info-value{padding:5px 10px;min-height:30px;}
-          .main-table{width:100%;border-collapse:collapse;margin-top:20px;}
-          .main-table th{background:#ccc;padding:12px;border:1px solid #999;text-align:left;font-weight:bold;font-size:13px;}
-          .main-table td{padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;}
-          .main-table tr:nth-child(even){background:#f9f9f9;}
-          .footer{margin-top:30px;text-align:center;font-size:12px;color:#666;padding-top:20px;border-top:1px solid #ddd;}
-          @media print{body{padding:0}.wrap{box-shadow:none}}
-        </style></head><body><div class="wrap">
-        
-        <table class="header-table">
-          <tr><td><div class="reporte-title">reporte</div></td></tr>
-        </table>
-        
-        <div class="info-row">
-          <div class="info-field">
-            <div class="info-label">Periodo</div>
-            <div class="info-value">${mesNombre} ${year}</div>
-          </div>
-          <div class="info-field">
-            <div class="info-label">Responsable de la Informacion</div>
-            <div class="info-value">&nbsp;</div>
-          </div>
-        </div>
-        
-        <table class="main-table">
-          <thead>
-            <tr>
-              <th style="width:15%">Fecha</th>
-              <th style="width:15%">Lugar</th>
-              <th style="width:10%">Hora</th>
-              <th style="width:30%">Tema</th>
-              <th style="width:15%">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filasReporte}
-          </tbody>
-        </table>
-        
-        <div class="footer">
-          <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos
-        </div>
-        </div></body></html>`;
-
-      if (Platform.OS === 'web') {
-        const w = window.open('', '_blank');
-        if (w) { 
-          w.document.write(html); 
-          w.document.close(); 
-          setTimeout(() => w.print(), 800); 
-        } else {
-          showError('Permite ventanas emergentes para ver el reporte.');
-        }
-      } else {
-        const { uri } = await Print.printToFileAsync({ html });
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
-      }
-    } catch (err) {
-      console.error('Error al generar PDF:', err);
-      showError('Error al generar PDF: ' + err.message);
-    } finally {
+    const reporte = reportesMensuales.find(r => r.mes === mesFormato);
+    if (!reporte) { 
       setLoading(false);
+      showError(`Sin datos para ${mesFormato}.`); 
+      return; 
     }
-  };
+
+    const [year, monthNum] = mesFormato.split('-');
+    const mesNombre = MONTH_NAMES_FULL[parseInt(monthNum) - 1];
+
+    const res = await axios.get(`${API_BASE_URL}/eventos`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const todosEventos = Array.isArray(res.data) ? res.data : [];
+    
+    const yearNum = parseInt(year);
+    const monthNum2 = parseInt(monthNum);
+    
+    const eventosDelMes = todosEventos.filter(ev => {
+      if (!ev.fechaevento) return false;
+      const fechaEvento = new Date(ev.fechaevento);
+      return fechaEvento.getFullYear() === yearNum && (fechaEvento.getMonth() + 1) === monthNum2;
+    });
+
+    // Función para formatear hora correctamente
+    const formatTime = (timeStr) => {
+      if (!timeStr) return '–';
+      
+      // Si ya es un string con formato HH:MM o HH:MM:SS
+      if (typeof timeStr === 'string') {
+        const parts = timeStr.split(':');
+        if (parts.length >= 2) {
+          return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+        }
+        return timeStr;
+      }
+      
+      // Si es un objeto Date o timestamp
+      try {
+        const date = new Date(timeStr);
+        if (!isNaN(date.getTime())) {
+          const hours = date.getHours().toString().padStart(2, '0');
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          return `${hours}:${minutes}`;
+        }
+      } catch (e) {
+        // Ignorar errores
+      }
+      
+      return '–';
+    };
+
+    const filasReporte = eventosDelMes.map(ev => {
+      const fecha = ev.fechaevento
+        ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+          })
+        : '–';
+      
+      const horaFormateada = formatTime(ev.horaevento);
+      
+      const estadoColors = {
+        aprobado: { bg: '#d1fae5', text: '#059669' },
+        pendiente: { bg: '#fef3c7', text: '#d97706' },
+        rechazado: { bg: '#fee2e2', text: '#dc2626' },
+      };
+      const estadoStyle = estadoColors[(ev.estado || '').toLowerCase()] || { bg: '#f3f4f6', text: '#6b7280' };
+      
+      return `
+        <tr>
+          <!-- 1. Fecha -->
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${fecha}</td>
+          
+          <!-- 2. Lugar -->
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${ev.lugarevento || '–'}</td>
+          
+          <!-- 3. Hora formateada -->
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;text-align:center;">
+            <strong>${horaFormateada}</strong>
+          </td>
+          
+          <!-- 4. Tema -->
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">
+            <strong>${ev.nombreevento || '–'}</strong><br>
+            <span style="color:#6b7280;font-size:11px;">${ev.tipo_evento || ev.tipoEvento || ''}</span>
+          </td>
+          
+          <!-- 5. Estado -->
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;text-align:center;">
+            <span style="background:${estadoStyle.bg};color:${estadoStyle.text};padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;display:inline-block;min-width:80px;">
+              ${(ev.estado || 'N/A').charAt(0).toUpperCase() + (ev.estado || '').slice(1)}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Arial,sans-serif;padding:40px;background:#fff}
+        .wrap{max-width:1200px;margin:0 auto}
+        .header-table{width:100%;border:2px solid #2d5016;margin-bottom:20px;}
+        .header-table td{padding:15px;text-align:center;}
+        .reporte-title{font-size:32px;font-weight:bold;color:#000;text-transform:lowercase;}
+        .info-row{display:flex;justify-content:space-between;margin-bottom:20px;border:1px solid #ddd;}
+        .info-field{flex:1;padding:10px;border-right:1px solid #ddd;}
+        .info-field:last-child{border-right:none;}
+        .info-label{font-weight:bold;background:#f0f0f0;padding:5px 10px;display:inline-block;margin-bottom:5px;}
+        .info-value{padding:5px 10px;min-height:30px;}
+        .main-table{width:100%;border-collapse:collapse;margin-top:20px;}
+        .main-table th{background:#ccc;padding:12px;border:1px solid #999;text-align:left;font-weight:bold;font-size:13px;}
+        .main-table td{padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;}
+        .main-table tr:nth-child(even){background:#f9f9f9;}
+        .footer{margin-top:30px;text-align:center;font-size:12px;color:#666;padding-top:20px;border-top:1px solid #ddd;}
+        @media print{body{padding:0}.wrap{box-shadow:none}}
+      </style></head><body><div class="wrap">
+      
+      <table class="header-table">
+        <tr><td><div class="reporte-title">reporte</div></td></tr>
+      </table>
+      
+      <div class="info-row">
+        <div class="info-field">
+          <div class="info-label">Periodo</div>
+          <div class="info-value">${mesNombre} ${year}</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Responsable de la Informacion</div>
+          <div class="info-value">&nbsp;</div>
+        </div>
+      </div>
+      
+      <table class="main-table">
+        <thead>
+          <tr>
+            <th style="width:15%">Fecha</th>
+            <th style="width:15%">Lugar</th>
+            <th style="width:10%">Hora</th>
+            <th style="width:30%">Tema</th>
+            <th style="width:15%">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filasReporte}
+        </tbody>
+      </table>
+      
+      <div class="footer">
+        <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos
+      </div>
+      </div></body></html>`;
+
+    if (Platform.OS === 'web') {
+      const w = window.open('', '_blank');
+      if (w) { 
+        w.document.write(html); 
+        w.document.close(); 
+        setTimeout(() => w.print(), 800); 
+      } else {
+        showError('Permite ventanas emergentes para ver el reporte.');
+      }
+    } else {
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Compartir Reporte' });
+    }
+  } catch (err) {
+    console.error('Error al generar PDF:', err);
+    showError('Error al generar PDF: ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const generarReporteAnual = async (year) => {
     setLoading(true);
