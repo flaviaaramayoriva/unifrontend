@@ -1285,14 +1285,7 @@ const ReportesAvanzadosScreen = () => {
                 <Ionicons name="chevron-forward" size={18} color={COLORS.info} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#F3F4F6' }]} onPress={exportarCSV}>
-                <Ionicons name="download-outline" size={22} color={COLORS.secondary} />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[styles.actionTitle, { color: COLORS.secondary }]}>Exportar CSV</Text>
-                  <Text style={styles.actionSub}>Formato simple compatible con cualquier sistema</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={COLORS.secondary} />
-              </TouchableOpacity>
+              
             </View>
           </>
         )}
