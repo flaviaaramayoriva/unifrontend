@@ -5,6 +5,7 @@ ActivityIndicator, KeyboardAvoidingView, Platform, Alert, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
+import { useRouter } from 'expo-router';
 
 const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY    = 'adminAuthToken';
@@ -288,6 +289,7 @@ ListEmptyComponent={
 };
 
 const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
+  const router = useRouter();
   const [tab, setTab]         = useState('grupal');
   const [chatPrivado, setChatPrivado] = useState(null);
 
@@ -332,14 +334,22 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
+            <View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
         {[
-          { id: 'grupal',   label: 'Chat Grupal',  icon: 'chatbubbles-outline' },
-          { id: 'miembros', label: 'Miembros',      icon: 'people-outline' },
+          { id: 'grupal',   label: 'Chat',         icon: 'chatbubbles-outline' },
+          { id: 'miembros', label: 'Miembros',     icon: 'people-outline' },
+          { id: 'analisis', label: 'Análisis IA',  icon: 'analytics-outline' }, // <-- NUEVA PESTAÑA
         ].map(t => (
           <TouchableOpacity
             key={t.id}
-            onPress={() => setTab(t.id)}
+            onPress={() => {
+              if (t.id === 'analisis') {
+                // Navega a la pantalla de análisis que creamos antes
+                router.push(`/admin/ChatAnalysis?eventId=${evento.idevento}`);
+              } else {
+                setTab(t.id);
+              }
+            }}
             style={{
               flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
               gap: 6, paddingVertical: 12,

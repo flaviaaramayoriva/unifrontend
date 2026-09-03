@@ -1023,16 +1023,7 @@ useEffect(() => {
     badge: 'Nuevo',
     badgeColor: COLORS.accent,
   },
-  {
-      id: '8',
-      title: 'Predicción con IA',
-      iconName: 'analytics-outline',
-      route: '/admin/PrediccionIA', // Ruta a la pantalla que creamos antes
-      color: COLORS.info, // Azul para destacar que es tecnología
-      description: 'Predice la asistencia con Machine Learning',
-      badge: 'NUEVO',
-      badgeColor: COLORS.accent,
-    },
+  
 
 ], []);
 
