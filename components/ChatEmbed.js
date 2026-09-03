@@ -388,35 +388,41 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
-       {[
-          { id: 'grupal',   label: 'Chat',           icon: 'chatbubbles-outline' },
-          { id: 'miembros', label: 'Miembros',       icon: 'people-outline' },
-          { id: 'analisis', label: 'Análisis de IA', icon: 'analytics-outline' }, // ✅ CAMBIADO
-        ].map(t => (
-          <TouchableOpacity
-            key={t.id}
-            onPress={() => {
-              if (t.id === 'analisis') {
-                router.push(`/admin/ChatAnalysis?eventId=${evento.idevento}`);
-              } else {
-                setTab(t.id);
-              }
-            }}
-            style={{
-              flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-              gap: 6, paddingVertical: 12,
-              borderBottomWidth: tab === t.id ? 2 : 0,
-              borderBottomColor: COLORS.primary,
-            }}
-          >
-            <Ionicons name={t.icon} size={16} color={tab === t.id ? COLORS.primary : COLORS.textTertiary} />
-            <Text style={{ fontSize: 13, fontWeight: '600', color: tab === t.id ? COLORS.primary : COLORS.textTertiary }}>
-              {t.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      // En VistaEvento, actualiza el array de tabs:
+
+<View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
+  {[
+    { id: 'grupal',   label: 'Chat',           icon: 'chatbubbles-outline' },
+    { id: 'asistente', label: 'Asistente IA',  icon: 'robot-outline' },      // ✅ NUEVA PESTAÑA
+    { id: 'miembros', label: 'Miembros',       icon: 'people-outline' },
+    { id: 'analisis', label: 'Análisis de IA', icon: 'analytics-outline' },
+  ].map(t => (
+    <TouchableOpacity
+      key={t.id}
+      onPress={() => {
+        if (t.id === 'analisis') {
+          router.push(`/admin/ChatAnalysis?eventId=${evento.idevento}`);
+        } else if (t.id === 'asistente') {
+          // Navega a la nueva pantalla del asistente
+          router.push(`/admin/AsistenteIA?eventId=${evento.idevento}`);
+        } else {
+          setTab(t.id);
+        }
+      }}
+      style={{
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 6, paddingVertical: 12,
+        borderBottomWidth: tab === t.id ? 2 : 0,
+        borderBottomColor: COLORS.primary,
+      }}
+    >
+      <Ionicons name={t.icon} size={16} color={tab === t.id ? COLORS.primary : COLORS.textTertiary} />
+      <Text style={{ fontSize: 11, fontWeight: '600', color: tab === t.id ? COLORS.primary : COLORS.textTertiary }} numberOfLines={1}>
+        {t.label}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
 
       {tab === 'grupal' ? (
         <VistaChat
