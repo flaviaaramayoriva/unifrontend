@@ -389,10 +389,10 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
       </View>
 
       <View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
-        {[
-          { id: 'grupal',   label: 'Chat',         icon: 'chatbubbles-outline' },
-          { id: 'miembros', label: 'Miembros',     icon: 'people-outline' },
-          { id: 'analisis', label: 'Análisis IA',  icon: 'analytics-outline' },
+       {[
+          { id: 'grupal',   label: 'Chat',           icon: 'chatbubbles-outline' },
+          { id: 'miembros', label: 'Miembros',       icon: 'people-outline' },
+          { id: 'analisis', label: 'Análisis de IA', icon: 'analytics-outline' }, // ✅ CAMBIADO
         ].map(t => (
           <TouchableOpacity
             key={t.id}
