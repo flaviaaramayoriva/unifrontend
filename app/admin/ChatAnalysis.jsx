@@ -40,7 +40,7 @@ export default function ChatAnalysisScreen() {
     try {
       const token = await getTokenAsync();
       const response = await axios.get(
-        `${API_BASE_URL}/api/chat/event/${eventId}/analysis`,
+        `${API_BASE_URL}/chat/event/${eventId}/analysis`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
