@@ -597,7 +597,14 @@ const programacionEvento = () => {
             'Content-Type': 'application/json',
           },
         });
-        Alert.alert('Éxito', 'Evento actualizado correctamente.');
+        Alert.alert('Éxito', 'Evento actualizado correctamente.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.back(); // 👈 Vuelve a la pantalla anterior
+            }
+          }
+        ]);
       } else {
         await axios.post(`${API_BASE_URL}/eventos`, payload, {
           headers: {
@@ -605,9 +612,16 @@ const programacionEvento = () => {
             'Content-Type': 'application/json',
           },
         });
-        Alert.alert('Éxito', 'Evento creado correctamente.');
+        
+        Alert.alert('Éxito', 'Evento creado correctamente.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.back(); // 👈 Vuelve a la pantalla anterior
+            }
+          }
+        ]);
       }
-      router.back();
     } catch (error) {
       console.error("Error al guardar evento:", error.response?.data || error.message);
       const errorMessage = error.response?.data?.message
