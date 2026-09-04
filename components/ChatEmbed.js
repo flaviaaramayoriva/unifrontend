@@ -508,8 +508,15 @@ const ChatEmbed = ({ userId, userRole, userName }) => {
           headers: { Authorization: `Bearer ${token}` }
         });
         const dataCreados = await resCreados.json();
+         const hoy = new Date();
+         hoy.setHours(0, 0, 0, 0)    
         const eventosCreados = Array.isArray(dataCreados)
-          ? dataCreados.filter(e => e.estado === 'aprobado' && String(e.idacademico) === String(userId))
+          ? dataCreados.filter(e => {
+            return e.estado === 'aprobado' 
+              && String(e.idacademico) === String(userId)
+              && e.fechaEvento 
+              && e.fechaEvento >= hoy;
+          })
           : [];
 
         const eventosCompletos = await Promise.all(
