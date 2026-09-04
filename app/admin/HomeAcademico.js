@@ -510,16 +510,21 @@ const [isTelegramLinked, setIsTelegramLinked] = useState(false);
 const [telegramUsername, setTelegramUsername] = useState('');
 
 const currentMonthEvents = useMemo(() => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // 1. Ordenar todos los eventos por fecha (del más reciente al más antiguo)
+  const sortedEvents = [...comiteeEvents].sort((a, b) => {
+    const dateA = new Date(a.fechaevento || 0);
+    const dateB = new Date(b.fechaevento || 0);
+    return dateB - dateA; // Orden descendente
+  });
 
-  return comiteeEvents.filter(e => {
-    if (!e.fechaevento) return false; 
-    
+  // 2. Filtrar para mostrar eventos de los últimos 30 días (ajusta si quieres más)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  return sortedEvents.filter(e => {
+    if (!e.fechaevento) return false;
     const eventDate = new Date(e.fechaevento);
-    const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-    
-    return eventDay >= today;
+    return eventDate >= thirtyDaysAgo; 
   });
 }, [comiteeEvents]);
 
@@ -527,6 +532,7 @@ const filteredCommitteeEvents = useMemo(() => {
   if (committeeFilter === 'todos') return currentMonthEvents;
   return currentMonthEvents.filter(e => e.estado === committeeFilter);
 }, [currentMonthEvents, committeeFilter]);
+const ultimoEventoId = currentMonthEvents.length > 0 ? String(currentMonthEvents[0].idevento) : undefined;
 
 const fetchEstudiantesInscritosFacultad = useCallback(async () => {
   setLoadingEventosFacultad(true);
@@ -1775,7 +1781,7 @@ const handleActionPress = (action) => {
   </Modal>
 )}
   <ChatFlotante 
-      eventId="2" // Cambia este "2" por el ID de un evento real que tengas en tu BD para probar
+      eventId={ultimoEventoId} 
       visible={chatVisible} 
       onClose={() => setChatVisible(false)} 
     />
