@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  ActivityIndicator, KeyboardAvoidingView, Platform, Alert
+  KeyboardAvoidingView, Platform, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
 const COLORS = {
@@ -21,87 +20,23 @@ const COLORS = {
 
 export default function AsistenteIAScreen() {
   const { eventId } = useLocalSearchParams();
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [connected, setConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const socketRef = useRef(null);
-  const flatListRef = useRef(null);
-
-  useEffect(() => {
-    let socket;
-    let isMounted = true;
-
-    const initSocket = async () => {
-      try {
-        const mod = await import('socket.io-client');
-        const io = mod.io || mod.default;
-
-        socket = io(API_BASE_URL, {
-          transports: ['websocket'],
-          reconnection: true,
-        });
-
-        socketRef.current = socket;
-
-        socket.on('connect', () => {
-          if (!isMounted) return;
-          setConnected(true);
-          socket.emit('join_event', {
-            eventoId: String(eventId),
-            userId: '1', // ID temporal
-            role: 'academico',
-            userName: 'Usuario'
-          });
-        });
-
-        socket.on('receive_message', (msg) => {
-          if (!isMounted) return;
-          // Solo mostrar mensajes del bot
-          if (msg.esBot || msg.userId === 0 || msg.role === 'bot') {
-            setMessages(prev => [...prev, {
-              ...msg,
-              id: `msg_${Date.now()}_${Math.random()}`
-            }]);
-            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-          }
-        });
-
-        socket.on('disconnect', () => {
-          if (isMounted) setConnected(false);
-        });
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error:', error);
-        setLoading(false);
-      }
-    };
-
-    initSocket();
-
-    // Mensaje de bienvenida
-    setMessages([{
+  const [messages, setMessages] = useState([
+    {
       id: 'welcome',
       userId: 0,
       userName: '🤖 Asistente IA',
-      message: '¡Hola! Soy tu asistente virtual. Pregúntame sobre:\n\n•  Horarios\n• 📍 Ubicación\n• 📜 Certificados\n• 💰 Costos\n• 📋 Requisitos',
+      message: '¡Hola! Soy tu asistente virtual. Pregúntame sobre:\n\n• 🕐 Horarios\n• 📍 Ubicación\n• 📜 Certificados\n• 💰 Costos\n• 📋 Requisitos',
       esBot: true,
       timestamp: new Date().toISOString()
-    }]);
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const flatListRef = useRef(null);
 
-    return () => {
-      isMounted = false;
-      if (socket) {
-        socket.emit('leave_event', { eventoId: String(eventId) });
-        socket.disconnect();
-      }
-    };
-  }, [eventId]);
-
-  const handleSend = () => {
+  const handleSend = async () => {
     const texto = input.trim();
-    if (!texto || !socketRef.current?.connected) return;
+    if (!texto) return;
 
     // Agregar mensaje del usuario
     const userMessage = {
@@ -115,15 +50,40 @@ export default function AsistenteIAScreen() {
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setLoading(true);
 
-    // Enviar al socket con prefijo /bot para que el backend lo detecte
-    socketRef.current.emit('send_message', {
-      eventoId: String(eventId),
-      userId: 1,
-      role: 'academico',
-      userName: 'Usuario',
-      message: `/bot ${texto}` // ← IMPORTANTE: Agregar prefijo
-    });
+    try {
+      // Llamar directamente al endpoint del bot
+      const response = await fetch(`${API_BASE_URL}/chat/event/${eventId}/bot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: texto,
+          userId: 1,
+          userName: 'Usuario'
+        })
+      });
+
+      const data = await response.json();
+      
+      const botMessage = {
+        id: `bot_${Date.now()}`,
+        userId: 0,
+        userName: '🤖 Asistente IA',
+        message: data.respuesta || 'Lo siento, no entendí tu pregunta. ¿Puedes reformularla?',
+        esBot: true,
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'No se pudo conectar con el asistente');
+    } finally {
+      setLoading(false);
+    }
+
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   const renderMessage = ({ item }) => {
@@ -184,27 +144,21 @@ export default function AsistenteIAScreen() {
           <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.textPrimary }}>
             Asistente IA
           </Text>
-          <Text style={{ fontSize: 12, color: connected ? COLORS.success : COLORS.textTertiary }}>
-            {connected ? '● En línea' : '○ Conectando...'}
+          <Text style={{ fontSize: 12, color: COLORS.success }}>
+            ● En línea
           </Text>
         </View>
       </View>
 
       {/* Lista de mensajes */}
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 16 }}
-          renderItem={renderMessage}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
-      )}
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={item => item.id}
+        contentContainerStyle={{ padding: 16 }}
+        renderItem={renderMessage}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+      />
 
       {/* Input */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -226,14 +180,18 @@ export default function AsistenteIAScreen() {
           />
           <TouchableOpacity
             onPress={handleSend}
-            disabled={!input.trim() || !connected}
+            disabled={!input.trim() || loading}
             style={{
-              backgroundColor: (input.trim() && connected) ? COLORS.primary : COLORS.textTertiary,
+              backgroundColor: (input.trim() && !loading) ? COLORS.primary : COLORS.textTertiary,
               borderRadius: 24, width: 44, height: 44,
               justifyContent: 'center', alignItems: 'center',
             }}
           >
-            <Ionicons name="send" size={18} color="#FFFFFF" />
+            {loading ? (
+              <Ionicons name="ellipsis-horizontal" size={18} color="#FFFFFF" />
+            ) : (
+              <Ionicons name="send" size={18} color="#FFFFFF" />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

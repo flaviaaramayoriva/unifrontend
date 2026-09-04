@@ -392,8 +392,8 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
 <View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
   {[
     { id: 'grupal',   label: 'Chat',           icon: 'chatbubbles-outline' },
-    { id: 'asistente', label: 'Asistente IA',  icon: 'robot-outline' },      // ✅ NUEVA PESTAÑA
     { id: 'miembros', label: 'Miembros',       icon: 'people-outline' },
+    { id: 'asistente', label: 'Asistente IA',  icon: 'robot-outline' },      // ✅ NUEVA PESTAÑA
     { id: 'analisis', label: 'Análisis de IA', icon: 'analytics-outline' },
   ].map(t => (
     <TouchableOpacity
