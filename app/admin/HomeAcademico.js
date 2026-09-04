@@ -23,7 +23,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChatEmbed from '../../components/ChatEmbed';
 import QRCode from 'react-qr-code';
 import {useTheme} from '../../context/ThemeContext';
-import {useState} from 'react';
 import ChatFlotante from '../../components/ChatFlotante';
 // Configuración de API
 let determinedApiBaseUrl;
