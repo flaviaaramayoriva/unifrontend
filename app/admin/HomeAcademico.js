@@ -23,6 +23,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChatEmbed from '../../components/ChatEmbed';
 import QRCode from 'react-qr-code';
 import {useTheme} from '../../context/ThemeContext';
+import {useState} from 'react';
+import ChatFlotante from '../../components/ChatFlotante';
 // Configuración de API
 let determinedApiBaseUrl;
 /*if (Platform.OS === 'android') {
@@ -472,6 +474,7 @@ const HomeAcademicoScreen = () => {
   const nombreUsuario = params.nombre || 'Administrador';
   const router = useRouter();
   const { width: windowWidth } = useWindowDimensions();
+  const [chatVisible, setChatVisible] = useState(false);
   const {
   colors,
   colorScheme,
@@ -1497,20 +1500,54 @@ const handleActionPress = (action) => {
       />
 
      
-      {!isBannerExpanded && userProfile.id && (
+{!isBannerExpanded && userProfile.id && (
   <TouchableOpacity
     style={{
-      position: 'absolute', bottom: 78, right: 20,
-      width: 56, height: 56, borderRadius: 28,
-      backgroundColor: colors.primary,
-      justifyContent: 'center', alignItems: 'center',
-      elevation: 8, shadowColor: '#000',
+      position: 'absolute',
+      bottom: 78,
+      left: 20,  // ← IZQUIERDA
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#E95A0C',  // Naranja
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 8,
+      shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25, shadowRadius: 6,
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      zIndex: 999,
     }}
     onPress={() => setIsChatOpen(true)}
   >
-    <Ionicons name="chatbubble-ellipses" size={24} color={colors.onPrimary} />
+    <Ionicons name="chatbubbles" size={24} color="#FFFFFF" />
+  </TouchableOpacity>
+)}
+
+{/* BOTÓN DERECHO - Asistente IA */}
+{!isBannerExpanded && userProfile.id && (
+  <TouchableOpacity
+    style={{
+      position: 'absolute',
+      bottom: 78,
+      right: 20,  // → DERECHA
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#9B59B6',  // Morado
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      zIndex: 999,
+    }}
+    onPress={() => setChatVisible(true)}
+  >
+    <Ionicons name="robot" size={24} color="#FFFFFF" />
   </TouchableOpacity>
 )}
 
@@ -1738,7 +1775,13 @@ const handleActionPress = (action) => {
     </View>
   </Modal>
 )}
+  <ChatFlotante 
+      eventId="2" // Cambia este "2" por el ID de un evento real que tengas en tu BD para probar
+      visible={chatVisible} 
+      onClose={() => setChatVisible(false)} 
+    />
     </View>
+    
   );
 };
 
