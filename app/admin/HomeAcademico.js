@@ -1782,8 +1782,11 @@ const handleActionPress = (action) => {
 )}
   <ChatFlotante 
       eventId={ultimoEventoId} 
-      visible={chatVisible} 
-      onClose={() => setChatVisible(false)} 
+       visible={chatVisible} 
+      onClose={() => setChatVisible(false)}
+      userId={userProfile.id} 
+      userName={userProfile.nombre}
+      userRole={userProfile.role} 
     />
     </View>
     

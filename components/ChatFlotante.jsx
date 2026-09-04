@@ -1,29 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, Modal,
-  FlatList, KeyboardAvoidingView, Platform, TouchableWithoutFeedback
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
-
-const COLORS = {
-  primary: '#E95A0C',
-  surface: '#FFFFFF',
-  background: '#F9FAFB',
-  border: '#E5E7EB',
-  textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-};
-
-export default function ChatFlotante({ eventId, visible, onClose }) {
+export default function ChatFlotante({ eventId, visible, onClose, userId, userName, userRole }) {
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
       userId: 0,
       userName: '🤖 Asistente IA',
-      message: '¡Hola! ¿En qué puedo ayudarte?\n\n• Horarios\n• Ubicación\n• Certificados',
+      message: '¡Hola! Soy tu asistente virtual. Pregúntame sobre:\n\n• Horarios y fechas\n• Ubicación\n• Certificados\n• Costos\n• Inscripciones',
       esBot: true,
     }
   ]);
@@ -31,14 +12,33 @@ export default function ChatFlotante({ eventId, visible, onClose }) {
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef(null);
 
+  // ✅ Verificar que eventId sea válido
+  useEffect(() => {
+    console.log('🔍 ChatFlotante - eventId:', eventId);
+    console.log('🔍 ChatFlotante - userId:', userId);
+  }, [eventId, userId]);
+
   const handleSend = async () => {
     const texto = input.trim();
     if (!texto) return;
 
+    // Validar que tengamos un eventId válido
+    if (!eventId || eventId === 'undefined' || eventId === 'null') {
+      const errorMessage = {
+        id: `error_${Date.now()}`,
+        userId: 0,
+        userName: '️ Sistema',
+        message: 'No hay un evento seleccionado. Por favor, selecciona un evento primero.',
+        esBot: true,
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
+
     const userMessage = {
       id: `user_${Date.now()}`,
-      userId: 1,
-      userName: 'Tú',
+      userId: userId || 1,
+      userName: userName || 'Tú',
       message: texto,
       esBot: false,
     };
@@ -48,31 +48,52 @@ export default function ChatFlotante({ eventId, visible, onClose }) {
     setLoading(true);
 
     try {
+      // ✅ Enviar TODA la información del usuario
       const response = await fetch(`${API_BASE_URL}/chat/event/${eventId}/bot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: texto, userId: 1, userName: 'Usuario' })
+        body: JSON.stringify({ 
+          message: texto,
+          userId: userId || 1,
+          userName: userName || 'Usuario',
+          userRole: userRole || 'academico',
+          eventId: eventId // ✅ Asegurar que se envíe el eventId
+        })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('✅ Respuesta del backend:', data);
       
       const botMessage = {
         id: `bot_${Date.now()}`,
         userId: 0,
         userName: ' Asistente IA',
-        message: data.respuesta || 'Lo siento, no entendí.',
+        message: data.respuesta || data.reply || 'Lo siento, no entendí. Prueba con "/ayuda"',
         esBot: true,
       };
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Error en ChatFlotante:', error);
+      const errorMessage = {
+        id: `error_${Date.now()}`,
+        userId: 0,
+        userName: '️ Error',
+        message: 'Error de conexión. Verifica tu internet e intenta de nuevo.',
+        esBot: true,
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);
     }
 
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
+
 
   const renderMessage = ({ item }) => {
     const isBot = item.esBot || item.userId === 0;
