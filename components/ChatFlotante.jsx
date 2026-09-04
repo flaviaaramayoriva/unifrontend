@@ -186,7 +186,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
                     backgroundColor: '#FFFFFF',
                     justifyContent: 'center', alignItems: 'center'
                   }}>
-                    <Ionicons name="robot" size={20} color="#9B59B6" />
+                    <Ionicons name="hardware-chip-outline" size={20} color="#9B59B6" />
                   </View>
                   <View>
                     <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>
