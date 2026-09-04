@@ -5,35 +5,103 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import { COLORS } from '../../constants/colors'; // Ajusta la ruta si es necesario
+import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const COLORS = {
+  primary: '#E95A0C',
+  surface: '#FFFFFF',
+  background: '#F9FAFB',
+  border: '#E5E7EB',
+  textPrimary: '#1F2937',
+  textSecondary: '#6B7280',
+  textTertiary: '#9CA3AF',
+  success: '#10B981',
+};
 
 export default function AsistenteIAScreen() {
   const { eventId } = useLocalSearchParams();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
+  const socketRef = useRef(null);
   const flatListRef = useRef(null);
 
-  // Mensaje de bienvenida del bot
   useEffect(() => {
-    setMessages([
-      {
-        id: 'welcome',
-        userId: 0,
-        userName: '🤖 Asistente IA',
-        message: '¡Hola! Soy tu asistente virtual. Puedo ayudarte con:\n\n• 🕐 Horarios y fechas del evento\n• 📍 Ubicación y lugar\n•  Certificados y requisitos\n• 💰 Costos e inscripciones\n• 📋 Información general\n\n¡Pregúntame lo que necesites!',
-        esBot: true,
-        timestamp: new Date().toISOString()
-      }
-    ]);
-    setLoading(false);
-  }, []);
+    let socket;
+    let isMounted = true;
 
-  const handleSend = async () => {
+    const initSocket = async () => {
+      try {
+        const mod = await import('socket.io-client');
+        const io = mod.io || mod.default;
+
+        socket = io(API_BASE_URL, {
+          transports: ['websocket'],
+          reconnection: true,
+        });
+
+        socketRef.current = socket;
+
+        socket.on('connect', () => {
+          if (!isMounted) return;
+          setConnected(true);
+          socket.emit('join_event', {
+            eventoId: String(eventId),
+            userId: '1', // ID temporal
+            role: 'academico',
+            userName: 'Usuario'
+          });
+        });
+
+        socket.on('receive_message', (msg) => {
+          if (!isMounted) return;
+          // Solo mostrar mensajes del bot
+          if (msg.esBot || msg.userId === 0 || msg.role === 'bot') {
+            setMessages(prev => [...prev, {
+              ...msg,
+              id: `msg_${Date.now()}_${Math.random()}`
+            }]);
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+          }
+        });
+
+        socket.on('disconnect', () => {
+          if (isMounted) setConnected(false);
+        });
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error:', error);
+        setLoading(false);
+      }
+    };
+
+    initSocket();
+
+    // Mensaje de bienvenida
+    setMessages([{
+      id: 'welcome',
+      userId: 0,
+      userName: '🤖 Asistente IA',
+      message: '¡Hola! Soy tu asistente virtual. Pregúntame sobre:\n\n•  Horarios\n• 📍 Ubicación\n• 📜 Certificados\n• 💰 Costos\n• 📋 Requisitos',
+      esBot: true,
+      timestamp: new Date().toISOString()
+    }]);
+
+    return () => {
+      isMounted = false;
+      if (socket) {
+        socket.emit('leave_event', { eventoId: String(eventId) });
+        socket.disconnect();
+      }
+    };
+  }, [eventId]);
+
+  const handleSend = () => {
     const texto = input.trim();
-    if (!texto) return;
+    if (!texto || !socketRef.current?.connected) return;
 
     // Agregar mensaje del usuario
     const userMessage = {
@@ -48,36 +116,14 @@ export default function AsistenteIAScreen() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
 
-    // Simular que el bot está "pensando"
-    setTimeout(async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/chat/event/${eventId}/bot`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: texto,
-            userId: 1,
-            userName: 'Usuario'
-          })
-        });
-
-        const data = await response.json();
-        
-        const botMessage = {
-          id: `bot_${Date.now()}`,
-          userId: 0,
-          userName: ' Asistente IA',
-          message: data.respuesta || 'Lo siento, no entendí tu pregunta. ¿Puedes reformularla?',
-          esBot: true,
-          timestamp: new Date().toISOString()
-        };
-
-        setMessages(prev => [...prev, botMessage]);
-      } catch (error) {
-        console.error('Error:', error);
-        Alert.alert('Error', 'No se pudo conectar con el asistente');
-      }
-    }, 500);
+    // Enviar al socket con prefijo /bot para que el backend lo detecte
+    socketRef.current.emit('send_message', {
+      eventoId: String(eventId),
+      userId: 1,
+      role: 'academico',
+      userName: 'Usuario',
+      message: `/bot ${texto}` // ← IMPORTANTE: Agregar prefijo
+    });
   };
 
   const renderMessage = ({ item }) => {
@@ -95,6 +141,11 @@ export default function AsistenteIAScreen() {
               {item.userName}
             </Text>
           )}
+          {isBot && (
+            <Text style={{ fontSize: 11, color: '#9B59B6', fontWeight: '600', marginBottom: 2, marginLeft: 4 }}>
+              {item.userName}
+            </Text>
+          )}
           <View style={{
             backgroundColor: isBot ? '#F3E5F5' : COLORS.primary,
             paddingHorizontal: 14,
@@ -102,6 +153,8 @@ export default function AsistenteIAScreen() {
             borderRadius: 16,
             borderBottomLeftRadius: isBot ? 2 : 16,
             borderBottomRightRadius: isBot ? 16 : 2,
+            borderLeftWidth: isBot ? 3 : 0,
+            borderLeftColor: '#9B59B6',
           }}>
             <Text style={{ fontSize: 14, color: isBot ? '#1F2937' : '#FFFFFF' }}>
               {item.message}
@@ -118,7 +171,7 @@ export default function AsistenteIAScreen() {
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 10,
         paddingHorizontal: 16, paddingVertical: 12,
-        backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border,
+        backgroundColor: COLORS.surface, borderBottomWidth: 1, borderColor: COLORS.border,
       }}>
         <View style={{
           width: 40, height: 40, borderRadius: 20,
@@ -131,8 +184,8 @@ export default function AsistenteIAScreen() {
           <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.textPrimary }}>
             Asistente IA
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.success }}>
-            ● En línea
+          <Text style={{ fontSize: 12, color: connected ? COLORS.success : COLORS.textTertiary }}>
+            {connected ? '● En línea' : '○ Conectando...'}
           </Text>
         </View>
       </View>
@@ -156,7 +209,7 @@ export default function AsistenteIAScreen() {
       {/* Input */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={{
-          flexDirection: 'row', padding: 12, backgroundColor: COLORS.white,
+          flexDirection: 'row', padding: 12, backgroundColor: COLORS.surface,
           borderTopWidth: 1, borderColor: COLORS.border, gap: 8, alignItems: 'center',
         }}>
           <TextInput
@@ -173,9 +226,9 @@ export default function AsistenteIAScreen() {
           />
           <TouchableOpacity
             onPress={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || !connected}
             style={{
-              backgroundColor: input.trim() ? COLORS.primary : COLORS.textTertiary,
+              backgroundColor: (input.trim() && connected) ? COLORS.primary : COLORS.textTertiary,
               borderRadius: 24, width: 44, height: 44,
               justifyContent: 'center', alignItems: 'center',
             }}
