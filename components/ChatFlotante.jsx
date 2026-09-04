@@ -1,3 +1,20 @@
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, Modal,
+  FlatList, KeyboardAvoidingView, Platform, TouchableWithoutFeedback
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+
+const COLORS = {
+  primary: '#E95A0C',
+  surface: '#FFFFFF',
+  background: '#F9FAFB',
+  border: '#E5E7EB',
+  textPrimary: '#1F2937',
+  textSecondary: '#6B7280',
+};
 export default function ChatFlotante({ eventId, visible, onClose, userId, userName, userRole }) {
   const [messages, setMessages] = useState([
     {
