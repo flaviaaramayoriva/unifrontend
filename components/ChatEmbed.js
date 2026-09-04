@@ -312,7 +312,6 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
         contentContainerStyle={{ padding: 12, flexGrow: 1 }}
         renderItem={({ item }) => <Burbuja item={item} myId={userId} />}
         
-        // 👉 NUEVO: Indicador visual de que el bot está procesando
         ListFooterComponent={
           botTyping ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 6 }}>
@@ -328,11 +327,7 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
             <Text style={{ color: '#ccc', fontSize: 13, marginTop: 8 }}>
               {connected ? 'Aún no hay mensajes' : 'Conectando al chat...'}
             </Text>
-            {connected && (
-              <Text style={{ color: '#9B59B6', fontSize: 12, marginTop: 12, textAlign: 'center' }}>
-                💡 Escribe /pregunta ¿tu pregunta? para hablar con la IA
-              </Text>
-            )}
+           
           </View>
         }
       />
@@ -393,7 +388,6 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
   {[
     { id: 'grupal',   label: 'Chat',           icon: 'chatbubbles-outline' },
     { id: 'miembros', label: 'Miembros',       icon: 'people-outline' },
-    { id: 'asistente', label: 'Asistente IA',  icon: 'robot-outline' },      // ✅ NUEVA PESTAÑA
     { id: 'analisis', label: 'Análisis de IA', icon: 'analytics-outline' },
   ].map(t => (
     <TouchableOpacity
@@ -401,9 +395,6 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
       onPress={() => {
         if (t.id === 'analisis') {
           router.push(`/admin/ChatAnalysis?eventId=${evento.idevento}`);
-        } else if (t.id === 'asistente') {
-          // Navega a la nueva pantalla del asistente
-          router.push(`/admin/AsistenteIA?eventId=${evento.idevento}`);
         } else {
           setTab(t.id);
         }
