@@ -494,6 +494,7 @@ const HomeAcademicoScreen = () => {
   const [telegramUsername, setTelegramUsername] = useState('');
   const [dashboardStats, setDashboardStats] = useState([]);
   const [statusData, setStatusData] = useState({});
+  const [error, setError] = useState(''); // ✅ NUEVO: Estado de error global
 
   const unreadCount = notifications.filter(notif => !notif.read).length;
   const ultimoEventoId = comiteeEvents.length > 0 ? String(comiteeEvents[0].idevento) : undefined;
@@ -839,19 +840,54 @@ const HomeAcademicoScreen = () => {
       const token = await getTokenAsync();
 
       if (!token) {
+        setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
         router.replace('/');
         return;
       }
 
-      await Promise.allSettled([
-        fetchDashboardData(),
-        fetchUserProfile(),
-        fetchHistoricalData(),
-        fetchCommitteeEvents(),
-        fetchNotifications(),
-        checkTelegramStatus(),
-        fetchEstudiantesInscritosFacultad()
-      ]);
+      try {
+        await fetchDashboardData();
+      } catch (e) {
+        console.error('Error fetching dashboard:', e);
+        setError('Error al cargar datos del panel');
+      }
+
+      try {
+        await fetchUserProfile();
+      } catch (e) {
+        console.error('Error fetching user profile:', e);
+        setError('Error al cargar perfil de usuario');
+      }
+
+      try {
+        await fetchHistoricalData();
+      } catch (e) {
+        console.error('Error fetching historical data:', e);
+      }
+
+      try {
+        await fetchCommitteeEvents();
+      } catch (e) {
+        console.error('Error fetching committee events:', e);
+      }
+
+      try {
+        await fetchNotifications();
+      } catch (e) {
+        console.error('Error fetching notifications:', e);
+      }
+
+      try {
+        checkTelegramStatus();
+      } catch (e) {
+        console.error('Error checking telegram status:', e);
+      }
+
+      try {
+        await fetchEstudiantesInscritosFacultad();
+      } catch (e) {
+        console.error('Error fetching estudiantes:', e);
+      }
     };
 
     checkAuthAndLoadData();
