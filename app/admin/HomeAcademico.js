@@ -20,6 +20,7 @@ import DashboardStats from '../../components/admin/DashboardStats';
 import OverviewCharts from '../../components/admin/OverviewCharts';
 import UpcomingEvents from '../../components/admin/UpcomingEvents';
 import { useNavigation } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
 
 // ✅ statsRowStyles DEFINIDO AQUÍ - NIVEL MÓDULO (accesible en todo el archivo)
 const statsRowStyles = {
@@ -90,6 +91,7 @@ const HomeAcademicoScreen = () => {
   const router = useRouter();
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   // Estado local para datos seguros
   const [userProfile, setUserProfile] = useState({
@@ -104,6 +106,7 @@ const HomeAcademicoScreen = () => {
   const [dashboardStats, setDashboardStats] = useState([]);
   const [historicalData, setHistoricalData] = useState([]);
   const [comiteeEvents, setComiteeEvents] = useState([]);
+  const [statusData, setStatusData] = useState({});
 
   useEffect(() => {
     const init = async () => {
@@ -162,20 +165,20 @@ const HomeAcademicoScreen = () => {
         {/* ✅ Usando statsRowStyles definido al nivel módulo - NUNCA undefined */}
         <View style={statsRowStyles}>
           <UpcomingEvents 
-            nav={navigateTo} 
+            onSelectEvent={navigateTo} 
             colors={colors} 
             events={comiteeEvents} 
-            loading={userProfile.loading}
           />
           <DashboardStats 
-            colors={colors} 
-            dashboardStats={dashboardStats} 
-            loading={userProfile.loading}
-          />
-          <OverviewCharts 
-            colors={colors} 
+            stats={dashboardStats} 
             historicalData={historicalData} 
             loading={userProfile.loading}
+            colors={colors}
+          />
+          <OverviewCharts 
+            estadoCounts={statusData} 
+            historicalData={historicalData} 
+            colors={colors}
           />
         </View>
 
