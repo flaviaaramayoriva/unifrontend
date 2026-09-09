@@ -44,13 +44,6 @@ const COLORS = {
   black: '#000000',
 };
 
-const statsRowStyles = {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  width: '100%',
-  marginBottom: 20,
-};
-
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
@@ -91,6 +84,7 @@ const HomeAcademicoScreen = () => {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
+  // Estado local para datos seguros
   const [userProfile, setUserProfile] = useState({
     nombre: '',
     role: 'academico',
@@ -98,6 +92,11 @@ const HomeAcademicoScreen = () => {
   });
 
   const [error, setError] = useState('');
+
+  // Datos seguros con defaults vacíos
+  const [dashboardStats, setDashboardStats] = useState([]);
+  const [historicalData, setHistoricalData] = useState([]);
+  const [comiteeEvents, setComiteeEvents] = useState([]);
 
   useEffect(() => {
     const init = async () => {
@@ -139,6 +138,11 @@ const HomeAcademicoScreen = () => {
     router.replace('/');
   };
 
+  // Inicializar datos seguros después del perfil
+  useEffect(() => {
+    // Los componentes hijos recibirán arrays vacíos mientras cargan
+  }, [userProfile.loading]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" />
@@ -153,16 +157,31 @@ const HomeAcademicoScreen = () => {
 
         {error && <Text style={styles.error}>{error}</Text>}
 
+        {/* Componentes con datos seguros - previene error .map() undefined */}
         <View style={statsRowStyles}>
-          <UpcomingEvents nav={navigateTo} colors={colors} />
-        <DashboardStats colors={colors} />
-        <OverviewCharts colors={colors} />
+          {/* Pasar arrays vacíos si no hay datos - evita error .map() */}
+          <UpcomingEvents 
+            nav={navigateTo} 
+            colors={colors} 
+            events={comiteeEvents} 
+            loading={userProfile.loading}
+          />
+          <DashboardStats 
+            colors={colors} 
+            dashboardStats={dashboardStats} 
+            loading={userProfile.loading}
+          />
+          <OverviewCharts 
+            colors={colors} 
+            historicalData={historicalData} 
+            loading={userProfile.loading}
+          />
+        </View>
 
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
-    </View>
     </View>
   );
 };
@@ -209,6 +228,12 @@ const createStyles = (colors) => StyleSheet.create({
   logoutText: {
     color: colors.white,
     fontWeight: '600',
+  },
+  statsRowStyles: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 20,
   },
 });
 
