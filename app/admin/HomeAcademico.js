@@ -21,6 +21,14 @@ import OverviewCharts from '../../components/admin/OverviewCharts';
 import UpcomingEvents from '../../components/admin/UpcomingEvents';
 import { useNavigation } from '@react-navigation/native';
 
+// ✅ statsRowStyles DEFINIDO AQUÍ - NIVEL MÓDULO (accesible en todo el archivo)
+const statsRowStyles = {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  width: '100%',
+  marginBottom: 20,
+};
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
@@ -82,7 +90,6 @@ const HomeAcademicoScreen = () => {
   const router = useRouter();
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const styles = createStyles(colors);
 
   // Estado local para datos seguros
   const [userProfile, setUserProfile] = useState({
@@ -93,7 +100,7 @@ const HomeAcademicoScreen = () => {
 
   const [error, setError] = useState('');
 
-  // Datos seguros con defaults vacíos
+  // Datos seguros con defaults vacíos (nunca undefined)
   const [dashboardStats, setDashboardStats] = useState([]);
   const [historicalData, setHistoricalData] = useState([]);
   const [comiteeEvents, setComiteeEvents] = useState([]);
@@ -138,11 +145,6 @@ const HomeAcademicoScreen = () => {
     router.replace('/');
   };
 
-  // Inicializar datos seguros después del perfil
-  useEffect(() => {
-    // Los componentes hijos recibirán arrays vacíos mientras cargan
-  }, [userProfile.loading]);
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" />
@@ -157,9 +159,8 @@ const HomeAcademicoScreen = () => {
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        {/* Componentes con datos seguros - previene error .map() undefined */}
+        {/* ✅ Usando statsRowStyles definido al nivel módulo - NUNCA undefined */}
         <View style={statsRowStyles}>
-          {/* Pasar arrays vacíos si no hay datos - evita error .map() */}
           <UpcomingEvents 
             nav={navigateTo} 
             colors={colors} 
@@ -228,12 +229,6 @@ const createStyles = (colors) => StyleSheet.create({
   logoutText: {
     color: colors.white,
     fontWeight: '600',
-  },
-  statsRowStyles: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 20,
   },
 });
 
