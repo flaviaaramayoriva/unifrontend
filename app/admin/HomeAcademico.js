@@ -31,8 +31,8 @@ import ActionGrid from '../../components/admin/ActionGrid';
 import TelegramModal from '../../components/admin/TelegramModal';
 
 // ============ Configuración ============
-//const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
-const API_BASE_URL = 'https://localhost:8080'; // Cambiar según el entorno de desarrollo o producción
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
+//const API_BASE_URL = 'https://localhost:8080'; // Cambiar según el entorno de desarrollo o producción
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
