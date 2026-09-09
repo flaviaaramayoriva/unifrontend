@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   surface: '#FFFFFF',
   background: '#F9FAFB',
   border: '#E5E7EB',
@@ -133,7 +133,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
             </Text>
           )}
           <View style={{
-            backgroundColor: isBot ? '#F3E5F5' : '#E95A0C',
+            backgroundColor: isBot ? '#F3E5F5' : '#C44B0A',
             paddingHorizontal: 10,
             paddingVertical: 8,
             borderRadius: 12,
@@ -155,6 +155,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
       transparent={true}
       animationType="slide"
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }}>
@@ -197,7 +198,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
                     </Text>
                   </View>
                 </View>
-                <TouchableOpacity onPress={onClose}>
+                <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar" accessibilityRole="button" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                   <Ionicons name="close" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
@@ -223,6 +224,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
                     onChangeText={setInput}
                     placeholder="Escribe..."
                     placeholderTextColor={COLORS.textSecondary}
+                    accessibilityLabel="Escribe un mensaje"
                     style={{
                       flex: 1, backgroundColor: COLORS.background,
                       borderRadius: 20, paddingHorizontal: 12,
@@ -233,10 +235,12 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
                     onPress={handleSend}
                     disabled={!input.trim() || loading}
                     style={{
-                      backgroundColor: input.trim() ? '#E95A0C' : '#CCCCCC',
-                      borderRadius: 20, width: 36, height: 36,
+                      backgroundColor: input.trim() ? '#C44B0A' : '#CCCCCC',
+                      borderRadius: 22, width: 44, height: 44,
                       justifyContent: 'center', alignItems: 'center',
                     }}
+                    accessibilityLabel="Enviar mensaje"
+                    accessibilityRole="button"
                   >
                     <Ionicons name="send" size={16} color="#FFFFFF" />
                   </TouchableOpacity>

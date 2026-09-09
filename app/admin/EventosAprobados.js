@@ -1,5 +1,5 @@
-// EventosAprobadosPorFacultad.js - Versión con Banner y Badge de Fase 2
-import React, { useState, useEffect, useCallback } from 'react';
+// EventosAprobadosPorFacultad.js - Rediseño: secciones por facultad, búsqueda y filtros
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,41 +11,43 @@ import {
   Platform,
   Alert,
   SectionList,
+  TextInput,
+  ScrollView,
   Dimensions
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const { width } = Dimensions.get('window');
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C',
-  primaryLight: '#FF7A3D',
-  accent: '#4CAF50', // Verde para badges de éxito
-  background: '#F8F9FA',
-  surface: '#FFFFFF',
-  success: '#2E7D32', // Verde oscuro para textos/bordes
-  warning: '#FFA726',
-  info: '#3498db',
-  purple: '#9b59b6',
-  blue: '#2196F3',
+  primary: '#C44B0A',
+  primaryLight: '#FFEDD5',
+  success: '#16A34A',
+  successLight: '#E8F5E9',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+  infoLight: '#EFF6FF',
   white: '#FFFFFF',
+  background: '#F6F7F9',
+  surface: '#FFFFFF',
   grayLight: '#E0E0E0',
-  grayMedium: '#BDBDBD',
-  grayText: '#757575',
-  darkText: '#212121',
+  grayMedium: '#9CA3AF',
+  grayText: '#64748B',
+  darkText: '#0F172A',
+  border: '#E6E9EF',
   cardShadow: '#000000',
-  border: '#E8E8E8',
 };
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -53,7 +55,7 @@ const getTokenAsync = async () => {
 
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { localStorage.removeItem(TOKEN_KEY); } catch { }
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch { }
   } else {
     try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch { }
   }
@@ -62,10 +64,10 @@ const deleteTokenAsync = async () => {
 const parseEventDate = (dateStr) => {
   if (!dateStr) return new Date(0);
   if (dateStr instanceof Date && !isNaN(dateStr.getTime())) return dateStr;
-  
+
   const parsed = new Date(dateStr);
   if (!isNaN(parsed.getTime())) return parsed;
-  
+
   if (typeof dateStr === 'string' && dateStr.includes('/')) {
     const parts = dateStr.split('/');
     if (parts.length === 3) {
@@ -75,96 +77,44 @@ const parseEventDate = (dateStr) => {
       }
     }
   }
-  
+
   return new Date(0);
 };
 
 const isEventPast = (event) => {
   const dateStr = event.fechaevento || event.date;
-  if (!dateStr) return true; 
-  
+  if (!dateStr) return true;
+
   const eventDate = parseEventDate(dateStr);
   const today = new Date();
-  
+
   eventDate.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
-  
+
   return eventDate < today;
 };
 
-const groupEventsByStatusAndFaculty = (events) => {
-  const activos = events.filter(e => !isEventPast(e));
-  const pasados = events.filter(e => isEventPast(e));
+const getEventFaculty = (event) => event.faculty || event.facultad || 'Sin facultad';
 
-  const sections = [];
-  
-  if (activos.length > 0) {
-    const groupedActivos = {};
-    activos.forEach(event => {
-      const faculty = event.faculty || event.facultad || 'Sin facultad';
-      if (!groupedActivos[faculty]) groupedActivos[faculty] = [];
-      groupedActivos[faculty].push(event);
-    });
-    
-    sections.push({
-      title: '📅 Eventos Activos',
-      type: 'activos',
-      isPastSection: false,
-      data: Object.keys(groupedActivos).sort().flatMap(faculty => 
-        groupedActivos[faculty].map(event => ({ ...event, _facultyGroup: faculty }))
-      ),
-      facultyGroups: Object.keys(groupedActivos).sort().map(faculty => ({
-        faculty,
-        count: groupedActivos[faculty].length,
-        events: groupedActivos[faculty]
-      }))
-    });
-  }
-  
-  if (pasados.length > 0) {
-    const groupedPasados = {};
-    pasados.forEach(event => {
-      const faculty = event.faculty || event.facultad || 'Sin facultad';
-      if (!groupedPasados[faculty]) groupedPasados[faculty] = [];
-      groupedPasados[faculty].push(event);
-    });
-    
-    sections.push({
-      title: '🕰️ Eventos Finalizados',
-      type: 'pasados',
-      isPastSection: true,
-      data: Object.keys(groupedPasados).sort().flatMap(faculty => 
-        groupedPasados[faculty].map(event => ({ ...event, _facultyGroup: faculty }))
-      ),
-      facultyGroups: Object.keys(groupedPasados).sort().map(faculty => ({
-        faculty,
-        count: groupedPasados[faculty].length,
-        events: groupedPasados[faculty]
-      }))
-    });
-  }
-  
-  return sections;
+const getFacultyColor = (facultyName) => {
+  const colors = [
+    '#C44B0A', '#9C27B0', '#2563EB', '#0D9488', '#DC2626',
+    '#7C3AED', '#EA580C', '#0284C7', '#16A34A', '#DB2777'
+  ];
+  const hash = facultyName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
 };
 
 const formatSubmittedDate = (date) => {
   if (!date) return 'N/A';
   const now = new Date();
   const submittedDate = new Date(date);
+  if (isNaN(submittedDate.getTime())) return 'N/A';
   const diff = Math.floor((now - submittedDate) / 1000);
-  if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+  if (diff < 3600) return `Hace ${Math.max(1, Math.floor(diff / 60))} min`;
   if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
   const days = Math.floor(diff / 86400);
   return `Hace ${days} día${days > 1 ? 's' : ''}`;
-};
-
-const getFacultyColor = (facultyName) => {
-  const colors = [
-    '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-    '#00BCD4', '#009688', '#4CAF50', '#FF9800', '#FF5722'
-  ];
-  const hash = facultyName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return colors[hash % colors.length];
 };
 
 const EventosAprobadosPorFacultad = () => {
@@ -172,11 +122,14 @@ const EventosAprobadosPorFacultad = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [facultadFiltro, setFacultadFiltro] = useState('todas');
+  const [faseFiltro, setFaseFiltro] = useState('1');
 
   const fetchApprovedEventsByFaculty = useCallback(async () => {
     try {
       const token = await getTokenAsync();
-      
+
       if (!token) {
         Alert.alert('Sesión Expirada', 'Por favor, inicia sesión de nuevo.');
         router.replace('/LoginAdmin');
@@ -184,7 +137,7 @@ const EventosAprobadosPorFacultad = () => {
       }
 
       const response = await axios.get(`${API_BASE_URL}/eventos/aprobados-por-facultad`, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
@@ -194,7 +147,7 @@ const EventosAprobadosPorFacultad = () => {
 
     } catch (error) {
       console.error('❌ Error al cargar eventos:', error);
-      
+
       if (error.response?.status === 401 || error.response?.status === 403) {
         await deleteTokenAsync();
         Alert.alert('Sesión Expirada', 'Tu sesión ha expirado.', [
@@ -220,11 +173,62 @@ const EventosAprobadosPorFacultad = () => {
   }, [fetchApprovedEventsByFaculty]);
 
   const handleEventPress = (event) => {
+    const eventId = event.id || event.idevento;
+    if (!eventId) return;
     router.push({
       pathname: '/admin/EventDetailUpdateScreen',
-      params: { eventId: event.id || event.idevento }
+      params: { eventId: String(eventId) }
     });
   };
+
+  const faculties = useMemo(() => {
+    const list = [...new Set(events.map(getEventFaculty))].sort();
+    return list;
+  }, [events]);
+
+  const stats = useMemo(() => {
+    const total = events.length;
+    const upcoming = total;
+    return { total, upcoming, faculties: faculties.length };
+  }, [events, faculties]);
+
+  const filteredEvents = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return events.filter(event => {
+      if (isEventPast(event)) return false;
+      if (faseFiltro !== 'todas' && String(event.idfase || 1) !== faseFiltro) return false;
+      if (facultadFiltro !== 'todas' && getEventFaculty(event) !== facultadFiltro) return false;
+      if (term) {
+        const haystack = [
+          event.title, event.nombreevento,
+          event.organizer, event.responsable_evento, event.organizador,
+          getEventFaculty(event)
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      return true;
+    });
+  }, [events, searchTerm, facultadFiltro, faseFiltro]);
+
+  const phaseStats = useMemo(() => {
+    const upcoming = events.filter(e => !isEventPast(e));
+    const fase1 = upcoming.filter(e => String(e.idfase || 1) === '1').length;
+    const fase2 = upcoming.filter(e => String(e.idfase || 1) === '2').length;
+    return { fase1, fase2 };
+  }, [events]);
+
+  const sections = useMemo(() => {
+    const grouped = {};
+    filteredEvents.forEach(event => {
+      const faculty = getEventFaculty(event);
+      if (!grouped[faculty]) grouped[faculty] = [];
+      grouped[faculty].push(event);
+    });
+
+    return Object.keys(grouped).sort().map(faculty => {
+      return { title: faculty, faculty, data: grouped[faculty] };
+    });
+  }, [filteredEvents]);
 
   const renderEventItem = ({ item }) => {
     if (!item || typeof item !== 'object' || (!item.id && !item.idevento)) {
@@ -232,210 +236,258 @@ const EventosAprobadosPorFacultad = () => {
     }
 
     const eventId = item.id || item.idevento;
-    const isPast = isEventPast(item);
-    const facultyName = item._facultyGroup || item.faculty || item.facultad || 'Sin facultad';
+    const facultyName = getEventFaculty(item);
     const facultyColor = getFacultyColor(facultyName);
-    
+
+    const dateStr = item.fechaevento || item.date;
+    const displayDate = dateStr
+      ? new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+      : 'N/A';
+    const displayTime = item.time || item.horaevento || '';
+
+    const daysRemaining = (() => {
+      if (!dateStr) return null;
+      const d = new Date(dateStr).setHours(0, 0, 0, 0);
+      const today = new Date().setHours(0, 0, 0, 0);
+      return Math.round((d - today) / 864e5);
+    })();
+
+    const getInitials = () => {
+      const name = item.organizer || item.responsable_evento || item.organizador || 'A';
+      return name.trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+    };
+
     return (
       <TouchableOpacity
-        style={[styles.eventCard, isPast && styles.eventCardPast]}
-        onPress={() => !isPast && handleEventPress(item)}
+        style={styles.eventCard}
+        onPress={() => handleEventPress(item)}
         activeOpacity={0.8}
-        disabled={isPast}
       >
-        <View style={[
-          styles.facultyBar,
-          { backgroundColor: isPast ? COLORS.grayMedium : facultyColor }
-        ]} />
-        
+        <View style={[styles.facultyBar, { backgroundColor: facultyColor }]} />
+
         <View style={styles.cardContent}>
-          <View style={styles.eventHeader}>
-            <View style={styles.titleRow}>
-              <Text style={[styles.eventTitle, isPast && styles.eventTitlePast]} numberOfLines={2}>
+          <View style={styles.cardTopRow}>
+            <View style={styles.titleWrap}>
+              <Text style={styles.eventTitle} numberOfLines={2}>
                 {item.title || item.nombreevento || 'Sin título'}
               </Text>
-              <View style={styles.idBadge}>
-                <Text style={styles.idText}>#{eventId}</Text>
-              </View>
+              <Text style={styles.eventId}>#{eventId}</Text>
             </View>
-            
-            <View style={styles.badgeContainer}>
-              <View style={[styles.monthBadge, { backgroundColor: isPast ? COLORS.grayMedium : COLORS.blue }]}>
-                <Ionicons name="calendar" size={12} color={COLORS.white} />
-                <Text style={styles.monthBadgeText}>
-                  {isPast ? 'Finalizado' : 'Próximo'}
-                </Text>
-              </View>
-              
-              {/* ✅ NUEVO: Badge de Fase 2 */}
-              {item.idfase === 2 && !isPast && (
-                <View style={styles.fase2Badge}>
-                  <Ionicons name="checkmark-circle" size={14} color={COLORS.white} />
-                  <Text style={styles.fase2Text}>Listo para publicar</Text>
-                </View>
-              )}
-            </View>
-          </View>
 
-          <View style={styles.infoGrid}>
-            <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={14} color={isPast ? COLORS.grayMedium : COLORS.grayText} />
-              <Text style={[styles.infoText, isPast && styles.infoTextPast]}>
-                {item.date || (item.fechaevento ? new Date(item.fechaevento).toLocaleDateString('es-ES') : 'N/A')}
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="time-outline" size={14} color={isPast ? COLORS.grayMedium : COLORS.grayText} />
-              <Text style={[styles.infoText, isPast && styles.infoTextPast]}>{item.time || item.horaevento || 'N/A'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.infoGrid}>
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={14} color={isPast ? COLORS.grayMedium : COLORS.grayText} />
-              <Text style={[styles.infoText, isPast && styles.infoTextPast]} numberOfLines={1}>
-                {item.location || item.lugarevento || 'N/A'}
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="person-outline" size={14} color={isPast ? COLORS.grayMedium : COLORS.grayText} />
-              <Text style={[styles.infoText, isPast && styles.infoTextPast]} numberOfLines={1}>
-                {item.organizer || item.responsable_evento || 'N/A'}
+            <View style={[
+              styles.statusPill,
+              daysRemaining !== null && daysRemaining <= 3 ? styles.statusSoon : styles.statusUpcoming
+            ]}>
+              <Ionicons
+                name="calendar-outline"
+                size={12}
+                color={daysRemaining !== null && daysRemaining <= 3 ? COLORS.warning : COLORS.success}
+              />
+              <Text style={[
+                styles.statusPillText,
+                { color: daysRemaining !== null && daysRemaining <= 3 ? COLORS.warning : COLORS.success }
+              ]}>
+                {daysRemaining === 0 ? 'Hoy' : daysRemaining !== null && daysRemaining <= 3 ? `En ${daysRemaining} día${daysRemaining !== 1 ? 's' : ''}` : 'Próximo'}
               </Text>
             </View>
           </View>
 
-          <View style={styles.phaseContainer}>
-            <View style={styles.phaseBadge}>
-              <Ionicons name="flag" size={12} color={isPast ? COLORS.grayMedium : COLORS.primary} />
-              <Text style={[styles.phaseText, isPast && styles.infoTextPast]}>Fase {item.idfase || 1}</Text>
-            </View>
-            <View style={styles.submissionInfo}>
-              <Text style={[styles.submittedBy, isPast && styles.infoTextPast]}>
-                {item.submittedBy || item.organizador || 'Sistema'}
-              </Text>
-              <Text style={[styles.submittedDate, isPast && styles.infoTextPast]}>
-                {formatSubmittedDate(item.submittedDate || item.created_at || item.fechaevento)}
-              </Text>
-            </View>
-          </View>
-
-          <TouchableOpacity 
-            style={styles.viewDetailsButton}
-            onPress={() => !isPast && handleEventPress(item)}
-            disabled={isPast}
-          >
-            <Text style={[styles.viewDetailsText, isPast && styles.infoTextPast]}>
-              {isPast ? 'Ver historial' : 'Ver detalles'}
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={14} color={COLORS.grayText} />
+            <Text style={styles.infoText}>
+              {displayDate}{displayTime ? ` · ${displayTime}` : ''}
             </Text>
-            <Ionicons 
-              name={isPast ? "archive-outline" : "chevron-forward"} 
-              size={18} 
-              color={isPast ? COLORS.grayMedium : COLORS.primary} 
-            />
-          </TouchableOpacity>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={14} color={COLORS.grayText} />
+            <Text style={styles.infoText} numberOfLines={1}>
+              {item.location || item.lugarevento || 'Sin ubicación'}
+            </Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{getInitials()}</Text>
+            </View>
+            <Text style={styles.infoText} numberOfLines={1}>
+              {item.organizer || item.responsable_evento || item.organizador || 'Sin organizador'}
+            </Text>
+          </View>
+
+          <View style={styles.cardFooter}>
+            <View style={styles.facultyChip}>
+              <View style={[styles.facultyChipDot, { backgroundColor: facultyColor }]} />
+              <Text style={styles.facultyChipText} numberOfLines={1}>
+                {facultyName}
+              </Text>
+            </View>
+
+            {String(item.idfase || 1) === '2' ? (
+              <View style={styles.fase2Badge}>
+                <Ionicons name="checkmark-circle" size={12} color={COLORS.success} />
+                <Text style={styles.fase2Text}>Fase 2</Text>
+              </View>
+            ) : (
+              <View style={styles.fase1Badge}>
+                <Ionicons name="create-outline" size={12} color={COLORS.primary} />
+                <Text style={styles.fase1Text}>Fase 1</Text>
+              </View>
+            )}
+
+            <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+          </View>
         </View>
       </TouchableOpacity>
     );
   };
 
-  const renderSectionHeader = ({ section }) => {
+  const renderFacultyHeader = ({ section }) => {
+    const color = getFacultyColor(section.faculty);
+
     return (
-      <View style={[
-        styles.sectionHeader,
-        section.isPastSection && styles.sectionHeaderPast
-      ]}>
-        <View style={styles.sectionHeaderContent}>
-          <View style={[
-            styles.facultyDot, 
-            { backgroundColor: section.isPastSection ? COLORS.grayMedium : COLORS.primary }
-          ]} />
-          <Text style={[
-            styles.sectionTitle,
-            section.isPastSection && styles.sectionTitlePast
-          ]}>
-            {section.title}
-          </Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{section.data.length}</Text>
-          </View>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.facultyIconCircle, { backgroundColor: color + '1A' }]}>
+          <Ionicons name="school-outline" size={16} color={color} />
+        </View>
+        <View style={styles.sectionHeaderText}>
+          <Text style={styles.sectionTitle} numberOfLines={1}>{section.faculty}</Text>
+        </View>
+        <View style={[styles.countBadge, { backgroundColor: color + '1A' }]}>
+          <Text style={[styles.countText, { color }]}>{section.data.length}</Text>
         </View>
       </View>
     );
   };
 
-  // ✅ NUEVO: Header con Banner de Fase 2 + Estadísticas
   const renderListHeader = () => {
-    const hasPhase2Events = events.some(e => e.idfase === 2);
-    
+    const phase2Count = events.filter(e => e.idfase === 2 && !isEventPast(e)).length;
+
     return (
-      <>
-        {hasPhase2Events && (
+      <View>
+        {phase2Count > 0 && (
           <View style={styles.infoBanner}>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+            <View style={styles.bannerIcon}>
+              <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />
+            </View>
             <View style={styles.bannerText}>
-              <Text style={styles.bannerTitle}>Eventos Listos para Publicar</Text>
+              <Text style={styles.bannerTitle}>{phase2Count} evento{phase2Count !== 1 ? 's' : ''} listo{phase2Count !== 1 ? 's' : ''} para publicar</Text>
               <Text style={styles.bannerSubtitle}>
-                Los eventos en Fase 2 han sido aprobados y están listos para ser publicados automáticamente.
+                Fase 2 aprobada. El día del evento se habilitará el informe para su actualización.
               </Text>
             </View>
           </View>
         )}
-        
-        
-        {events.length > 0 && (
-          <View style={styles.topStatsContainer}>
-            <View style={[styles.topStatCard, { backgroundColor: COLORS.primary }]}>
-              <Ionicons name="calendar" size={24} color={COLORS.white} />
-              <Text style={styles.topStatNumber}>{events.length}</Text>
-              <Text style={styles.topStatLabel}>Eventos totales</Text>
-            </View>
-            
-            <View style={[styles.topStatCard, { backgroundColor: COLORS.accent }]}>
-              <Ionicons name="school" size={24} color={COLORS.white} />
-              <Text style={styles.topStatNumber}>{uniqueFaculties}</Text>
-              <Text style={styles.topStatLabel}>Facultades</Text>
-            </View>
-          </View>
-        )}
-        {hasPhase2Events && (
-          <View style={styles.infoBanner}>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
-            <View style={styles.bannerText}>
-              <Text style={styles.bannerTitle}> Eventos Completos</Text>
-              <Text style={styles.bannerSubtitle}>
-                El dia del evento se abrira el informe para su actualizacion.
+
+        <View style={styles.phaseTabs}>
+          <TouchableOpacity
+            style={[styles.phaseTab, faseFiltro === '1' && styles.phaseTabActive1]}
+            onPress={() => setFaseFiltro('1')}
+            accessibilityRole="button"
+          >
+            <Ionicons name="create-outline" size={15} color={faseFiltro === '1' ? COLORS.white : COLORS.primary} />
+            <Text style={[styles.phaseTabText, faseFiltro === '1' && styles.phaseTabTextActive]}>
+              Fase 1 · Planeación
+            </Text>
+            <View style={[styles.phaseTabCount, faseFiltro === '1' && styles.phaseTabCountActive]}>
+              <Text style={[styles.phaseTabCountText, faseFiltro === '1' && styles.phaseTabCountTextActive]}>
+                {phaseStats.fase1}
               </Text>
             </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.phaseTab, faseFiltro === '2' && styles.phaseTabActive2]}
+            onPress={() => setFaseFiltro('2')}
+            accessibilityRole="button"
+          >
+            <Ionicons name="checkmark-circle-outline" size={15} color={faseFiltro === '2' ? COLORS.white : COLORS.success} />
+            <Text style={[styles.phaseTabText, faseFiltro === '2' && styles.phaseTabTextActive]}>
+              Fase 2 · Listos para publicar
+            </Text>
+            <View style={[styles.phaseTabCount, faseFiltro === '2' && styles.phaseTabCountActive]}>
+              <Text style={[styles.phaseTabCountText, faseFiltro === '2' && styles.phaseTabCountTextActive]}>
+                {phaseStats.fase2}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={[styles.statValue, { color: COLORS.primary }]}>{stats.total}</Text>
+            <Text style={styles.statLabel}>Eventos</Text>
           </View>
-        )}
-      </>
+          <View style={styles.statCard}>
+            <Text style={[styles.statValue, { color: COLORS.success }]}>{stats.upcoming}</Text>
+            <Text style={styles.statLabel}>Próximos</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statValue, { color: COLORS.purple || '#7C3AED' }]}>{stats.faculties}</Text>
+            <Text style={styles.statLabel}>Facultades</Text>
+          </View>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={18} color={COLORS.grayText} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar evento, organizador o facultad..."
+              placeholderTextColor={COLORS.grayMedium}
+              accessibilityLabel="Buscar"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+            />
+            {searchTerm !== '' && (
+              <TouchableOpacity onPress={() => setSearchTerm('')} accessibilityRole="button" accessibilityLabel="Limpiar búsqueda">
+                <Ionicons name="close-circle" size={18} color={COLORS.grayMedium} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, facultadFiltro === 'todas' && styles.filterChipActive]}
+            onPress={() => setFacultadFiltro('todas')}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.filterChipText, facultadFiltro === 'todas' && styles.filterChipTextActive]}>
+              Todas las facultades
+            </Text>
+          </TouchableOpacity>
+
+          {faculties.map(fac => {
+            const active = facultadFiltro === fac;
+            const color = getFacultyColor(fac);
+            return (
+              <TouchableOpacity
+                key={fac}
+                style={[styles.filterChip, active && { backgroundColor: color, borderColor: color }]}
+                onPress={() => setFacultadFiltro(fac)}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.filterChipText, active && { color: COLORS.white }]} numberOfLines={1}>
+                  {fac}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <Text style={styles.resultsText}>
+          {filteredEvents.length} {filteredEvents.length === 1 ? 'evento' : 'eventos'}
+          {searchTerm || facultadFiltro !== 'todas' ? ' encontrados' : ` en Fase ${faseFiltro}`}
+        </Text>
+      </View>
     );
   };
-
-  const renderListFooter = () => (
-    events.length > 0 ? (
-      <View style={styles.bottomStatsContainer}>
-        <View style={[styles.bottomStatCard, { backgroundColor: COLORS.primary }]}>
-          <Ionicons name="calendar" size={20} color={COLORS.white} />
-          <Text style={styles.bottomStatNumber}>{events.length}</Text>
-          <Text style={styles.bottomStatLabel}>Total</Text>
-        </View>
-        
-        <View style={[styles.bottomStatCard, { backgroundColor: COLORS.accent }]}>
-          <Ionicons name="school" size={20} color={COLORS.white} />
-          <Text style={styles.bottomStatNumber}>{uniqueFaculties}</Text>
-          <Text style={styles.bottomStatLabel}>Facultades</Text>
-        </View>
-        
-        <View style={[styles.bottomStatCard, { backgroundColor: COLORS.grayMedium }]}>
-          <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
-          <Text style={styles.bottomStatNumber}>{finalizedCount}</Text>
-          <Text style={styles.bottomStatLabel}>Finalizados</Text>
-        </View>
-      </View>
-    ) : null
-  );
 
   if (loading) {
     return (
@@ -446,48 +498,31 @@ const EventosAprobadosPorFacultad = () => {
     );
   }
 
-  const sections = groupEventsByStatusAndFaculty(events);
-  const uniqueFaculties = new Set(events.map(e => e.faculty || e.facultad || 'Sin facultad')).size;
-  const finalizedCount = events.filter(e => isEventPast(e)).length;
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-      
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-        </TouchableOpacity>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>Eventos por Facultad</Text>
-          <Text style={styles.headerSubtitle}>
-            {uniqueFaculties} {uniqueFaculties === 1 ? 'facultad' : 'facultades'}
-          </Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.refreshButton} 
-          onPress={onRefresh} 
-          disabled={refreshing}
-        >
-          <Ionicons 
-            name="refresh" 
-            size={24} 
-            color={COLORS.white}
-            style={refreshing && styles.rotating}
-          />
-        </TouchableOpacity>
-      </View>
+
+      <AdminHeader
+        title="Eventos Aprobados"
+        subtitle={`${stats.faculties} ${stats.faculties === 1 ? 'facultad' : 'facultades'} · ${stats.total} eventos`}
+        eyebrow="Gestión"
+        primaryColor={COLORS.primary}
+        rightActions={(
+          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} disabled={refreshing} accessibilityRole="button" accessibilityLabel="Actualizar" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="refresh" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      />
 
       <SectionList
         sections={sections}
         keyExtractor={(item) => `event-${item.id || item.idevento || Math.random()}`}
         renderItem={renderEventItem}
-        renderSectionHeader={renderSectionHeader}
+        renderSectionHeader={renderFacultyHeader}
         ListHeaderComponent={renderListHeader}
-        ListFooterComponent={renderListFooter}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        stickySectionHeadersEnabled={true}
+        stickySectionHeadersEnabled={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -499,12 +534,24 @@ const EventosAprobadosPorFacultad = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Ionicons name="school-outline" size={80} color={COLORS.grayMedium} />
+              <Ionicons name="school-outline" size={72} color={COLORS.grayMedium} />
             </View>
-            <Text style={styles.emptyTitle}>No hay eventos</Text>
+            <Text style={styles.emptyTitle}>{events.length === 0 ? 'No hay eventos' : 'Sin resultados'}</Text>
             <Text style={styles.emptyText}>
-              No se encontraron eventos aprobados organizados por facultad
+              {events.length === 0
+                ? 'No se encontraron eventos aprobados organizados por facultad.'
+                : 'No hay eventos que coincidan con los filtros aplicados. Intenta ajustar la búsqueda.'}
             </Text>
+            {(events.length > 0 && (searchTerm || facultadFiltro !== 'todas')) && (
+
+              <TouchableOpacity
+                style={styles.clearFiltersButton}
+                onPress={() => { setSearchTerm(''); setFacultadFiltro('todas'); }}
+                accessibilityRole="button"
+              >
+                <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
       />
@@ -529,200 +576,234 @@ const styles = StyleSheet.create({
     color: COLORS.grayText,
     fontWeight: '500',
   },
-  header: {
-    backgroundColor: COLORS.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.cardShadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.white,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 2,
-  },
   refreshButton: {
-    padding: 8,
-    marginLeft: 8,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  rotating: {
-    transform: [{ rotate: '180deg' }],
-  },
-  
-  // ✅ NUEVOS ESTILOS: Banner de Fase 2
+
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
-    padding: 16,
+    backgroundColor: COLORS.successLight,
+    padding: 14,
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: COLORS.success,
   },
+  bannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.success,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   bannerText: {
     flex: 1,
     marginLeft: 12,
   },
   bannerTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    color: COLORS.success,
+    color: COLORS.darkText,
     marginBottom: 2,
   },
   bannerSubtitle: {
     fontSize: 12,
-    color: '#558B2F',
+    color: COLORS.grayText,
     lineHeight: 16,
   },
 
-  topStatsContainer: {
+  statsRow: {
     flexDirection: 'row',
+    gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
+    paddingTop: 16,
   },
-  topStatCard: {
+  statCard: {
     flex: 1,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.cardShadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  topStatNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginTop: 8,
-  },
-  topStatLabel: {
-    fontSize: 12,
-    color: COLORS.white,
-    marginTop: 4,
-    fontWeight: '600',
-    opacity: 0.9,
-  },
-  bottomStatsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.white,
-  },
-  bottomStatCard: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.cardShadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  bottomStatNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginTop: 4,
-  },
-  bottomStatLabel: {
-    fontSize: 10,
-    color: COLORS.white,
-    marginTop: 2,
-    fontWeight: '500',
-    opacity: 0.9,
-  },
-  sectionHeader: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
     paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.cardShadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+      },
+      android: { elevation: 1 },
+    }),
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: COLORS.grayText,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+
+  searchContainer: {
     paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingTop: 14,
   },
-  sectionHeaderPast: {
-    backgroundColor: '#f0f0f0',
-  },
-  sectionHeaderContent: {
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    padding: 12,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
+    paddingHorizontal: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.darkText,
+    outlineStyle: 'none',
+  },
+
+  chipsContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.grayText,
+  },
+  filterChipTextActive: {
+    color: COLORS.white,
+  },
+
+  phaseTabs: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  phaseTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  phaseTabActive1: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  phaseTabActive2: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  phaseTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.grayText,
+    flex: 1,
+  },
+  phaseTabTextActive: {
+    color: COLORS.white,
+  },
+  phaseTabCount: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  phaseTabCountActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  phaseTabCountText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  phaseTabCountTextActive: {
+    color: COLORS.white,
+  },
+
+  resultsText: {
+    fontSize: 12,
+    color: COLORS.grayText,
+    fontWeight: '500',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    marginTop: 14,
+    marginBottom: 8,
+    marginHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 10,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.cardShadow,
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
+        shadowOpacity: 0.06,
         shadowRadius: 4,
       },
-      android: {
-        elevation: 2,
-      },
+      android: { elevation: 1 },
     }),
   },
-  facultyDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 12,
+  facultyIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.darkText,
+  sectionHeaderText: {
     flex: 1,
   },
-  sectionTitlePast: {
-    color: COLORS.grayText,
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.darkText,
   },
   countBadge: {
-    backgroundColor: COLORS.background,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -730,15 +811,16 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.primary,
   },
+
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
+
   eventCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    marginBottom: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    marginBottom: 10,
     marginHorizontal: 16,
     overflow: 'hidden',
     flexDirection: 'row',
@@ -746,105 +828,67 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: COLORS.cardShadow,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
       },
-      android: {
-        elevation: 2,
-      },
+      android: { elevation: 1 },
     }),
   },
-  eventCardPast: {
-    opacity: 0.75,
-    backgroundColor: '#fafafa',
-  },
   facultyBar: {
-    width: 6,
+    width: 5,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
   cardContent: {
     flex: 1,
-    padding: 16,
+    padding: 14,
   },
-  eventHeader: {
-    marginBottom: 12,
-  },
-  titleRow: {
+  cardTopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+    gap: 10,
     marginBottom: 8,
   },
+  titleWrap: {
+    flex: 1,
+  },
   eventTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.darkText,
-    flex: 1,
-    marginRight: 8,
   },
-  eventTitlePast: {
-    color: COLORS.grayText,
-  },
-  idBadge: {
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  idText: {
+  eventId: {
     fontSize: 11,
     fontWeight: '700',
     color: COLORS.primary,
+    marginTop: 2,
   },
-  
-  // ✅ ACTUALIZADO: Contenedor de badges para soportar múltiples badges
-  badgeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  monthBadge: {
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    gap: 4,
   },
-  monthBadgeText: {
+  statusUpcoming: {
+    backgroundColor: COLORS.successLight,
+  },
+  statusSoon: {
+    backgroundColor: '#FEF3C7',
+  },
+  statusPillText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  
-  // ✅ NUEVO: Estilo del badge de Fase 2
-  fase2Badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.accent,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    gap: 4,
-  },
-  fase2Text: {
-    color: COLORS.white,
-    fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
-  infoGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    gap: 12,
-  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    gap: 6,
+    gap: 8,
+    marginBottom: 5,
   },
   infoText: {
     fontSize: 12,
@@ -852,87 +896,112 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
-  infoTextPast: {
-    color: COLORS.grayMedium,
-  },
-  phaseContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    marginBottom: 12,
-  },
-  phaseBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    gap: 4,
-  },
-  phaseText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  submissionInfo: {
-    alignItems: 'flex-end',
-  },
-  submittedBy: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: COLORS.grayText,
-  },
-  submittedDate: {
-    fontSize: 10,
-    color: COLORS.grayMedium,
-    marginTop: 2,
-  },
-  viewDetailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  avatarCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: COLORS.primaryLight,
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingTop: 12,
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  viewDetailsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginRight: 4,
-  },
-  emptyContainer: {
+  facultyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     flex: 1,
+  },
+  facultyChipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  facultyChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.grayText,
+    flex: 1,
+  },
+  fase2Badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.successLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  fase2Text: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.success,
+  },
+  fase1Badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  fase1Text: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+
+  emptyContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 80,
+    paddingVertical: 60,
     paddingHorizontal: 32,
   },
   emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.background,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.darkText,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 14,
     color: COLORS.grayText,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
+  },
+  clearFiltersButton: {
+    marginTop: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+  },
+  clearFiltersText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

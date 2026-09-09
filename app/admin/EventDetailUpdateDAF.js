@@ -21,7 +21,7 @@ let determinedApiBaseUrl;
 } else if (Platform.OS === 'ios') {
   determinedApiBaseUrl = 'http://192.168.0.167:3001/api';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
@@ -31,9 +31,9 @@ const TOKEN_KEY = 'adminAuthToken';
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -49,9 +49,9 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al eliminar token de localStorage en web:", e);
+      console.error("Error al eliminar token de sessionStorage en web:", e);
     }
   } else {
     try {
@@ -65,7 +65,7 @@ const deleteTokenAsync = async () => {
 const COLORS = {
   accent: '#0052A0',
   secondary: '#2980b9',
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   background: '#f8fafc',
   surface: '#ffffff',
   success: '#27ae60',
@@ -382,11 +382,11 @@ console.log('objetivos_pdi del backend:', eventData.objetivos_pdi);
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detalles del Evento</Text>
-        <TouchableOpacity onPress={fetchEventDetails}>
+        <TouchableOpacity onPress={fetchEventDetails} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="refresh" size={24} color={COLORS.white} />
         </TouchableOpacity>
       </View>
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   backgroundColor: COLORS.background,
 },
 header: {
-  backgroundColor: COLORS.primary, // Naranja #E95A0C
+  backgroundColor: COLORS.primary, // Naranja #C44B0A
   flexDirection: 'row',
   justifyContent: 'space-between',
   alignItems: 'center',

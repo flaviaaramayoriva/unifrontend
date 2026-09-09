@@ -20,23 +20,23 @@ import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   background: '#F9FAFB',
   surface: '#FFFFFF',
   textPrimary: '#1F2937',
   textSecondary: '#6B7280',
   border: '#E5E7EB',
   danger: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
 };
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem('adminAuthToken');
+      return sessionStorage.getItem('adminAuthToken');
     } catch (e) {
       return null;
     }
@@ -265,7 +265,7 @@ const Recurso = () => {
         </View>
       </View>
       <View style={styles.recursoCardActions}>
-        <TouchableOpacity style={styles.editBtn} onPress={() => abrirEdicion(recurso)}>
+        <TouchableOpacity style={styles.editBtn} onPress={() => abrirEdicion(recurso)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="pencil" size={18} color={COLORS.primary} />
         </TouchableOpacity>
       
@@ -286,6 +286,7 @@ const Recurso = () => {
         <TextInput
           style={styles.input}
           placeholder="Ej: Proyector Epson"
+          accessibilityLabel="Nombre"
           value={nombre_recurso}
           onChangeText={setNombreRecurso}
           maxLength={100}
@@ -308,6 +309,7 @@ const Recurso = () => {
         <TextInput
           style={styles.input}
           placeholder="Ej: 10"
+          accessibilityLabel="Cantidad"
           value={cantidad}
           onChangeText={setCantidad}
           keyboardType="numeric"
@@ -353,12 +355,13 @@ const Recurso = () => {
         transparent
         animationType="slide"
         onRequestClose={() => setEditModalVisible(false)}
+        accessibilityViewIsModal={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Editar Recurso</Text>
-              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)} accessibilityLabel="Cerrar" accessibilityRole="button">
                 <Ionicons name="close" size={24} color={COLORS.textPrimary} />
               </TouchableOpacity>
             </View>
@@ -370,6 +373,7 @@ const Recurso = () => {
                 value={editNombre}
                 onChangeText={setEditNombre}
                 placeholder="Nombre del recurso"
+                accessibilityLabel="Nombre"
                 maxLength={100}
               />
 
@@ -393,6 +397,7 @@ const Recurso = () => {
                 value={editDescripcion}
                 onChangeText={setEditDescripcion}
                 placeholder="Detalles del recurso..."
+                accessibilityLabel="Descripción"
                 multiline
                 numberOfLines={4}
               />
@@ -402,6 +407,7 @@ const Recurso = () => {
                   value={editCantidad}
                   onChangeText={setEditCantidad}
                   placeholder="Cantidad disponible"
+                  accessibilityLabel="Cantidad"
                   keyboardType="numeric"
                   maxLength={5}
                 />

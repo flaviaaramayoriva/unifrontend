@@ -18,15 +18,15 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 const getTokenAsync = async () => {
   const TOKEN_KEY = 'adminAuthToken';
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -44,7 +44,7 @@ const getCurrentUserId = async () => {
   try {
     let userData = null;
     if (Platform.OS === 'web') {
-      const stored = localStorage.getItem('usuario');
+      const stored = sessionStorage.getItem('usuario');
       if (stored) userData = JSON.parse(stored);
     } else {
       const stored = await AsyncStorage.getItem('usuario');
@@ -58,11 +58,11 @@ const getCurrentUserId = async () => {
 };
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
   background: '#F9FAFB',
@@ -376,6 +376,7 @@ const EditUser = () => {
                   onChangeText={(value) => handleInputChange('username', value)}
                   placeholder="Nombre de usuario"
                   placeholderTextColor={COLORS.textTertiary}
+                  accessibilityLabel="Usuario"
                 />
               </View>
               {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
@@ -391,6 +392,7 @@ const EditUser = () => {
                   onChangeText={(value) => handleInputChange('nombre', value)}
                   placeholder="Nombre"
                   placeholderTextColor={COLORS.textTertiary}
+                  accessibilityLabel="Nombre"
                 />
               </View>
               {errors.nombre && <Text style={styles.errorText}>{errors.nombre}</Text>}
@@ -406,6 +408,7 @@ const EditUser = () => {
                   onChangeText={(value) => handleInputChange('apellidopat', value)}
                   placeholder="Apellido paterno"
                   placeholderTextColor={COLORS.textTertiary}
+                  accessibilityLabel="Apellido Paterno"
                 />
               </View>
               {errors.apellidopat && <Text style={styles.errorText}>{errors.apellidopat}</Text>}
@@ -421,6 +424,7 @@ const EditUser = () => {
                   onChangeText={(value) => handleInputChange('apellidomat', value)}
                   placeholder="Apellido materno"
                   placeholderTextColor={COLORS.textTertiary}
+                  accessibilityLabel="Apellido Materno"
                 />
               </View>
             </View>
@@ -437,6 +441,7 @@ const EditUser = () => {
                   placeholderTextColor={COLORS.textTertiary}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  accessibilityLabel="Correo Electrónico"
                 />
               </View>
               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
@@ -453,6 +458,7 @@ const EditUser = () => {
                   placeholder="Dejar en blanco para mantener la actual"
                   placeholderTextColor={COLORS.textTertiary}
                   secureTextEntry
+                  accessibilityLabel="Contraseña"
                 />
               </View>
               <Text style={styles.hintText}>Deja en blanco si no quieres cambiarla</Text>
@@ -471,6 +477,7 @@ const EditUser = () => {
                   style={[styles.input, { backgroundColor: COLORS.background }]}
                   value={formData.role.toUpperCase()}
                   editable={false}
+                  accessibilityLabel="Rol"
                 />
               </View>
             </View>
@@ -508,6 +515,7 @@ const EditUser = () => {
                       : 'Sin facultad'}
                     editable={false}
                     placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Facultad"
                   />
                 </View>
               </View>
@@ -523,6 +531,7 @@ const EditUser = () => {
                       : 'Sin carrera'}
                     editable={false}
                     placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Carrera"
                   />
                 </View>
               </View>

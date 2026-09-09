@@ -24,23 +24,23 @@ let determinedApiBaseUrl;
   if (typeof window !== 'undefined' && window.location) {
     const origin = window.location.origin;
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      determinedApiBaseUrl = 'http://localhost:3001/api';
+      determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
     } else {
       determinedApiBaseUrl = `${origin}/api`;
     }
   } else {
     // Fallback si window no está disponible
-    determinedApiBaseUrl = 'http://localhost:3001/api';
+    determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
   }
 } else if (Platform.OS === 'android') {
   determinedApiBaseUrl = 'http://10.0.2.2:3001/api';
 } else if (Platform.OS === 'ios') {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
 
-const API_BASE_URL =  'https://evento.cidtec-uc.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 const TOKEN_KEY = 'adminAuthToken';
 
@@ -64,9 +64,9 @@ const COLORS = {
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      // ✅ Verificar que window y localStorage existen
-      if (typeof window !== 'undefined' && window.localStorage) {
-        return window.localStorage.getItem(TOKEN_KEY);
+      // ✅ Verificar que window y sessionStorage existen
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        return window.sessionStorage.getItem(TOKEN_KEY);
       }
       return null;
     } catch (e) {
@@ -373,6 +373,9 @@ const rechazarEvento = async (eventoId, organizadorId, tituloEvento) => {
         style={styles.eventosList}
         contentContainerStyle={styles.eventosListContent}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -512,9 +515,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },

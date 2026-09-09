@@ -10,19 +10,19 @@ import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FFEDD5', textPrimary: '#1F2937',
+  primary: '#C44B0A', primaryLight: '#FFEDD5', textPrimary: '#1F2937',
   textSecondary: '#6B7280', border: '#E5E7EB', surface: '#FFFFFF',
-  background: '#F9FAFB', white: '#FFFFFF', accent: '#EF4444', success: '#10B981',
+  background: '#F9FAFB', white: '#FFFFFF', accent: '#EF4444', success: '#047857',
   telegramBlue: '#0088cc', telegramLight: '#E3F2FD', danger: '#FEE2E2', dangerText: '#DC2626'
 };
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'studentAuthToken';
 
 const getToken = async () => {
   try {
     return Platform.OS === 'web'
-      ? localStorage.getItem(TOKEN_KEY)
+      ? sessionStorage.getItem(TOKEN_KEY)
       : await SecureStore.getItemAsync(TOKEN_KEY);
   } catch { return null; }
 };
@@ -54,12 +54,13 @@ const TelegramLinkedModal = ({ visible, onClose, username, onUnlink, unlinking }
       transparent={true}
       animationType="fade"
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <View style={styles.telegramModalOverlay}>
         <View style={styles.telegramModalContent}>
           {/* Header con logo */}
           <View style={styles.telegramModalHeader}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Cerrar" accessibilityRole="button">
               <Ionicons name="close" size={24} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -357,7 +358,7 @@ const telegramData = {
       />
 
       {/* Modal de Edición */}
-      <Modal visible={showEditModal} animationType="slide" transparent={true} onRequestClose={() => setShowEditModal(false)}>
+      <Modal visible={showEditModal} animationType="slide" transparent={true} onRequestClose={() => setShowEditModal(false)} accessibilityViewIsModal={true}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <TouchableWithoutFeedback onPress={() => !saving && setShowEditModal(false)}>
             <View style={styles.modalOverlay}>
@@ -365,7 +366,7 @@ const telegramData = {
                 <View style={styles.modalContent}>
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>Editar Perfil</Text>
-                    <TouchableOpacity onPress={() => !saving && setShowEditModal(false)} disabled={saving}>
+                    <TouchableOpacity onPress={() => !saving && setShowEditModal(false)} disabled={saving} accessibilityLabel="Cerrar" accessibilityRole="button">
                       <Ionicons name="close" size={24} color={COLORS.textSecondary} />
                     </TouchableOpacity>
                   </View>
@@ -379,6 +380,7 @@ const telegramData = {
                         onChangeText={(text) => setFormData({...formData, codigoestudiante: text})} 
                         placeholder="Ej: 2023-1234" 
                         placeholderTextColor={COLORS.textSecondary} 
+                        accessibilityLabel="Código de estudiante"
                         editable={!saving} 
                       />
                     </View>
@@ -390,6 +392,7 @@ const telegramData = {
                         onChangeText={(text) => setFormData({...formData, semestre: text})} 
                         placeholder="Ej: 5to semestre" 
                         placeholderTextColor={COLORS.textSecondary} 
+                        accessibilityLabel="Semestre"
                         editable={!saving} 
                       />
                     </View>
@@ -402,6 +405,7 @@ const telegramData = {
                         placeholder="Ej: 71234567" 
                         placeholderTextColor={COLORS.textSecondary} 
                         keyboardType="phone-pad" 
+                        accessibilityLabel="Teléfono"
                         editable={!saving} 
                       />
                     </View>

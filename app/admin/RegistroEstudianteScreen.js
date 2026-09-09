@@ -21,7 +21,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 const CARRERA_A_FACULTAD = {
   '2': '3', '3': '4', '1': '5', '4': '2', '5': '2', '6': '2', '7': '2', 
@@ -119,16 +119,16 @@ const CrearUsuarioEstudiante = () => {
      const TOKEN_KEY = 'adminAuthToken';
   try {
      if (Platform.OS === 'web') {
-      console.log('🔍 Claves en localStorage:', Object.keys(localStorage));
-      console.log('🔍 adminAuthToken existe:', !!localStorage.getItem('adminAuthToken'));
-      console.log('🔍 studentAuthToken existe:', !!localStorage.getItem('studentAuthToken'));
+      console.log('🔍 Claves en sessionStorage:', Object.keys(sessionStorage));
+      console.log('🔍 adminAuthToken existe:', !!sessionStorage.getItem('adminAuthToken'));
+      console.log('🔍 studentAuthToken existe:', !!sessionStorage.getItem('studentAuthToken'));
     } else {
       const allKeys = await SecureStore.getItemAsync('debug_keys');
       console.log('🔍 Claves conocidas:', allKeys);
     }
     let usuarioStr = null;
     if (Platform.OS === 'web') {
-      usuarioStr = localStorage.getItem('usuario');
+      usuarioStr = sessionStorage.getItem('usuario');
     } else {
       usuarioStr = await AsyncStorage.getItem('usuario');
     }
@@ -175,7 +175,7 @@ const CrearUsuarioEstudiante = () => {
     // 3. Obtener el token con la clave correcta
     let token = null;
     if (Platform.OS === 'web') {
-      token = localStorage.getItem(TOKEN_KEY);
+      token = sessionStorage.getItem(TOKEN_KEY);
     } else {
       token = await SecureStore.getItemAsync(TOKEN_KEY);
     }
@@ -200,8 +200,8 @@ const handleAuthError = () => {
           // Limpiar token antes de redirigir
           try {
             if (Platform.OS === 'web') {
-              localStorage.removeItem('studentAuthToken');
-              localStorage.removeItem('usuario');
+              sessionStorage.removeItem('studentAuthToken');
+              sessionStorage.removeItem('usuario');
             } else {
               await SecureStore.deleteItemAsync('studentAuthToken');
               await AsyncStorage.removeItem('usuario');
@@ -441,9 +441,9 @@ const handleDirectLogin = async () => {
 
     // Guardar sesión del estudiante (igual que lo hace el LoginScreen)
     if (Platform.OS === 'web') {
-      localStorage.setItem('studentAuthToken', token);
-      localStorage.setItem('studentUserData', JSON.stringify(user));
-      localStorage.setItem('usuario', JSON.stringify({
+      sessionStorage.setItem('studentAuthToken', token);
+      sessionStorage.setItem('studentUserData', JSON.stringify(user));
+      sessionStorage.setItem('usuario', JSON.stringify({
         id: user.id,
         nombre: user.nombre || user.username,
         role: user.role,
@@ -506,6 +506,7 @@ const handleDirectLogin = async () => {
         {options.icon && <Ionicons name={options.icon} size={20} color="#666" style={styles.inputIcon} />}
         <TextInput
           style={[styles.input, options.icon && styles.inputWithIcon, errors[field] && styles.inputError]}
+          accessibilityLabel={label}
           placeholder={placeholder}
           value={formData[field]}
           onChangeText={(value) => updateFormData(field, value)}
@@ -611,7 +612,7 @@ const handleDirectLogin = async () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
-        <Stack.Screen options={{ title: 'Nuevo Estudiante', headerStyle: { backgroundColor: '#e95a0c' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }} />
+        <Stack.Screen options={{ title: 'Nuevo Estudiante', headerStyle: { backgroundColor: '#C44B0A' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }} />
         
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
@@ -626,7 +627,7 @@ const handleDirectLogin = async () => {
           <View style={styles.buttonContainer}>
             {currentStep > 1 && (
               <TouchableOpacity style={styles.secondaryButton} onPress={prevStep} disabled={isLoading}>
-                <Ionicons name="arrow-back" size={20} color="#e95a0c" />
+                <Ionicons name="arrow-back" size={20} color="#C44B0A" />
                 <Text style={styles.secondaryButtonText}>Anterior</Text>
               </TouchableOpacity>
             )}
@@ -670,8 +671,8 @@ const handleDirectLogin = async () => {
         router.back(); // vuelve al panel de donde viniste
       }}
     >
-      <Ionicons name="home-outline" size={20} color="#e95a0c" />
-      <Text style={[styles.successActionText, { color: '#e95a0c' }]}>Volver al menú</Text>
+      <Ionicons name="home-outline" size={20} color="#C44B0A" />
+      <Text style={[styles.successActionText, { color: '#C44B0A' }]}>Volver al menú</Text>
     </TouchableOpacity>
   </View>
 )}
@@ -683,7 +684,7 @@ const handleDirectLogin = async () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#e95a0c' },
+  safeArea: { flex: 1, backgroundColor: '#C44B0A' },
   container: { flex: 1, backgroundColor: '#f8f9fa' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 40 },
   header: { paddingVertical: 20, alignItems: 'center' },
@@ -691,11 +692,11 @@ const styles = StyleSheet.create({
   progressContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   progressStep: { flexDirection: 'row', alignItems: 'center' },
   progressCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' },
-  progressCircleActive: { backgroundColor: '#e95a0c' },
+  progressCircleActive: { backgroundColor: '#C44B0A' },
   progressNumber: { fontSize: 16, fontWeight: 'bold', color: '#999' },
   progressNumberActive: { color: '#fff' },
   progressLine: { width: 50, height: 2, backgroundColor: '#e0e0e0', marginHorizontal: 5 },
-  progressLineActive: { backgroundColor: '#e95a0c' },
+  progressLineActive: { backgroundColor: '#C44B0A' },
   stepTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center' },
   stepContainer: { paddingVertical: 20 },
   conditionalContainer: { marginTop: 25 },
@@ -725,16 +726,16 @@ const styles = StyleSheet.create({
   roleBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2ecc71', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginBottom: 8 },
   roleBadgeText: { color: '#fff', fontSize: 16, fontWeight: '600', marginLeft: 8 },
   roleInfoText: { fontSize: 14, color: '#27ae60', textAlign: 'center', marginTop: 5 },
-  roleInfoContainer: { backgroundColor: '#f8f9fa', borderRadius: 8, padding: 12, marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#e95a0c' },
+  roleInfoContainer: { backgroundColor: '#f8f9fa', borderRadius: 8, padding: 12, marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#C44B0A' },
   autoSelectionBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e8f8f5', padding: 10, borderRadius: 8, marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#27ae60' },
   autoSelectionText: { fontSize: 14, color: '#27ae60', marginLeft: 8, fontWeight: '500' },
   buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 30, gap: 15 },
-  primaryButton: { backgroundColor: '#e95a0c', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', flex: 1, shadowColor: '#e95a0c', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 8 },
-  secondaryButton: { backgroundColor: '#fff', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', flex: 1, borderWidth: 2, borderColor: '#e95a0c' },
+  primaryButton: { backgroundColor: '#C44B0A', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', flex: 1, shadowColor: '#C44B0A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 8 },
+  secondaryButton: { backgroundColor: '#fff', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', flex: 1, borderWidth: 2, borderColor: '#C44B0A' },
   fullWidthButton: { flex: 1 },
   buttonDisabled: { backgroundColor: '#f9bda3', shadowOpacity: 0.1 },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginRight: 8 },
-  secondaryButtonText: { color: '#e95a0c', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+  secondaryButtonText: { color: '#C44B0A', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
   toastContainer: { position: 'absolute', bottom: 60, left: 0, right: 0, alignItems: 'center', zIndex: 9999, paddingHorizontal: 20 },
   toastContent: { backgroundColor: '#27ae60', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 8, minWidth: 280 },
   toastText: { color: '#fff', fontSize: 16, fontWeight: '600', marginLeft: 12, textAlign: 'center' },
@@ -766,7 +767,7 @@ successActionButton: {
 successActionSecondary: {
   backgroundColor: '#fff',
   borderWidth: 2,
-  borderColor: '#e95a0c',
+  borderColor: '#C44B0A',
 },
 successActionText: {
   color: '#fff',

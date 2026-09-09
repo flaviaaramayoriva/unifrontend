@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TouchableOpacity,
   View,
@@ -7,24 +7,24 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Platform, 
-  ImageBackground
+  Platform,
+  ImageBackground,
+  Image,
+  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store'; 
+import * as SecureStore from 'expo-secure-store';
 import { useRouter, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 const showAlert = (title, message) => {
   console.warn(`🚨 ALERT: ${title} - ${message}`);
-  
-  if (Platform.OS === 'web') {
-    window.alert(`${title}\n\n${message}`);
-  } else {
-    Alert.alert(title, message);
-  }
+  setToast({ title, message });
 };
 
 const LoginScreen = () => {
@@ -32,6 +32,15 @@ const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [contrasenia, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const handleLogin = async () => {
     const trimmedEmail = email.trim();
@@ -73,9 +82,9 @@ const LoginScreen = () => {
 
       if (response.status === 200 && response.data.token && response.data.user) {
         const { token, user } = response.data;
-        
+
         let TOKEN_KEY, USER_DATA_KEY;
-        
+
         switch (user.role) {
           case 'admin':
           case 'academico':
@@ -115,7 +124,7 @@ const LoginScreen = () => {
 
         const allKeys = [
           'adminAuthToken', 'adminUserData',
-          'studentAuthToken', 'studentUserData', 
+          'studentAuthToken', 'studentUserData',
           'academicoAuthToken', 'academicoUserData',
           'dafAuthToken', 'dafUserData',
           'comunicacionAuthToken', 'comunicacionUserData',
@@ -128,11 +137,11 @@ const LoginScreen = () => {
         await AsyncStorage.setItem('usuario', JSON.stringify({
           id: user.id,
           nombre: user.nombre,
-          role: user.role   
+          role: user.role
         }));
 
         if (Platform.OS === 'web') {
-          localStorage.setItem('usuario', JSON.stringify({
+          sessionStorage.setItem('usuario', JSON.stringify({
             id: user.id,
             nombre: user.nombre || user.username,
             role: user.role
@@ -141,7 +150,7 @@ const LoginScreen = () => {
 
         console.log('🧹 Limpiando claves anteriores...');
         if (Platform.OS === 'web') {
-          allKeys.forEach(key => localStorage.removeItem(key));
+          allKeys.forEach(key => sessionStorage.removeItem(key));
         } else {
           for (const key of allKeys) {
             await SecureStore.deleteItemAsync(key);
@@ -150,29 +159,29 @@ const LoginScreen = () => {
 
         console.log(`💾 Guardando datos con claves: ${TOKEN_KEY} / ${USER_DATA_KEY}`);
         if (Platform.OS === 'web') {
-          localStorage.setItem(TOKEN_KEY, token);
-          localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
+          sessionStorage.setItem(TOKEN_KEY, token);
+          sessionStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
         } else {
           await SecureStore.setItemAsync(TOKEN_KEY, token);
           await SecureStore.setItemAsync(USER_DATA_KEY, JSON.stringify(user));
         }
 
-        const savedToken = Platform.OS === 'web' 
-          ? localStorage.getItem(TOKEN_KEY)
+        const savedToken = Platform.OS === 'web'
+          ? sessionStorage.getItem(TOKEN_KEY)
           : await SecureStore.getItemAsync(TOKEN_KEY);
         const savedUser = Platform.OS === 'web'
-          ? localStorage.getItem(USER_DATA_KEY)
+          ? sessionStorage.getItem(USER_DATA_KEY)
           : await SecureStore.getItemAsync(USER_DATA_KEY);
-        
+
         console.log('✅ Verificación de guardado:', {
           role: user.role,
           tokenSaved: !!savedToken,
           userSaved: !!savedUser
         });
-        
+
         let targetRoute = '/';
         let routeParams = {};
-        
+
         switch (user.role) {
           case 'admin':
             targetRoute = '/admin/HomeAdministradorScreen';
@@ -186,13 +195,13 @@ const LoginScreen = () => {
             routeParams = { nombre: user.nombre };
             break;
           case 'daf':
-            targetRoute = '/admin/Daf'; 
+            targetRoute = '/admin/Daf';
             break;
           case 'comunicacion':
-            targetRoute = '/admin/HomeComunicacion'; 
+            targetRoute = '/admin/HomeComunicacion';
             break;
           case 'TI':
-            targetRoute = '/admin/HomeTI'; 
+            targetRoute = '/admin/HomeTI';
             break;
           case 'recursos':
             targetRoute = '/admin/HomeRecursosHumanos';
@@ -202,8 +211,8 @@ const LoginScreen = () => {
             targetRoute = '/admin/HomeAdmisiones';
             routeParams = { nombre: user.nombre, idUsuario: user.id };
             break;
-          case 'Serv. Estudiatil': 
-            targetRoute = '/admin/HomeServiciosEstudiantiles'; 
+          case 'Serv. Estudiatil':
+            targetRoute = '/admin/HomeServiciosEstudiantiles';
             routeParams = { nombre: user.nombre, idUsuario: user.id };
             break;
           default:
@@ -211,8 +220,8 @@ const LoginScreen = () => {
             showAlert('Acceso', 'Tu rol no tiene una interfaz asignada.');
             targetRoute = '/';
             break;
-        } 
-        
+        }
+
         console.log('🔄 Redirigiendo a:', targetRoute);
 
         setTimeout(() => {
@@ -223,13 +232,13 @@ const LoginScreen = () => {
             showAlert('Error', 'No se pudo redirigir. Intenta nuevamente.');
           }
         }, 200);
-        
+
       } else {
-        const errorMsg = response.data?.message 
-          || response.data?.error 
+        const errorMsg = response.data?.message
+          || response.data?.error
           || response.data?.msg
           || 'Credenciales inválidas o respuesta inesperada del servidor.';
-        
+
         console.error('❌ Login fallido - Respuesta:', response.data);
         showAlert('Login Fallido', errorMsg);
       }
@@ -241,25 +250,25 @@ const LoginScreen = () => {
         status: err.response?.status,
         hasRequest: !!err.request
       });
-      
+
       if (err.response) {
-        const errorMsg = err.response.data?.message 
-          || err.response.data?.error 
+        const errorMsg = err.response.data?.message
+          || err.response.data?.error
           || err.response.data?.msg
           || 'Credenciales inválidas.';
-        
+
         showAlert(
-          'Login Fallido', 
+          'Login Fallido',
           `${errorMsg} (Status: ${err.response.status})`
         );
       } else if (err.request) {
         showAlert(
-          'Error de Red', 
+          'Error de Red',
           'No se pudo conectar al servidor. Verifica tu conexión a internet.'
         );
       } else if (err.code === 'ECONNABORTED') {
         showAlert(
-          'Tiempo Agotado', 
+          'Tiempo Agotado',
           'La conexión tardó demasiado. Intenta nuevamente.'
         );
       } else {
@@ -270,156 +279,400 @@ const LoginScreen = () => {
     }
   };
 
-    const handleRegisterStudent = () => {
+  const handleRegisterStudent = () => {
     console.log('🔗 Intentando navegar al registro de estudiante...');
     try {
-      // OPCIÓN A: Si tu archivo está dentro de la carpeta app/admin/
       router.push('/admin/RegistroEstudianteScreen');
-      
-      // OPCIÓN B: Si tu archivo está directamente en la carpeta app/ (raíz), usa esta en su lugar:
-      // router.push('/RegistroEstudianteScreen');
-      
     } catch (error) {
       console.error('❌ Error de navegación:', error);
       Alert.alert(
-        'Error de Navegación', 
+        'Error de Navegación',
         'No se pudo abrir la pantalla de registro. Verifica que el archivo "RegistroEstudianteScreen.js" exista en la carpeta correcta.'
       );
     }
   };
 
+  const getFieldStyle = (field) => [
+    styles.input,
+    focusedField === field && styles.inputFocused,
+  ];
+
   return (
     <ImageBackground
-      source={require('../../assets/images/FONDO NARANJA_Mesa de trabajo 1.jpeg')} 
+      source={require('../../assets/images/FONDO NARANJA_Mesa de trabajo 1.jpeg')}
       style={styles.background}
       resizeMode="cover"
     >
-      <View style={styles.overlay} />
+      <LinearGradient
+        colors={['rgba(15,23,42,0.68)', 'rgba(40,22,12,0.45)', 'rgba(15,8,4,0.84)']}
+        style={styles.overlay}
+      />
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Iniciar Sesión</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Correo Electrónico"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholderTextColor="#aaa"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          value={contrasenia}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          placeholderTextColor="#aaa"
-        />
-
-        <TouchableOpacity
-          onPress={handleLogin}
-          style={[styles.button, loading && styles.buttonDisabled]}
-          disabled={loading}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.buttonText}>Ingresar</Text>
-          )}
-        </TouchableOpacity>
+          <Stack.Screen options={{ headerShown: false }} />
 
-        <TouchableOpacity
-          onPress={handleRegisterStudent}
-          style={styles.registerLinkContainer}
-        >
-          <Text style={styles.registerLinkText}>
-            ¿No tienes cuenta?{' '}
-            <Text style={styles.registerLinkHighlight}>Crear cuenta de estudiante</Text>
+          <View style={styles.brand}>
+            <View style={styles.logoBadge}>
+              <Image
+                source={require('../../assets/images/logo.jpg')}
+                style={styles.logo}
+                resizeMode="cover"
+              />
+            </View>
+            <Text style={styles.brandName}>UFT Eventos</Text>
+            <Text style={styles.brandSub}>Eventos · Formación · Comunidad</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.title}>Iniciar Sesión</Text>
+            <Text style={styles.subtitle}>Bienvenido de nuevo, ingresa tus credenciales</Text>
+
+            <View style={styles.fieldGroup}>
+              <Ionicons
+                name="mail-outline"
+                size={19}
+                color={focusedField === 'email' ? PRIMARY : INPUT_ICON}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={getFieldStyle('email')}
+                placeholder="Correo Electrónico"
+                placeholderTextColor={PLACEHOLDER}
+                accessibilityLabel="Correo Electrónico"
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                returnKeyType="next"
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={19}
+                color={focusedField === 'password' ? PRIMARY : INPUT_ICON}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={getFieldStyle('password')}
+                placeholder="Contraseña"
+                placeholderTextColor={PLACEHOLDER}
+                accessibilityLabel="Contraseña"
+                value={contrasenia}
+                onChangeText={setPassword}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
+              />
+              <TouchableOpacity
+                style={styles.passwordToggle}
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={INPUT_ICON}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleLogin}
+              style={styles.buttonWrap}
+              disabled={loading}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Ingresar"
+            >
+              <LinearGradient
+                colors={[PRIMARY, '#C83E00']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.button}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.buttonText}>Ingresar</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>¿ERES ESTUDIANTE?</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              onPress={handleRegisterStudent}
+              style={styles.registerLinkContainer}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+            >
+              <Ionicons name="person-add-outline" size={16} color={PRIMARY} />
+              <Text style={styles.registerLinkText}>
+                <Text style={styles.registerLinkHighlight}>Crear cuenta de estudiante</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.footer}>
+            © {new Date().getFullYear()} UFT Eventos · Universidad Privada Franz Tamayo
           </Text>
-        </TouchableOpacity>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {toast && (
+        <View style={styles.toast} accessibilityRole="alert">
+          <Ionicons name="alert-circle" size={20} color="#fff" />
+          <Text style={styles.toastText}>{toast.title}: {toast.message}</Text>
+        </View>
+      )}
     </ImageBackground>
   );
 };
 
+const PRIMARY = '#C44200';
+const PRIMARY_DARK = '#C83E00';
+const PLACEHOLDER = '#9CA3AF';
+const INPUT_ICON = '#9CA3AF';
+
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  flex: {
+    flex: 1,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
-  content: {
-    width: '90%',
-    maxWidth: 400,
-    padding: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+  },
+  brand: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  logoBadge: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.7)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 10,
+    marginBottom: 12,
+  },
+  logo: {
+    width: 78,
+    height: 78,
+  },
+  brandName: {
+    color: '#FFFFFF',
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  brandSub: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1.4,
+    marginTop: 4,
+    textTransform: 'uppercase',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 430,
+    paddingVertical: 32,
+    paddingHorizontal: 28,
+    backgroundColor: 'rgba(255,255,255,0.97)',
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 12,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1F2937',
     textAlign: 'center',
-    marginBottom: 25,
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 26,
+    lineHeight: 19,
+  },
+  fieldGroup: {
+    marginBottom: 16,
+    position: 'relative',
   },
   input: {
     width: '100%',
-    height: 55,
-    backgroundColor: '#f9f9f9',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    marginBottom: 20,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    color: '#333',
+    height: 54,
+    backgroundColor: '#F5F6FA',
+    borderWidth: 1.5,
+    borderColor: '#E8EAF1',
+    borderRadius: 14,
+    paddingHorizontal: 46,
+    fontSize: 15,
+    color: '#1F2937',
+  },
+  inputFocused: {
+    borderColor: PRIMARY,
+    backgroundColor: '#FFF',
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 16,
+    top: 17,
+    zIndex: 2,
+  },
+  passwordToggle: {
+    position: 'absolute',
+    right: 14,
+    top: 17,
+    zIndex: 2,
+  },
+  buttonWrap: {
+    borderRadius: 14,
+    marginTop: 6,
+    shadowColor: PRIMARY_DARK,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
   },
   button: {
-    backgroundColor: '#e95a0c',
-    width: '100%',
-    height: 55,
-    borderRadius: 30,
+    borderRadius: 14,
+    height: 56,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    backgroundColor: '#b6470a',
   },
   buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    letterSpacing: 1,
+    marginHorizontal: 12,
   },
   registerLinkContainer: {
-    marginTop: 25,
-    paddingVertical: 10,
+    marginTop: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 12,
+    backgroundColor: '#FFF4EC',
+    borderWidth: 1,
+    borderColor: '#FFD4BC',
   },
   registerLinkText: {
-    color: '#ffffff',
-    fontSize: 16,
-    textAlign: 'center',
-    fontWeight: '400',
+    color: '#1F2937',
+    fontSize: 14,
+    fontWeight: '500',
   },
   registerLinkHighlight: {
-    color: '#FFD700',
+    color: PRIMARY,
+    fontWeight: '700',
+  },
+  footer: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(233, 30, 30, 0.95)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+  },
+  toastText: {
+    color: '#fff',
+    fontSize: 13,
     fontWeight: '600',
-    textDecorationLine: 'underline',
+    flex: 1,
+    lineHeight: 18,
   },
 });
 

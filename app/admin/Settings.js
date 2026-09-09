@@ -20,12 +20,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext'; // Asegúrate que la ruta sea correcta
 import { ACCENT_PRESETS } from '../../utils/colorUtils'; // Asegúrate que la ruta sea correcta
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken'; 
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch (e) { return null; }
   }
@@ -33,7 +33,7 @@ const getTokenAsync = async () => {
 
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem('usuario'); } catch (e) { console.error("Error en web:", e); }
+    try { sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem('usuario'); } catch (e) { console.error("Error en web:", e); }
   } else {
     try { await SecureStore.deleteItemAsync(TOKEN_KEY); await AsyncStorage.removeItem('usuario'); } catch (e) { console.error("Error en nativo:", e); }
   }
@@ -48,7 +48,7 @@ const SettingsScreen = () => {
   const [savingTheme, setSavingTheme] = useState(false);
   const [savingColor, setSavingColor] = useState(false);
   const [user, setUser] = useState({ 
-    id: null, nombre: '', apellidopat: '', apellidomat: '', email: '', role: '', facultad: '', theme: 'light', color_acento: '#E95A0C'
+    id: null, nombre: '', apellidopat: '', apellidomat: '', email: '', role: '', facultad: '', theme: 'light', color_acento: '#C44B0A'
   });
 
   useEffect(() => {
@@ -72,7 +72,7 @@ const SettingsScreen = () => {
       console.log('👤 Perfil recibido del backend:', userData);
 
       const savedTheme = userData.theme || 'light';
-      const savedAccent = userData.color_acento || '#E95A0C';
+      const savedAccent = userData.color_acento || '#C44B0A';
       if (savedTheme)  setGlobalTheme(savedTheme);
       if (savedAccent) setGlobalAccentColor(savedAccent);
 

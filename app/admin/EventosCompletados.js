@@ -1,5 +1,5 @@
-// EventosCompletados.js
-import React, { useState, useEffect, useCallback } from 'react';
+// EventosCompletados.js - Rediseño: secciones por facultad, búsqueda y filtros (solo Fase 3 completados)
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,45 +7,47 @@ import {
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
+  RefreshControl,
   Platform,
   Alert,
   SectionList,
-  Dimensions,
-  ScrollView
+  TextInput,
+  ScrollView,
+  Dimensions
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const { width } = Dimensions.get('window');
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C',
-  primaryLight: '#FF7A3D',
-  accent: '#4CAF50',
-  background: '#F8F9FA',
-  surface: '#FFFFFF',
-  success: '#2E7D32',
-  warning: '#FFA726',
-  info: '#3498db',
-  purple: '#9b59b6',
-  blue: '#2196F3',
+  primary: '#C44B0A',
+  primaryLight: '#FFEDD5',
+  success: '#16A34A',
+  successLight: '#E8F5E9',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+  infoLight: '#EFF6FF',
   white: '#FFFFFF',
+  background: '#F6F7F9',
+  surface: '#FFFFFF',
   grayLight: '#E0E0E0',
-  grayMedium: '#BDBDBD',
-  grayText: '#757575',
-  darkText: '#212121',
+  grayMedium: '#9CA3AF',
+  grayText: '#64748B',
+  darkText: '#0F172A',
+  border: '#E6E9EF',
   cardShadow: '#000000',
-  border: '#E8E8E8',
 };
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -53,144 +55,79 @@ const getTokenAsync = async () => {
 
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { localStorage.removeItem(TOKEN_KEY); } catch { }
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch { }
   } else {
     try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch { }
   }
 };
 
 const parseEventDate = (dateStr) => {
-  if (!dateStr) return new Date(0);
-  if (dateStr instanceof Date) return dateStr;
-  
+  if (!dateStr) return null;
+  if (dateStr instanceof Date && !isNaN(dateStr.getTime())) return dateStr;
+
   if (typeof dateStr === 'string') {
-    const cleanStr = dateStr.trim();
-    const parts = cleanStr.split(/[-/]/);
-    
-    if (parts.length === 3) {
-      const [p1, p2, p3] = parts.map(Number);
-      if (!isNaN(p1) && !isNaN(p2) && !isNaN(p3)) {
-        if (p1 > 31) return new Date(p1, p2 - 1, p3);
-        if (p3 > 31) return new Date(p3, p2 - 1, p1);
-      }
+    const s = dateStr.trim();
+
+    const isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (isoMatch) {
+      const y = +isoMatch[1], m = +isoMatch[2], d = +isoMatch[3];
+      if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return new Date(y, m - 1, d);
     }
-    
-    const parsed = new Date(cleanStr);
+
+    const dmMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmMatch) {
+      const d = +dmMatch[1], m = +dmMatch[2], y = +dmMatch[3];
+      if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return new Date(y, m - 1, d);
+    }
+
+    const parsed = new Date(s);
     if (!isNaN(parsed.getTime())) return parsed;
   }
-  
+
   if (typeof dateStr === 'number') {
     const parsed = new Date(dateStr);
     if (!isNaN(parsed.getTime())) return parsed;
   }
-  
-  return new Date(0);
+
+  return null;
 };
 
-const getEventDateStr = (event) => {
-  return event.date || event.fecha || event.fecha_inicio || event.fechaEvento || '';
-};
+// Fecha cruda del evento (formato ISO/legible devuelto por el backend)
+  const getRawEventDate = (event) => event.fechaevento || event.fecha_inicio || event.fecha || event.fechaEvento || event.date || '';
 
-const formatSubmittedDate = (date) => {
-  const now = new Date();
-  const submittedDate = new Date(date);
-  const diff = Math.floor((now - submittedDate) / 1000);
-  if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
-  const days = Math.floor(diff / 86400);
-  return `Hace ${days} día${days > 1 ? 's' : ''}`;
-};
+  // Fecha en formato es-ES para mostrar
+  const getDisplayDate = (event) => {
+    const d = parseEventDate(getRawEventDate(event));
+    return d ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+  };
 
-const isEventPast = (dateStr) => {
-  if (!dateStr) return true;
-  const eventDate = parseEventDate(dateStr);
-  const today = new Date();
-  eventDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  return eventDate < today;
-};
+  const isEventPast = (event) => {
+    const eventDate = parseEventDate(getRawEventDate(event));
+    if (!eventDate) return false;
+    const today = new Date();
+    eventDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return eventDate < today;
+  };
 
-const getMonthBadge = (dateStr) => {
-  const eventDate = parseEventDate(dateStr);
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-  const eventMonth = eventDate.getMonth();
-  const eventYear = eventDate.getFullYear();
-  
-  if (eventMonth === currentMonth && eventYear === currentYear) {
-    return { text: 'Del mes actual', color: COLORS.success };
-  } else if (eventMonth === (currentMonth + 1) % 12 && eventYear === currentYear) {
-    return { text: 'Del mes próximo', color: COLORS.blue };
-  } else {
-    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    return { text: monthNames[eventMonth] || 'Mes', color: COLORS.primary };
-  }
-};
+  const formatSubmittedDate = (date) => {
+    if (!date) return 'N/A';
+    const now = new Date();
+    const submittedDate = new Date(date);
+    if (isNaN(submittedDate.getTime())) return 'N/A';
+    const diff = Math.floor((now - submittedDate) / 1000);
+    if (diff < 3600) return `Hace ${Math.max(1, Math.floor(diff / 60))} min`;
+    if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
+    const days = Math.floor(diff / 86400);
+    return `Hace ${days} día${days > 1 ? 's' : ''}`;
+  };
 
-// ✅ CORRECCIÓN PRINCIPAL: Ahora 'activos' incluye eventos futuros y de hoy
-const groupEventsByStatusAndFaculty = (events) => {
-  const eventosFase3 = events.filter(e => e.idfase === 3 || String(e.idfase) === '3');
-  
-  // Cualquier evento que NO sea pasado se considera activo/próximo
-  const activos = eventosFase3.filter(e => !isEventPast(getEventDateStr(e)));
-  const pasados = eventosFase3.filter(e => isEventPast(getEventDateStr(e)));
-  
-  const sections = [];
-  
-  if (activos.length > 0) {
-    const groupedActivos = {};
-    activos.forEach(event => {
-      const faculty = event.faculty || 'Sin facultad';
-      if (!groupedActivos[faculty]) groupedActivos[faculty] = [];
-      groupedActivos[faculty].push(event);
-    });
-    
-    sections.push({
-      title: '📅 Eventos Próximos o Activos (Fase 3)',
-      type: 'activos',
-      isPastSection: false,
-      data: Object.keys(groupedActivos).sort().flatMap(faculty => 
-        groupedActivos[faculty].map(event => ({ ...event, _facultyGroup: faculty }))
-      ),
-      facultyGroups: Object.keys(groupedActivos).sort().map(faculty => ({
-        faculty,
-        count: groupedActivos[faculty].length,
-        events: groupedActivos[faculty]
-      }))
-    });
-  }
-  
-  if (pasados.length > 0) {
-    const groupedPasados = {};
-    pasados.forEach(event => {
-      const faculty = event.faculty || 'Sin facultad';
-      if (!groupedPasados[faculty]) groupedPasados[faculty] = [];
-      groupedPasados[faculty].push(event);
-    });
-    
-    sections.push({
-      title: '🏆 Eventos Completados (Fase 3)',
-      type: 'pasados',
-      isPastSection: true,
-      data: Object.keys(groupedPasados).sort().flatMap(faculty => 
-        groupedPasados[faculty].map(event => ({ ...event, _facultyGroup: faculty }))
-      ),
-      facultyGroups: Object.keys(groupedPasados).sort().map(faculty => ({
-        faculty,
-        count: groupedPasados[faculty].length,
-        events: groupedPasados[faculty]
-      }))
-    });
-  }
-  
-  return sections;
-};
+const getEventFaculty = (event) => event.faculty || event.facultad || 'Sin facultad';
 
 const getFacultyColor = (facultyName) => {
   const colors = [
-    '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-    '#00BCD4', '#009688', '#4CAF50', '#FF9800', '#FF5722'
+    '#C44B0A', '#9C27B0', '#2563EB', '#0D9488', '#DC2626',
+    '#7C3AED', '#EA580C', '#0284C7', '#16A34A', '#DB2777'
   ];
   const hash = facultyName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
@@ -201,11 +138,13 @@ const EventosCompletados = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [facultadFiltro, setFacultadFiltro] = useState('todas');
 
   const fetchApprovedEventsByFaculty = useCallback(async () => {
     try {
       const token = await getTokenAsync();
-      
+
       if (!token) {
         Alert.alert('Sesión Expirada', 'Por favor, inicia sesión de nuevo.');
         router.replace('/LoginAdmin');
@@ -213,21 +152,17 @@ const EventosCompletados = () => {
       }
 
       const response = await axios.get(`${API_BASE_URL}/eventos/aprobados-por-facultad`, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
       });
 
-      console.log('✅ Total de eventos recibidos del backend:', response.data.length);
-      const fase3Debug = response.data.filter(e => e.idfase === 3 || String(e.idfase) === '3');
-      console.log('✅ Eventos de Fase 3 recibidos:', fase3Debug.length, fase3Debug);
-
-      setEvents(response.data);
+      setEvents(response.data || []);
 
     } catch (error) {
       console.error('❌ Error al cargar eventos:', error);
-      
+
       if (error.response?.status === 401 || error.response?.status === 403) {
         await deleteTokenAsync();
         Alert.alert('Sesión Expirada', 'Tu sesión ha expirado.', [
@@ -236,7 +171,7 @@ const EventosCompletados = () => {
         return;
       }
 
-      Alert.alert('Error', 'No se pudieron cargar los eventos.');
+      Alert.alert('Error', 'No se pudieron cargar los eventos. Revisa la consola.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -253,105 +188,233 @@ const EventosCompletados = () => {
   }, [fetchApprovedEventsByFaculty]);
 
   const handleEventPress = (event) => {
+    const eventId = event.id || event.idevento;
+    if (!eventId) return;
     router.push({
       pathname: '/admin/InformeEventoScreen',
-      params: { eventId: event.id }
+      params: { eventId: String(eventId) }
     });
   };
 
+  // Solo eventos Fase 3 completados
+  const completedEvents = useMemo(() => {
+    return events.filter(e =>
+      (e.idfase === 3 || String(e.idfase) === '3') && isEventPast(e)
+    );
+  }, [events]);
+
+  const faculties = useMemo(() => {
+    return [...new Set(completedEvents.map(getEventFaculty))].sort();
+  }, [completedEvents]);
+
+  const stats = useMemo(() => {
+    const total = completedEvents.length;
+    return { total, faculties: faculties.length };
+  }, [completedEvents, faculties]);
+
+  const filteredEvents = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return completedEvents.filter(event => {
+      if (facultadFiltro !== 'todas' && getEventFaculty(event) !== facultadFiltro) return false;
+      if (term) {
+        const haystack = [
+          event.title, event.nombreevento,
+          event.organizer, event.responsable_evento, event.organizador,
+          getEventFaculty(event)
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      return true;
+    });
+  }, [completedEvents, searchTerm, facultadFiltro]);
+
+  const sections = useMemo(() => {
+    const grouped = {};
+    filteredEvents.forEach(event => {
+      const faculty = getEventFaculty(event);
+      if (!grouped[faculty]) grouped[faculty] = [];
+      grouped[faculty].push(event);
+    });
+
+    return Object.keys(grouped).sort().map(faculty => {
+      return { title: faculty, faculty, data: grouped[faculty] };
+    });
+  }, [filteredEvents]);
+
   const renderEventItem = ({ item }) => {
-    if (!item || typeof item !== 'object' || typeof item.id === 'undefined') {
+    if (!item || typeof item !== 'object' || (!item.id && !item.idevento)) {
       return null;
     }
 
-    const dateStr = getEventDateStr(item);
-    const facultyColor = getFacultyColor(item._facultyGroup || item.faculty || 'Sin facultad');
-    const badge = getMonthBadge(dateStr);
-    
+    const eventId = item.id || item.idevento;
+    const facultyName = getEventFaculty(item);
+    const facultyColor = getFacultyColor(facultyName);
+
+    const displayDate = getDisplayDate(item);
+    const displayTime = item.time || item.horaevento || '';
+
+    const getInitials = () => {
+      const name = item.organizer || item.responsable_evento || item.organizador || 'A';
+      return name.trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+    };
+
     return (
       <TouchableOpacity
-        style={styles.eventCard} 
-        onPress={() => handleEventPress(item)} 
+        style={styles.eventCard}
+        onPress={() => handleEventPress(item)}
         activeOpacity={0.8}
       >
         <View style={[styles.facultyBar, { backgroundColor: facultyColor }]} />
-        
+
         <View style={styles.cardContent}>
-          <View style={styles.eventHeader}>
-            <View style={styles.titleRow}>
+          <View style={styles.cardTopRow}>
+            <View style={styles.titleWrap}>
               <Text style={styles.eventTitle} numberOfLines={2}>
-                {item.title || 'Sin título'}
+                {item.title || item.nombreevento || 'Sin título'}
               </Text>
-              <View style={styles.idBadge}>
-                <Text style={styles.idText}>#{item.id}</Text>
-              </View>
+              <Text style={styles.eventId}>#{eventId}</Text>
             </View>
-            
-            <View style={styles.badgeContainer}>
-              <View style={[styles.monthBadge, { backgroundColor: badge.color }]}>
-                <Ionicons name="calendar" size={12} color={COLORS.white} />
-                <Text style={styles.monthBadgeText}>{badge.text}</Text>
-              </View>
-            </View>
-          </View>
 
-          <View style={styles.infoGrid}>
-            <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={14} color={COLORS.grayText} />
-              <Text style={styles.infoText}>{dateStr || 'Sin fecha'}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="time-outline" size={14} color={COLORS.grayText} />
-              <Text style={styles.infoText}>{item.time || 'Sin hora'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.infoGrid}>
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={14} color={COLORS.grayText} />
-              <Text style={styles.infoText} numberOfLines={1}>{item.location || 'Sin ubicación'}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="person-outline" size={14} color={COLORS.grayText} />
-              <Text style={styles.infoText} numberOfLines={1}>{item.organizer || 'Sin organizador'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.phaseContainer}>
-            <View style={styles.phaseBadge}>
-              <Ionicons name="flag" size={12} color={COLORS.primary} />
-              <Text style={styles.phaseText}>Fase {item.idfase || 1}</Text>
-            </View>
-            <View style={styles.submissionInfo}>
-              <Text style={styles.submittedBy}>{item.submittedBy || 'Desconocido'}</Text>
-              <Text style={styles.submittedDate}>
-                {formatSubmittedDate(item.submittedDate || new Date())}
+            <View style={styles.statusPill}>
+              <Ionicons name="checkmark-done-circle" size={12} color={COLORS.success} />
+              <Text style={[styles.statusPillText, { color: COLORS.success }]}>
+                Completado
               </Text>
             </View>
           </View>
 
-          <TouchableOpacity 
-            style={styles.viewDetailsButton}
-            onPress={() => handleEventPress(item)}
-          >
-            <Text style={styles.viewDetailsText}>Ver detalles</Text>
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={14} color={COLORS.grayText} />
+            <Text style={styles.infoText}>
+              {displayDate}{displayTime ? ` · ${displayTime}` : ''}
+            </Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={14} color={COLORS.grayText} />
+            <Text style={styles.infoText} numberOfLines={1}>
+              {item.location || item.lugarevento || 'Sin ubicación'}
+            </Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{getInitials()}</Text>
+            </View>
+            <Text style={styles.infoText} numberOfLines={1}>
+              {item.organizer || item.responsable_evento || item.organizador || 'Sin organizador'}
+            </Text>
+          </View>
+
+          <View style={styles.cardFooter}>
+            <View style={styles.facultyChip}>
+              <View style={[styles.facultyChipDot, { backgroundColor: facultyColor }]} />
+              <Text style={styles.facultyChipText} numberOfLines={1}>
+                {facultyName}
+              </Text>
+            </View>
+
+            <View style={styles.fase3Badge}>
+              <Ionicons name="trophy" size={12} color={COLORS.primary} />
+              <Text style={styles.fase3Text}>Fase 3</Text>
+            </View>
+
             <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
-          </TouchableOpacity>
+          </View>
         </View>
       </TouchableOpacity>
     );
   };
 
-  const renderSectionHeader = ({ section }) => {
+  const renderFacultyHeader = ({ section }) => {
+    const color = getFacultyColor(section.faculty);
+
     return (
       <View style={styles.sectionHeader}>
-        <View style={styles.sectionHeaderContent}>
-          <View style={[styles.facultyDot, { backgroundColor: COLORS.primary }]} />
-          <Text style={styles.sectionTitle}>{section.title}</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{section.data.length}</Text>
+        <View style={[styles.facultyIconCircle, { backgroundColor: color + '1A' }]}>
+          <Ionicons name="school-outline" size={16} color={color} />
+        </View>
+        <View style={styles.sectionHeaderText}>
+          <Text style={styles.sectionTitle} numberOfLines={1}>{section.faculty}</Text>
+        </View>
+        <View style={[styles.countBadge, { backgroundColor: color + '1A' }]}>
+          <Text style={[styles.countText, { color }]}>{section.data.length}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderListHeader = () => {
+    return (
+      <View>
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={[styles.statValue, { color: COLORS.primary }]}>{stats.total}</Text>
+            <Text style={styles.statLabel}>Completados</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statValue, { color: COLORS.success }]}>{stats.faculties}</Text>
+            <Text style={styles.statLabel}>Facultades</Text>
           </View>
         </View>
+
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={18} color={COLORS.grayText} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar evento, organizador o facultad..."
+              placeholderTextColor={COLORS.grayMedium}
+              accessibilityLabel="Buscar"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+            />
+            {searchTerm !== '' && (
+              <TouchableOpacity onPress={() => setSearchTerm('')} accessibilityRole="button" accessibilityLabel="Limpiar búsqueda">
+                <Ionicons name="close-circle" size={18} color={COLORS.grayMedium} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, facultadFiltro === 'todas' && styles.filterChipActive]}
+            onPress={() => setFacultadFiltro('todas')}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.filterChipText, facultadFiltro === 'todas' && styles.filterChipTextActive]}>
+              Todas las facultades
+            </Text>
+          </TouchableOpacity>
+
+          {faculties.map(fac => {
+            const active = facultadFiltro === fac;
+            const color = getFacultyColor(fac);
+            return (
+              <TouchableOpacity
+                key={fac}
+                style={[styles.filterChip, active && { backgroundColor: color, borderColor: color }]}
+                onPress={() => setFacultadFiltro(fac)}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.filterChipText, active && { color: COLORS.white }]} numberOfLines={1}>
+                  {fac}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <Text style={styles.resultsText}>
+          {filteredEvents.length} {filteredEvents.length === 1 ? 'evento completado' : 'eventos completados'}
+          {searchTerm || facultadFiltro !== 'todas' ? ' encontrados' : ''}
+        </Text>
       </View>
     );
   };
@@ -365,171 +428,401 @@ const EventosCompletados = () => {
     );
   }
 
-  const eventosFase3 = events.filter(e => e.idfase === 3 || String(e.idfase) === '3');
-  const sections = groupEventsByStatusAndFaculty(events);
-  
-  const finalizedCount = eventosFase3.filter(e => isEventPast(getEventDateStr(e))).length;
-  const uniqueFaculties = new Set(eventosFase3.map(e => e.faculty || 'Sin facultad')).size;
-  const totalFase3 = eventosFase3.length;
-  const eventosPróximos = eventosFase3.filter(e => !isEventPast(getEventDateStr(e)));
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-      
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-        </TouchableOpacity>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>Eventos Fase 3 por Facultad</Text>
-          <Text style={styles.headerSubtitle}>
-            {uniqueFaculties} {uniqueFaculties === 1 ? 'facultad' : 'facultades'}
-          </Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.refreshButton} 
-          onPress={onRefresh} 
-          disabled={refreshing}
-        >
-          <Ionicons 
-            name="refresh" 
-            size={24} 
-            color={COLORS.white}
-            style={refreshing && styles.rotating}
+
+      <AdminHeader
+        title="Eventos Completados"
+        subtitle={`${stats.faculties} ${stats.faculties === 1 ? 'facultad' : 'facultades'} · ${stats.total} eventos`}
+        eyebrow="Gestión"
+        primaryColor={COLORS.primary}
+        rightActions={(
+          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} disabled={refreshing} accessibilityRole="button" accessibilityLabel="Actualizar">
+            <Ionicons name="refresh" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      />
+
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => `event-${item.id || item.idevento || Math.random()}`}
+        renderItem={renderEventItem}
+        renderSectionHeader={renderFacultyHeader}
+        ListHeaderComponent={renderListHeader}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
           />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {totalFase3 > 0 && (
-          <View style={styles.topStatsContainer}>
-            <View style={[styles.topStatCard, { backgroundColor: COLORS.primary }]}>
-              <Ionicons name="calendar" size={24} color={COLORS.white} />
-              <Text style={styles.topStatNumber}>{totalFase3}</Text>
-              <Text style={styles.topStatLabel}>Eventos totales (Fase 3)</Text>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="school-outline" size={72} color={COLORS.grayMedium} />
             </View>
-            
-            <View style={[styles.topStatCard, { backgroundColor: COLORS.accent }]}>
-              <Ionicons name="school" size={24} color={COLORS.white} />
-              <Text style={styles.topStatNumber}>{uniqueFaculties}</Text>
-              <Text style={styles.topStatLabel}>Facultades</Text>
-            </View>
+            <Text style={styles.emptyTitle}>{completedEvents.length === 0 ? 'No hay eventos completados' : 'Sin resultados'}</Text>
+            <Text style={styles.emptyText}>
+              {completedEvents.length === 0
+                ? 'No se encontraron eventos de Fase 3 completados organizados por facultad.'
+                : 'No hay eventos que coincidan con los filtros aplicados. Intenta ajustar la búsqueda.'}
+            </Text>
+            {(completedEvents.length > 0 && (searchTerm || facultadFiltro !== 'todas')) && (
+              <TouchableOpacity
+                style={styles.clearFiltersButton}
+                onPress={() => { setSearchTerm(''); setFacultadFiltro('todas'); }}
+                accessibilityRole="button"
+              >
+                <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
+              </TouchableOpacity>
+            )}
           </View>
-        )}
-
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => `event-${item.id}`}
-          renderItem={renderEventItem}
-          renderSectionHeader={renderSectionHeader}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          stickySectionHeadersEnabled={true}
-          scrollEnabled={false}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconContainer}>
-                <Ionicons 
-                  name={totalFase3 === 0 ? 'filter-outline' : 'time-outline'} 
-                  size={80} 
-                  color={COLORS.grayMedium} 
-                />
-              </View>
-              <Text style={styles.emptyTitle}>
-                {totalFase3 === 0 ? 'No hay eventos de Fase 3' : 'Ningún evento en esta vista'}
-              </Text>
-              <Text style={styles.emptyText}>
-                {totalFase3 === 0 
-                  ? 'No se encontraron eventos de Fase 3 organizados por facultad'
-                  : `Hay ${eventosPróximos.length} evento${eventosPróximos.length !== 1 ? 's' : ''} próximo${eventosPróximos.length !== 1 ? 's' : ''} y ${finalizedCount} completado${finalizedCount !== 1 ? 's' : ''}.`}
-              </Text>
-            </View>
-          }
-        />
-
-        {totalFase3 > 0 && (
-          <View style={styles.bottomStatsContainer}>
-            <View style={[styles.bottomStatCard, { backgroundColor: COLORS.primary }]}>
-              <Ionicons name="layers" size={20} color={COLORS.white} />
-              <Text style={styles.bottomStatNumber}>{totalFase3}</Text>
-              <Text style={styles.bottomStatLabel}>Total Fase 3</Text>
-            </View>
-            
-            <View style={[styles.bottomStatCard, { backgroundColor: COLORS.accent }]}>
-              <Ionicons name="school" size={20} color={COLORS.white} />
-              <Text style={styles.bottomStatNumber}>{uniqueFaculties}</Text>
-              <Text style={styles.bottomStatLabel}>Facultades</Text>
-            </View>
-            
-            <View style={[styles.bottomStatCard, { backgroundColor: COLORS.info }]}>
-              <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
-              <Text style={styles.bottomStatNumber}>{finalizedCount}</Text>
-              <Text style={styles.bottomStatLabel}>Completados</Text>
-            </View>
-          </View>
-        )}
-      </ScrollView>
+        }
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
-  loadingText: { marginTop: 16, fontSize: 16, color: COLORS.grayText, fontWeight: '500' },
-  header: {
-    backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 50 : 16, paddingBottom: 16, paddingHorizontal: 16,
-    ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 8 }, android: { elevation: 4 } }),
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
-  backButton: { padding: 8, marginRight: 8 },
-  headerTextContainer: { flex: 1 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.white },
-  headerSubtitle: { fontSize: 13, color: 'rgba(255, 255, 255, 0.8)', marginTop: 2 },
-  refreshButton: { padding: 8, marginLeft: 8 },
-  rotating: { transform: [{ rotate: '180deg' }] },
-  topStatsContainer: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
-  topStatCard: { flex: 1, borderRadius: 16, padding: 20, alignItems: 'center', justifyContent: 'center', ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 }, android: { elevation: 3 } }) },
-  topStatNumber: { fontSize: 28, fontWeight: 'bold', color: COLORS.white, marginTop: 8 },
-  topStatLabel: { fontSize: 12, color: COLORS.white, marginTop: 4, fontWeight: '600', opacity: 0.9 },
-  bottomStatsContainer: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 16, gap: 12, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.white },
-  bottomStatCard: { flex: 1, borderRadius: 12, padding: 12, alignItems: 'center', justifyContent: 'center', ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4 }, android: { elevation: 2 } }) },
-  bottomStatNumber: { fontSize: 24, fontWeight: 'bold', color: COLORS.white, marginTop: 4 },
-  bottomStatLabel: { fontSize: 10, color: COLORS.white, marginTop: 2, fontWeight: '500', opacity: 0.9 },
-  sectionHeader: { backgroundColor: COLORS.background, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 8 },
-  sectionHeaderContent: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, padding: 12, borderRadius: 12, ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4 }, android: { elevation: 2 } }) },
-  facultyDot: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.darkText, flex: 1 },
-  countBadge: { backgroundColor: COLORS.background, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  countText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
-  listContent: { paddingBottom: 20, paddingHorizontal: 16 },
-  eventCard: { backgroundColor: COLORS.white, borderRadius: 16, marginBottom: 12, overflow: 'hidden', flexDirection: 'row', ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 }, android: { elevation: 2 } }) },
-  facultyBar: { width: 6 },
-  cardContent: { flex: 1, padding: 16 },
-  eventHeader: { marginBottom: 12 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 },
-  eventTitle: { fontSize: 16, fontWeight: '700', color: COLORS.darkText, flex: 1, marginRight: 8 },
-  idBadge: { backgroundColor: COLORS.background, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  idText: { fontSize: 11, fontWeight: '700', color: COLORS.primary },
-  badgeContainer: { marginTop: 4 },
-  monthBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, gap: 4 },
-  monthBadgeText: { fontSize: 11, fontWeight: '600', color: COLORS.white },
-  infoGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, gap: 12 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 6 },
-  infoText: { fontSize: 12, color: COLORS.grayText, fontWeight: '500', flex: 1 },
-  phaseContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border, marginBottom: 12 },
-  phaseBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, gap: 4 },
-  phaseText: { fontSize: 11, fontWeight: '600', color: COLORS.primary },
-  submissionInfo: { alignItems: 'flex-end' },
-  submittedBy: { fontSize: 11, fontWeight: '500', color: COLORS.grayText },
-  submittedDate: { fontSize: 10, color: COLORS.grayMedium, marginTop: 2 },
-  viewDetailsButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
-  viewDetailsText: { fontSize: 14, fontWeight: '600', color: COLORS.primary, marginRight: 4 },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 80, paddingHorizontal: 32 },
-  emptyIconContainer: { width: 120, height: 120, borderRadius: 60, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  emptyTitle: { fontSize: 22, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 8 },
-  emptyText: { fontSize: 15, color: COLORS.grayText, textAlign: 'center', lineHeight: 22 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.grayText,
+    fontWeight: '500',
+  },
+  refreshButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.cardShadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+      },
+      android: { elevation: 1 },
+    }),
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: COLORS.grayText,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.darkText,
+    outlineStyle: 'none',
+  },
+
+  chipsContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.grayText,
+  },
+  filterChipTextActive: {
+    color: COLORS.white,
+  },
+
+  resultsText: {
+    fontSize: 12,
+    color: COLORS.grayText,
+    fontWeight: '500',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    marginTop: 14,
+    marginBottom: 8,
+    marginHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.cardShadow,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+      },
+      android: { elevation: 1 },
+    }),
+  },
+  facultyIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionHeaderText: {
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.darkText,
+  },
+  countBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  countText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  listContent: {
+    paddingBottom: 24,
+  },
+
+  eventCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    marginBottom: 10,
+    marginHorizontal: 16,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.cardShadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+      },
+      android: { elevation: 1 },
+    }),
+  },
+  facultyBar: {
+    width: 5,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
+  },
+  cardContent: {
+    flex: 1,
+    padding: 14,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 8,
+  },
+  titleWrap: {
+    flex: 1,
+  },
+  eventTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.darkText,
+  },
+  eventId: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginTop: 2,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.successLight,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 5,
+  },
+  infoText: {
+    fontSize: 12,
+    color: COLORS.grayText,
+    fontWeight: '500',
+    flex: 1,
+  },
+  avatarCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  facultyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  facultyChipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  facultyChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.grayText,
+    flex: 1,
+  },
+  fase3Badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  fase3Text: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.darkText,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.grayText,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  clearFiltersButton: {
+    marginTop: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+  },
+  clearFiltersText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });
 
 export default EventosCompletados;

@@ -10,16 +10,16 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 const getToken = async () => {
-  if (Platform.OS === 'web') { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } }
+  if (Platform.OS === 'web') { try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; } }
   try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
 };
 
 const C = {
-  primary: '#E95A0C', primaryLight: '#FFF0E6',
-  success: '#10B981', successLight: '#D1FAE5',
+  primary: '#C44B0A', primaryLight: '#FFF0E6',
+  success: '#047857', successLight: '#D1FAE5',
   warning: '#F59E0B', warningLight: '#FEF3C7',
   danger: '#EF4444',  dangerLight: '#FEE2E2',
   info: '#3B82F6',    infoLight: '#DBEAFE',
@@ -66,7 +66,7 @@ const RecursoCard = ({ item, onEdit }) => {
       <View style={{ flex: 1 }}>
         <View style={st.cardTop}>
           <Text style={st.cardName} numberOfLines={1}>{item.nombre_recurso}</Text>
-          <TouchableOpacity style={st.editBtn} onPress={() => onEdit(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+           <TouchableOpacity style={st.editBtn} onPress={() => onEdit(item)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <Ionicons name="pencil-outline" size={15} color={C.primary} />
           </TouchableOpacity>
         </View>
@@ -194,6 +194,7 @@ const InventarioDAF = () => {
             style={st.searchInput}
             placeholder="Buscar recurso…"
             placeholderTextColor={C.t3}
+            accessibilityLabel="Buscar"
             value={search}
             onChangeText={setSearch}
           />

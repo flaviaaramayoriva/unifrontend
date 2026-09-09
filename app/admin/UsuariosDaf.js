@@ -22,14 +22,14 @@ import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const getTokenAsync = async () => {
   const TOKEN_KEY = 'adminAuthToken';
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -46,9 +46,9 @@ const deleteTokenAsync = async () => {
   const TOKEN_KEY = 'adminAuthToken';
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al eliminar token de localStorage en web:", e);
+      console.error("Error al eliminar token de sessionStorage en web:", e);
     }
   } else {
     try {
@@ -60,11 +60,11 @@ const deleteTokenAsync = async () => {
 };
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
   background: '#F9FAFB',
@@ -335,6 +335,7 @@ const UsuariosDaf = () => {
         transparent={true}
         animationType="fade"
         onRequestClose={() => setShowUserModal(false)}
+        accessibilityViewIsModal={true}
       >
         <Pressable
           style={styles.modalOverlay}
@@ -346,6 +347,8 @@ const UsuariosDaf = () => {
               <TouchableOpacity
                 onPress={() => setShowUserModal(false)}
                 style={styles.modalCloseButton}
+                accessibilityLabel="Cerrar"
+                accessibilityRole="button"
               >
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
@@ -462,6 +465,7 @@ const UsuariosDaf = () => {
             <TextInput
               style={styles.searchInput}
               placeholder="Buscar por nombre o email..."
+              accessibilityLabel="Buscar"
               value={searchTerm}
               onChangeText={setSearchTerm}
               placeholderTextColor="#888"

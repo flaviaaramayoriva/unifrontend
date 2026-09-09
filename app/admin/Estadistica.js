@@ -10,12 +10,12 @@ import * as SecureStore from 'expo-secure-store';
 import { PieChart, LineChart } from 'react-native-chart-kit';
 
 //const API_BASE_URL = 'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    return localStorage.getItem('adminAuthToken');
+    return sessionStorage.getItem('adminAuthToken');
   } else {
     return await SecureStore.getItemAsync('adminAuthToken');
   }
@@ -23,18 +23,18 @@ const getTokenAsync = async () => {
 
 const getUserRoleAsync = async () => {
   if (Platform.OS === 'web') {
-    return localStorage.getItem('userRole'); // guarda el rol al hacer login
+    return sessionStorage.getItem('userRole'); // guarda el rol al hacer login
   } else {
     return await SecureStore.getItemAsync('userRole');
   }
 };
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
   background: '#F9FAFB',
@@ -130,7 +130,7 @@ const EstadisticaScreen = () => {
     backgroundColor: COLORS.surface,
     backgroundGradientFrom: COLORS.surface,
     backgroundGradientTo: COLORS.surface,
-    color: (opacity = 1) => `rgba(233, 90, 12, ${opacity})`,
+    color: (opacity = 1) => `rgba(196, 75, 10, ${opacity})`,
     labelColor: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
     style: { borderRadius: 16 },
     propsForLabels: { fontSize: 10 },
@@ -151,7 +151,7 @@ const EstadisticaScreen = () => {
           const val = Number(d.eventos);
           return isNaN(val) ? 0 : val;
         }),
-        color: (opacity = 1) => `rgba(233, 90, 12, ${opacity})`,
+        color: (opacity = 1) => `rgba(196, 75, 10, ${opacity})`,
         strokeWidth: 2
       }],
       legend: ["Eventos"]

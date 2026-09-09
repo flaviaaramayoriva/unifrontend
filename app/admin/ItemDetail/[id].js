@@ -18,15 +18,15 @@ import CustomAlert from '../../../components/CustomAlert';
 import { useFocusEffect } from '@react-navigation/native';
 
 // Configuración de API
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -42,9 +42,9 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al eliminar token de localStorage en web:", e);
+      console.error("Error al eliminar token de sessionStorage en web:", e);
     }
   } else {
     try {
@@ -58,7 +58,7 @@ const deleteTokenAsync = async () => {
 const COLORS = {
   accent: '#0052A0',
   secondary: '#2980b9',
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   background: '#f8fafc',
   surface: '#ffffff',
   success: '#27ae60',

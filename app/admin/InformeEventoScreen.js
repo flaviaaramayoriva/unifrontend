@@ -20,12 +20,12 @@ import * as SecureStore from 'expo-secure-store';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -34,7 +34,7 @@ const getTokenAsync = async () => {
 const COLORS = {
   accent: '#0052A0',
   secondary: '#2980b9',
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   background: '#f8fafc',
   surface: '#ffffff',
   success: '#27ae60',
@@ -329,14 +329,14 @@ const InformeEventoScreen = () => {
     return `<html><head><meta charset="UTF-8"><style>
       @page { margin: 1.5cm; }
       body { font-family: Arial, sans-serif; color: #333; font-size: 12px; }
-      h1 { color: #E95A0C; border-bottom: 2px solid #E95A0C; padding-bottom: 5px; font-size: 22px; }
-      h2 { color: #E95A0C; border-bottom: 1px solid #E95A0C; padding-bottom: 3px; font-size: 16px; margin-top: 20px; }
-      .section-title { background: #E95A0C; color: #fff; font-weight: bold; padding: 6px 10px; margin-top: 20px; margin-bottom: 10px; font-size: 14px; border-radius: 4px; }
+      h1 { color: #C44B0A; border-bottom: 2px solid #C44B0A; padding-bottom: 5px; font-size: 22px; }
+      h2 { color: #C44B0A; border-bottom: 1px solid #C44B0A; padding-bottom: 3px; font-size: 16px; margin-top: 20px; }
+      .section-title { background: #C44B0A; color: #fff; font-weight: bold; padding: 6px 10px; margin-top: 20px; margin-bottom: 10px; font-size: 14px; border-radius: 4px; }
       table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
       th { background: #f4f4f4; font-weight: bold; }
       td, th { border: 1px solid #ccc; padding: 6px; font-size: 11px; }
       .balance-box { background: #ecf0f1; padding: 10px; font-weight: bold; text-align: right; margin-top: 10px; border-radius: 4px; font-size: 14px; }
-      .text-block { background: #f9f9f9; padding: 10px; border-left: 4px solid #E95A0C; margin-bottom: 10px; white-space: pre-wrap; }
+      .text-block { background: #f9f9f9; padding: 10px; border-left: 4px solid #C44B0A; margin-bottom: 10px; white-space: pre-wrap; }
       ul { margin: 0; padding-left: 20px; }
     </style></head><body>
       <h1>Informe del Evento: ${event?.title || ''}</h1>
@@ -623,9 +623,9 @@ const InformeEventoScreen = () => {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}><Ionicons name="arrow-back" size={24} color={COLORS.white} /></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="arrow-back" size={24} color={COLORS.white} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Informe del Evento</Text>
-        <TouchableOpacity onPress={generarPDF}><Ionicons name="print-outline" size={24} color={COLORS.white} /></TouchableOpacity>
+        <TouchableOpacity onPress={generarPDF} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="print-outline" size={24} color={COLORS.white} /></TouchableOpacity>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -937,7 +937,7 @@ const InformeEventoScreen = () => {
               <Ionicons name="arrow-forward" size={20} color={COLORS.grayText} />
               <View style={[styles.compareBox, { backgroundColor: '#E3F2FD' }]}>
                 <Text style={styles.compareBoxLabel}>REAL</Text>
-                <TextInput style={[styles.compareBoxInput, !readOnly && styles.editableInput]} editable={!readOnly} value={participacionReal} onChangeText={setParticipacionReal} placeholder="Ingrese el valor real" />
+                <TextInput style={[styles.compareBoxInput, !readOnly && styles.editableInput]} editable={!readOnly} value={participacionReal} onChangeText={setParticipacionReal} placeholder="Ingrese el valor real" accessibilityLabel="Participación Efectiva" />
               </View>
             </View>
           </View>
@@ -955,7 +955,7 @@ const InformeEventoScreen = () => {
               <Ionicons name="arrow-forward" size={20} color={COLORS.grayText} />
               <View style={[styles.compareBox, { backgroundColor: '#E3F2FD' }]}>
                 <Text style={styles.compareBoxLabel}>REAL</Text>
-                <TextInput style={[styles.compareBoxInput, !readOnly && styles.editableInput]} editable={!readOnly} value={satisfaccionReal} onChangeText={setSatisfaccionReal} placeholder="Ingrese el valor real" />
+                <TextInput style={[styles.compareBoxInput, !readOnly && styles.editableInput]} editable={!readOnly} value={satisfaccionReal} onChangeText={setSatisfaccionReal} placeholder="Ingrese el valor real" accessibilityLabel="Índice de Satisfacción" />
               </View>
             </View>
           </View>
@@ -973,7 +973,7 @@ const InformeEventoScreen = () => {
               <Ionicons name="arrow-forward" size={20} color={COLORS.grayText} />
               <View style={[styles.compareBox, { backgroundColor: '#E3F2FD' }]}>
                 <Text style={styles.compareBoxLabel}>REAL</Text>
-                <TextInput style={[styles.compareBoxInput, styles.multilineCompare, !readOnly && styles.editableInput]} editable={!readOnly} multiline value={otrosResultadosReal} onChangeText={setOtrosResultadosReal} placeholder="Ingrese los resultados reales" />
+                <TextInput style={[styles.compareBoxInput, styles.multilineCompare, !readOnly && styles.editableInput]} editable={!readOnly} multiline value={otrosResultadosReal} onChangeText={setOtrosResultadosReal} placeholder="Ingrese los resultados reales" accessibilityLabel="Otros resultados" />
               </View>
             </View>
           </View>
@@ -1011,17 +1011,17 @@ const InformeEventoScreen = () => {
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{row.descripcion || '-'}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellDesc, styles.inputCell, styles.inputCellDesc]} editable={!readOnly} placeholder="Descripción" value={row.descripcion} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'descripcion', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellDesc, styles.inputCell, styles.inputCellDesc]} editable={!readOnly} placeholder="Descripción" accessibilityLabel="Descripción" value={row.descripcion} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'descripcion', v)} />
                 )}
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>{row.cantidad || '0'}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0" value={String(row.cantidad)} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'cantidad', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0" accessibilityLabel="Cantidad" value={String(row.cantidad)} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'cantidad', v)} />
                 )}
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(row.precio_unitario || 0).toFixed(2)}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0.00" value={String(row.precio_unitario)} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'precio_unitario', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0.00" accessibilityLabel="Precio Unitario" value={String(row.precio_unitario)} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'precio_unitario', v)} />
                 )}
                 <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>Bs {(row.total || 0).toFixed(2)}</Text>
                 {!readOnly && <TouchableOpacity onPress={() => removeRow(setEgresosReales, egresosReales, index)} style={{ width: 24, alignItems: 'center' }}><Ionicons name="trash-outline" size={18} color={COLORS.logout} /></TouchableOpacity>}
@@ -1051,17 +1051,17 @@ const InformeEventoScreen = () => {
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{row.descripcion || '-'}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellDesc, styles.inputCell, styles.inputCellDesc]} editable={!readOnly} placeholder="Descripción" value={row.descripcion} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'descripcion', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellDesc, styles.inputCell, styles.inputCellDesc]} editable={!readOnly} placeholder="Descripción" accessibilityLabel="Descripción" value={row.descripcion} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'descripcion', v)} />
                 )}
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>{row.cantidad || '0'}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0" value={String(row.cantidad)} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'cantidad', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0" accessibilityLabel="Cantidad" value={String(row.cantidad)} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'cantidad', v)} />
                 )}
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(row.precio_unitario || 0).toFixed(2)}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0.00" value={String(row.precio_unitario)} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'precio_unitario', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0.00" accessibilityLabel="Precio Unitario" value={String(row.precio_unitario)} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'precio_unitario', v)} />
                 )}
                 <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>Bs {(row.total || 0).toFixed(2)}</Text>
                 {!readOnly && <TouchableOpacity onPress={() => removeRow(setIngresosReales, ingresosReales, index)} style={{ width: 24, alignItems: 'center' }}><Ionicons name="trash-outline" size={18} color={COLORS.logout} /></TouchableOpacity>}
@@ -1099,6 +1099,7 @@ const InformeEventoScreen = () => {
                 value={infoPrensa} 
                 onChangeText={setInfoPrensa} 
                 placeholder="¿Qué se hizo, quiénes, por qué/para qué, cuándo, dónde?" 
+                accessibilityLabel="Información de prensa"
               />
             )}
           </View>
@@ -1122,6 +1123,7 @@ const InformeEventoScreen = () => {
                 value={analisisDesviaciones} 
                 onChangeText={setAnalisisDesviaciones} 
                 placeholder="Análisis de causas de las desviaciones detectadas" 
+                accessibilityLabel="Análisis de Desviaciones"
               />
             )}
           </View>
@@ -1145,6 +1147,7 @@ const InformeEventoScreen = () => {
                 value={leccionesAprendidas} 
                 onChangeText={setLeccionesAprendidas} 
                 placeholder="Lecciones aprendidas del evento" 
+                accessibilityLabel="Lecciones Aprendidas"
               />
             )}
           </View>
@@ -1172,14 +1175,14 @@ const InformeEventoScreen = () => {
         </TouchableOpacity>
       </ScrollView>
       
-      <Modal visible={showInscritos} animationType="slide" onRequestClose={() => setShowInscritos(false)}>
+      <Modal visible={showInscritos} animationType="slide" onRequestClose={() => setShowInscritos(false)} accessibilityViewIsModal={true}>
         <View style={{ flex: 1, backgroundColor: COLORS.background }}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setShowInscritos(false)}>
+            <TouchableOpacity onPress={() => setShowInscritos(false)} accessibilityLabel="Cerrar" accessibilityRole="button">
               <Ionicons name="close" size={24} color={COLORS.white} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Estudiantes Inscritos</Text>
-            <TouchableOpacity onPress={generarPDFRegistro}>
+            <TouchableOpacity onPress={generarPDFRegistro} accessibilityLabel="Imprimir" accessibilityRole="button">
               <Ionicons name="print-outline" size={24} color={COLORS.white} />
             </TouchableOpacity>
           </View>
@@ -1190,6 +1193,10 @@ const InformeEventoScreen = () => {
               data={inscritos}
               keyExtractor={(item) => String(item.idestudiante)}
               contentContainerStyle={{ padding: 16 }}
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+              removeClippedSubviews={Platform.OS === 'android'}
               ListEmptyComponent={<Text style={{ textAlign: 'center', color: COLORS.grayText, marginTop: 30 }}>Aún no hay estudiantes inscritos.</Text>}
               ListHeaderComponent={
                 <View style={styles.eventInfoCard}>

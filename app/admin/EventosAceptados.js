@@ -6,13 +6,13 @@ import * as SecureStore from 'expo-secure-store';
 import { COLORS } from './EventosPendientes'; // o importa tus colores desde donde los tengas
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   } else {
     return await SecureStore.getItemAsync(TOKEN_KEY);
   }
@@ -61,6 +61,9 @@ const EventosAceptados = () => {
       <FlatList
         data={events}
         keyExtractor={(item) => item.id}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{item.title}</Text>

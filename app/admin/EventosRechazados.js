@@ -17,29 +17,31 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 //const API_BASE_URL = 'https://evento.cidtec-uc.com'; 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   accent: '#EF4444',
-  background: '#F9FAFB',
+  background: '#F6F7F9',
   surface: '#FFFFFF',
-  textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
-  success: '#10B981',
+  textPrimary: '#0F172A',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
+  success: '#16A34A',
   warning: '#F59E0B',
+  info: '#3B82F6',
   white: '#FFFFFF',
 };
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -93,7 +95,12 @@ const RejectedEventCard = ({ event }) => {
   console.log('  - fechaevento:', event.fechaevento);
   console.log('  - fecha_rechazo:', event.fecha_rechazo);
   console.log('  - created_at:', event.created_at);
-  
+
+  const getInitials = () => {
+    const name = event.academico?.nombre || 'A';
+    return name.trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+  };
+
   return (
     <View style={styles.eventCard}>
       <View style={styles.eventHeader}>
@@ -136,7 +143,9 @@ const RejectedEventCard = ({ event }) => {
 
       <View style={styles.eventFooter}>
         <View style={styles.academicoInfo}>
-          <Ionicons name="person-circle-outline" size={16} color={COLORS.textSecondary} />
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{getInitials()}</Text>
+          </View>
           <Text style={styles.academicoName}>
             {event.academico?.nombre || 'Académico'}
           </Text>
@@ -256,13 +265,7 @@ const EventosRechazados = () => {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Eventos Rechazados</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <AdminHeader title="Eventos Rechazados" subtitle="Revisión de eventos rechazados" eyebrow="Gestión" primaryColor={COLORS.primary} />
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
             <Ionicons name="close-circle-outline" size={80} color={COLORS.textTertiary} />
@@ -284,15 +287,17 @@ const EventosRechazados = () => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Eventos Rechazados</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} disabled={refreshing}>
-          <Ionicons name="refresh-outline" size={22} color={COLORS.white} />
-        </TouchableOpacity>
-      </View>
+      <AdminHeader
+        title="Eventos Rechazados"
+        subtitle="Revisión de eventos rechazados"
+        eyebrow="Gestión"
+        primaryColor={COLORS.primary}
+        rightActions={(
+          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} disabled={refreshing} accessibilityRole="button" accessibilityLabel="Actualizar">
+            <Ionicons name="refresh-outline" size={22} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      />
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
@@ -301,6 +306,7 @@ const EventosRechazados = () => {
             style={styles.searchInput}
             placeholder="Buscar por nombre, facultad, académico..."
             placeholderTextColor={COLORS.textTertiary}
+            accessibilityLabel="Buscar"
             value={searchQuery}
             onChangeText={setSearchQuery}
             clearButtonMode="while-editing"
@@ -316,27 +322,24 @@ const EventosRechazados = () => {
         </Text>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsScroll}>
-        <View style={[styles.statCard, { backgroundColor: COLORS.accent }]}>
-          <Ionicons name="close-circle-outline" size={20} color={COLORS.white} />
-          <Text style={styles.statNumber}>{events.length}</Text>
-          <Text style={styles.statLabel}>Total</Text>
+      <View style={styles.miniStatsRow}>
+        <View style={[styles.miniStatCard, { borderLeftColor: COLORS.accent }]}>
+          <Text style={[styles.miniStatValue, { color: COLORS.accent }]}>{events.length}</Text>
+          <Text style={styles.miniStatLabel}>Rechazados</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: COLORS.warning }]}>
-          <Ionicons name="school-outline" size={20} color={COLORS.white} />
-          <Text style={styles.statNumber}>
+        <View style={[styles.miniStatCard, { borderLeftColor: COLORS.warning }]}>
+          <Text style={[styles.miniStatValue, { color: COLORS.warning }]}>
             {[...new Set(events.map(e => e.facultad).filter(Boolean))].length}
           </Text>
-          <Text style={styles.statLabel}>Facultades</Text>
+          <Text style={styles.miniStatLabel}>Facultades</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: COLORS.primary }]}>
-          <Ionicons name="person-outline" size={20} color={COLORS.white} />
-          <Text style={styles.statNumber}>
+        <View style={[styles.miniStatCard, { borderLeftColor: COLORS.info }]}>
+          <Text style={[styles.miniStatValue, { color: COLORS.info }]}>
             {[...new Set(events.map(e => e.idacademico).filter(Boolean))].length}
           </Text>
-          <Text style={styles.statLabel}>Académicos</Text>
+          <Text style={styles.miniStatLabel}>Académicos</Text>
         </View>
-      </ScrollView>
+      </View>
 
      <FlatList
   data={filteredEvents}
@@ -344,6 +347,10 @@ const EventosRechazados = () => {
   renderItem={({ item }) => <RejectedEventCard event={item} />}
   contentContainerStyle={styles.listContent}
   showsVerticalScrollIndicator={false}
+  initialNumToRender={8}
+  maxToRenderPerBatch={8}
+  windowSize={5}
+  removeClippedSubviews={Platform.OS === 'android'}
   refreshControl={
     <RefreshControl
       refreshing={refreshing}
@@ -377,15 +384,28 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: COLORS.primary },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.white },
-  refreshButton: { padding: 4 },
+  refreshButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.14)', justifyContent: 'center', alignItems: 'center' },
   searchContainer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   searchInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
   searchInput: { flex: 1, fontSize: 14, color: COLORS.textPrimary, padding: 0 },
   resultsCount: { fontSize: 12, color: COLORS.textTertiary, marginTop: 8, textAlign: 'right' },
-  statsScroll: { paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
-  statCard: { width: 120, paddingVertical: 12,paddingHorizontal: 10, borderRadius: 12, alignItems: 'center',justifyContent: 'center', gap: 4 },
-  statNumber: { fontSize: 22, fontWeight: '800', color: COLORS.white },
-  statLabel: { fontSize: 11, color: COLORS.white, opacity: 0.9, textAlign: 'center', includeFontPadding: false },
+  miniStatsRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+  miniStatCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 14,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  miniStatValue: { fontSize: 22, fontWeight: '800' },
+  miniStatLabel: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500', marginTop: 2 },
+  avatarCircle: { width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: 6 },
+  avatarText: { fontSize: 11, fontWeight: '800', color: COLORS.primary },
   listContent: { padding: 16, gap: 12 },
   eventCard: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },

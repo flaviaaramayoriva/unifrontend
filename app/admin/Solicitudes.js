@@ -9,16 +9,16 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend1-production.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 const getToken = async () => {
-  if (Platform.OS === 'web') { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } }
+  if (Platform.OS === 'web') { try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; } }
   try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
 };
 
 const C = {
-  primary: '#E95A0C', primaryLight: '#FFF0E6',
-  success: '#10B981', successLight: '#D1FAE5',
+  primary: '#C44B0A', primaryLight: '#FFF0E6',
+  success: '#047857', successLight: '#D1FAE5',
   warning: '#F59E0B', warningLight: '#FEF3C7',
   danger: '#EF4444',  dangerLight: '#FEE2E2',
   info: '#3B82F6',    infoLight: '#DBEAFE',
@@ -94,6 +94,7 @@ const RecursoRow = ({ recurso, onChangeAprobado, editable }) => {
           <TextInput
             style={s.cantInput}
             keyboardType="numeric"
+            accessibilityLabel="Cantidad aprobar"
             value={val}
             onChangeText={handleChange}
             maxLength={4}
@@ -168,13 +169,13 @@ const DetalleSolicitudModal = ({ visible, solicitud, onClose, onSubmit, submitti
   const isPendiente = solicitud.estado.toLowerCase() === 'pendiente';
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose} accessibilityViewIsModal={true}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={s.modalWrap}>
 
           {/* Header modal */}
           <View style={s.modalHeader}>
-            <TouchableOpacity onPress={onClose} style={s.closeBtn}>
+            <TouchableOpacity onPress={onClose} style={s.closeBtn} accessibilityLabel="Cerrar" accessibilityRole="button">
               <Ionicons name="close" size={20} color={C.t2} />
             </TouchableOpacity>
             <Text style={s.modalTitle}>Solicitud #{solicitud.id}</Text>
@@ -248,6 +249,7 @@ const DetalleSolicitudModal = ({ visible, solicitud, onClose, onSubmit, submitti
                   numberOfLines={3}
                   placeholder="Notas o motivo de rechazo…"
                   placeholderTextColor={C.t3}
+                  accessibilityLabel="Observaciones"
                   value={observaciones}
                   onChangeText={setObservaciones}
                 />
@@ -410,6 +412,7 @@ export default function Solicitudes() {
           style={s.searchInput}
           placeholder="Buscar evento o solicitante…"
           placeholderTextColor={C.t3}
+          accessibilityLabel="Buscar"
           value={search}
           onChangeText={setSearch}
         />

@@ -8,20 +8,21 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const { width } = Dimensions.get('window');
 //const API_BASE_URL = 'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FF7A3D', accent: '#4CAF50',
-  background: '#F8F9FA', surface: '#FFFFFF', success: '#2E7D32',
-  warning: '#FFA726', danger: '#E53935', info: '#3498db', purple: '#9b59b6',
+  primary: '#C44B0A', primaryLight: '#FFEDD5', accent: '#EF4444',
+  background: '#F6F7F9', surface: '#FFFFFF', success: '#16A34A',
+  warning: '#F59E0B', danger: '#EF4444', info: '#3B82F6', purple: '#9b59b6',
   blue: '#2196F3', white: '#FFFFFF', grayLight: '#E0E0E0',
-  grayMedium: '#BDBDBD', grayText: '#757575', darkText: '#212121',
-  cardShadow: '#000000', border: '#E8E8E8', pendingOrange: '#FF9800',
-  pendingLight: '#FFF3E0',
+  grayMedium: '#BDBDBD', grayText: '#64748B', darkText: '#0F172A',
+  cardShadow: '#000000', border: '#E6E9EF', pendingOrange: '#FF9800',
+  pendingLight: '#FFF3E0', textSecondary: '#64748B',
 };
 
   const DIAS_MINIMOS_APROBACION = 7;
@@ -94,7 +95,7 @@ const formatSubmittedDate = (date) => {
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -102,7 +103,7 @@ const getTokenAsync = async () => {
 
 const deleteTokenAsync = async () => {
   try {
-    if (Platform.OS === 'web') localStorage.removeItem(TOKEN_KEY);
+    if (Platform.OS === 'web') sessionStorage.removeItem(TOKEN_KEY);
     else await SecureStore.deleteItemAsync(TOKEN_KEY);
   } catch (e) { console.error("Error al eliminar token:", e); }
 };
@@ -129,6 +130,21 @@ const PendingEventCard = ({ event,userRole, onView, onApprove, onReject, onMarkE
   };
   const badge = getStatusBadge();
   const isAdmin = userRole === 'admin' || userRole === 'administrador';
+
+  const getCountdownLabel = () => {
+    if (daysRemaining === null) return { text: fechaEvento?.split('T')[0] || 'Sin fecha', color: COLORS.grayText };
+    if (daysRemaining < 0) return { text: `Vencido hace ${Math.abs(daysRemaining)}d`, color: COLORS.danger };
+    if (daysRemaining === 0) return { text: 'Se ejecuta HOY', color: COLORS.warning };
+    if (daysRemaining <= 3) return { text: `En ${daysRemaining} día${daysRemaining !== 1 ? 's' : ''}`, color: COLORS.warning };
+    return { text: `En ${daysRemaining} día${daysRemaining !== 1 ? 's' : ''}`, color: COLORS.success };
+  };
+  const countdown = getCountdownLabel();
+
+  const getInitials = () => {
+    const name = event.academico?.nombre || event.organizer || 'A';
+    return name.trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+  };
+  const initials = getInitials();
 
   return (
     <View style={[styles.eventCard, isAlreadyExpired && styles.eventCardExpired]}>
@@ -177,9 +193,9 @@ const PendingEventCard = ({ event,userRole, onView, onApprove, onReject, onMarkE
 
       <View style={styles.infoGrid}>
         <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color={COLORS.grayText} />
-          <Text style={[styles.infoText, isAlreadyExpired && { color: COLORS.danger, fontWeight:'600' }]}>
-            {fechaEvento?.split('T')[0] || 'Sin fecha'}
+          <Ionicons name="calendar-outline" size={16} color={countdown.color} />
+          <Text style={[styles.infoText, { color: countdown.color, fontWeight: '600' }]}>
+            {countdown.text}
           </Text>
         </View>
         <View style={styles.infoRow}>
@@ -193,7 +209,9 @@ const PendingEventCard = ({ event,userRole, onView, onApprove, onReject, onMarkE
       {/* Footer */}
       <View style={styles.footerContainer}>
         <View style={styles.academicoInfo}>
-          <Ionicons name="person-circle-outline" size={16} color={COLORS.textSecondary} />
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
           <Text style={styles.academicoName}>
             {event.academico?.nombre || event.organizer || 'Académico'}
           </Text>
@@ -264,6 +282,7 @@ const EventosPendientes = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [eventToReject, setEventToReject] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('todos');
 
   const fetchPendingEvents = useCallback(async () => {
     try {
@@ -456,6 +475,18 @@ const openRejectModal = (event) => {
     return { total: events.length, urgent, expired };
   }, [events]);
 
+  const filteredEvents = useMemo(() => {
+    if (activeFilter === 'urgentes') {
+      return events.filter(e => { const d=getDaysRemaining(e.fechaevento||e.date); return d!==null && d>=0 && d<=3; });
+    }
+    return events;
+  }, [events, activeFilter]);
+
+  const filters = [
+    { key:'todos', label:`Todos (${stats.total})` },
+    { key:'urgentes', label:`Por vencer (${stats.urgent})` },
+  ];
+
   if (loading) return (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={COLORS.primary} />
@@ -466,58 +497,53 @@ const openRejectModal = (event) => {
 return (
   <View style={styles.container}>
     <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-    
-    <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={()=>router.back()}>
-        <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-      </TouchableOpacity>
-      <View style={styles.headerTextContainer}>
-        <Text style={styles.headerTitle}>Eventos Pendientes</Text>
-        <Text style={styles.headerSubtitle}>
-          {stats.total} evento{stats.total!==1?'s':''}
-          {stats.urgent > 0 && (
-            <Text style={{color: COLORS.warning}}> • {stats.urgent} por vencer</Text>
-          )}
-        </Text>
-      </View>
-      <TouchableOpacity 
-        style={styles.refreshButton} 
-        onPress={onRefresh} 
-        disabled={refreshing}
-      >
-        <Ionicons 
-          name="refresh" 
-          size={24} 
-          color={COLORS.white} 
-          style={refreshing && {transform: [{rotate: '360deg'}]}} 
-        />
-      </TouchableOpacity>
-    </View>
+
+    <AdminHeader
+      title="Eventos Pendientes"
+      subtitle={`${stats.total} evento${stats.total!==1?'s':''}${stats.urgent > 0 ? ` • ${stats.urgent} por vencer` : ''}`}
+      eyebrow="Revisión"
+      primaryColor={COLORS.primary}
+      rightActions={(
+        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} disabled={refreshing} accessibilityRole="button" accessibilityLabel="Actualizar">
+          <Ionicons name="refresh" size={24} color={COLORS.white} />
+        </TouchableOpacity>
+      )}
+    />
 
     {stats.total > 0 && (
-      <View style={styles.summaryBanner}>
-        <View style={styles.summaryIconContainer}>
-          <Ionicons 
-            name={stats.expired>0 ? "alert-circle" : "hourglass-outline"} 
-            size={24} 
-            color={stats.expired>0 ? COLORS.danger : COLORS.pendingOrange} 
-          />
+      <View style={styles.miniStatsRow}>
+        <View style={[styles.miniStatCard, { borderLeftColor: COLORS.pendingOrange }]}>
+          <Text style={styles.miniStatValue}>{stats.total}</Text>
+          <Text style={styles.miniStatLabel}>Pendientes</Text>
         </View>
-        <View style={styles.summaryTextContainer}>
-          <Text style={styles.summaryTitle}>
-            {stats.expired>0 ? '⚠️ Atención Requerida' : 'Revisión Pendiente'}
-          </Text>
-          <Text style={styles.summarySubtitle}>
-            {stats.expired>0 
-              ? `${stats.expired} evento${stats.expired!==1?'s':''} ya vencido${stats.expired!==1?'s':''}` 
-              : `${stats.total} evento${stats.total!==1?'s':''} esperando aprobación`}
-          </Text>
+        <View style={[styles.miniStatCard, { borderLeftColor: COLORS.warning }]}>
+          <Text style={[styles.miniStatValue, { color: COLORS.warning }]}>{stats.urgent}</Text>
+          <Text style={styles.miniStatLabel}>Por vencer</Text>
+        </View>
+        <View style={[styles.miniStatCard, { borderLeftColor: COLORS.success }]}>
+          <Text style={[styles.miniStatValue, { color: COLORS.success }]}>{stats.expired}</Text>
+          <Text style={styles.miniStatLabel}>Vencidos</Text>
         </View>
       </View>
     )}
 
+    <View style={styles.filterChipsRow}>
+      {filters.map(f => (
+        <TouchableOpacity
+          key={f.key}
+          style={[styles.filterChip, activeFilter === f.key && styles.filterChipActive]}
+          onPress={() => setActiveFilter(f.key)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.filterChipText, activeFilter === f.key && styles.filterChipTextActive]}>
+            {f.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+
     <FlatList
-      data={events}
+      data={filteredEvents}
       renderItem={({item, index}) => {
         console.log(`Renderizando evento ${index}:`, item.idevento || item.id);
         return (
@@ -550,12 +576,19 @@ return (
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconContainer}>
-            <Ionicons name="checkmark-done-circle-outline" size={80} color={COLORS.grayMedium} />
+            <Ionicons name={activeFilter === 'urgentes' ? "time-outline" : "checkmark-done-circle-outline"} size={80} color={COLORS.grayMedium} />
           </View>
-          <Text style={styles.emptyTitle}>¡Todo al día!</Text>
-          <Text style={styles.emptyText}>No hay eventos pendientes de aprobación</Text>
+          <Text style={styles.emptyTitle}>
+            {activeFilter === 'urgentes' ? 'Sin eventos urgentes' : '¡Todo al día!'}
+          </Text>
+          <Text style={styles.emptyText}>
+            {activeFilter === 'urgentes' ? 'No hay eventos por vencer ahora mismo' : 'No hay eventos pendientes de aprobación'}
+          </Text>
         </View>
       }
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      windowSize={5}
       removeClippedSubviews={Platform.OS === 'android'}
     />
 {showRejectModal && (
@@ -577,6 +610,7 @@ return (
           style={styles.reasonInput}
           placeholder="Ingresa el motivo del rechazo..."
           placeholderTextColor={COLORS.grayMedium}
+          accessibilityLabel="Motivo del rechazo"
           value={rejectReason}
           onChangeText={setRejectReason}
           multiline
@@ -632,13 +666,27 @@ const styles = StyleSheet.create({
   headerTextContainer:{flex:1},
   headerTitle:{fontSize:20,fontWeight:'bold',color:COLORS.white},
   headerSubtitle:{fontSize:13,color:'rgba(255,255,255,0.8)',marginTop:2},
-  refreshButton:{padding:8,marginLeft:8},
+  refreshButton:{width:48,height:48,borderRadius:12,backgroundColor:'rgba(255,255,255,0.14)',justifyContent:'center',alignItems:'center'},
   
   summaryBanner:{backgroundColor:COLORS.white,flexDirection:'row',alignItems:'center',marginHorizontal:16,marginTop:16,padding:16,borderRadius:16,borderLeftWidth:4,borderLeftColor:COLORS.pendingOrange,...Platform.select({ios:{shadowColor:COLORS.cardShadow,shadowOffset:{width:0,height:2},shadowOpacity:0.08,shadowRadius:8},android:{elevation:2}})},
   summaryIconContainer:{width:48,height:48,borderRadius:24,backgroundColor:COLORS.pendingLight,justifyContent:'center',alignItems:'center',marginRight:12},
   summaryTextContainer:{flex:1},
   summaryTitle:{fontSize:16,fontWeight:'700',color:COLORS.darkText,marginBottom:2},
   summarySubtitle:{fontSize:13,color:COLORS.grayText},
+  
+  miniStatsRow:{flexDirection:'row',gap:10,paddingHorizontal:16,marginTop:16},
+  miniStatCard:{flex:1,backgroundColor:COLORS.white,borderRadius:14,padding:14,borderLeftWidth:4,...Platform.select({ios:{shadowColor:COLORS.cardShadow,shadowOffset:{width:0,height:2},shadowOpacity:0.08,shadowRadius:6},android:{elevation:2}})},
+  miniStatValue:{fontSize:22,fontWeight:'800',color:COLORS.pendingOrange},
+  miniStatLabel:{fontSize:12,color:COLORS.grayText,fontWeight:'500',marginTop:2},
+
+  filterChipsRow:{flexDirection:'row',gap:8,paddingHorizontal:16,marginTop:12},
+  filterChip:{paddingHorizontal:14,paddingVertical:7,borderRadius:20,backgroundColor:COLORS.surface,borderWidth:1,borderColor:COLORS.border},
+  filterChipActive:{backgroundColor:COLORS.primary,borderColor:COLORS.primary},
+  filterChipText:{fontSize:13,fontWeight:'600',color:COLORS.grayText},
+  filterChipTextActive:{color:COLORS.white},
+
+  avatarCircle:{width:26,height:26,borderRadius:13,backgroundColor:COLORS.primaryLight,justifyContent:'center',alignItems:'center',marginRight:6},
+  avatarText:{fontSize:11,fontWeight:'800',color:COLORS.primary},
   
   eventsList:{flex:1},
   eventsListContent:{padding:16},

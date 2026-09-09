@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   logout: '#e74c3c',
   white: '#fff',
   darkText: '#1e293b',
@@ -40,7 +40,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
   confirmDestructive = false,
 }) => {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" accessibilityViewIsModal={true}>
       <View style={styles.overlay}>
         <View style={styles.alertContainer}>
           <Text style={styles.title}>{title}</Text>

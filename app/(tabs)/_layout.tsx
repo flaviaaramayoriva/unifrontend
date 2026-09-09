@@ -18,7 +18,7 @@ function TabBarIcon(props: TabBarIconProps) {
 export default function TabLayout() {
   return (
     <Tabs screenOptions={{
-        tabBarActiveTintColor: '#FF5733',
+        tabBarActiveTintColor: '#C44B0A',
         tabBarInactiveTintColor: 'gray',
          tabBarStyle: {
             backgroundColor: '#fff', // Fondo de la barra de pestañas
@@ -27,18 +27,18 @@ export default function TabLayout() {
         }
       }}>
     <Tabs.Screen
-        name="index" // Esto hace referencia a app/(tabs)/index.tsx (tu componente Home)
+        name="index"
         options={{
-          title: 'Inicio', // Título para la pestaña
-          headerShown: false, // Puedes ocultar el header si ya lo manejas en el _layout principal
+          title: 'Inicio',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="Home"
         options={{
-          title: 'Inicio',
-          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          title: 'Eventos',
+          tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
         }}
       />
       <Tabs.Screen

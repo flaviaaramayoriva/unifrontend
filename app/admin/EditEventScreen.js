@@ -19,16 +19,16 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 //const API_BASE_URL = 'https://evento.cidtec-uc.com';
-const API_BASE_URL ='https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL =process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
   background: '#F9FAFB',
@@ -47,8 +47,8 @@ const COLORS = {
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); }
-    catch (e) { console.error("Error localStorage:", e); return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); }
+    catch (e) { console.error("Error sessionStorage:", e); return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); }
     catch (e) { console.error("Error SecureStore:", e); return null; }
@@ -396,6 +396,7 @@ const EditEventScreen = () => {
           multiline && styles.inputMultiline,
           errors[field] && styles.inputError
         ]}
+        accessibilityLabel={label}
         value={form[field] || ''}
         onChangeText={(text) => handleChange(field, text)}
         placeholder={placeholder}
@@ -419,6 +420,7 @@ const EditEventScreen = () => {
         <Ionicons name="calendar-outline" size={20} color={COLORS.textSecondary} />
         <TextInput
           style={[styles.input, { flex: 1, marginLeft: 10 }]}
+          accessibilityLabel="Fecha"
           value={form[field] || ''}
           onChangeText={(text) => handleChange(field, text)}
           placeholder="YYYY-MM-DD"
@@ -440,6 +442,7 @@ const EditEventScreen = () => {
         <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
         <TextInput
           style={[styles.input, { flex: 1, marginLeft: 10 }]}
+          accessibilityLabel="Hora"
           value={form[field] || ''}
           onChangeText={(text) => handleChange(field, text)}
           placeholder="HH:MM"

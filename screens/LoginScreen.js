@@ -16,29 +16,22 @@ const LoginScreen = ({ navigation }) => {
     { label: 'Director de carrera', value: 'Director' },
   ];*/
 
-  const handleLogin = async () => {
+const handleLogin = async () => {
     setLoading(true);
     try {
       const trimmedUsername = username.trim();
       const trimmedPassword = password.trim();
       console.log("send",{trimmedUsername,trimmedPassword});
-    const response = await axios.post('http://192.168.0.167:5000/auth/login', { 
-      userName: trimmedUsername,
-      contrasenia: trimmedPassword }, {
+    const response = await axios.post((process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app') + '/auth/login', { 
+      email: trimmedUsername,
+      password: trimmedPassword }, {
       timeout: 5000,
     });
     if (response.status === 200) {
-      const { userId, token } = response.data; // Assuming your backend returns userId and token
-      await AsyncStorage.setItem('userToken', token);
+      const { token, user } = response.data;
+      await AsyncStorage.setItem('adminAuthToken', token);
       
-    
-      const usersResponse = await axios.get('http://192.168.0.167:5000/events', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      navigation.navigate('EventosAdmin',{event:Event.data});
-      
+      navigation.navigate('HomeAcademico');
     }
   } catch (error) {
     if (error.response) {
@@ -51,7 +44,7 @@ const LoginScreen = ({ navigation }) => {
   } finally {
     setLoading(false);
   }
-  };
+};
 
   return (
     <View style={styles.sectionContainer}>

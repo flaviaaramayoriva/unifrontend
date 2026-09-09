@@ -16,11 +16,11 @@ import dayjs from 'dayjs';
 if (Platform.OS === 'android') {
   determinedApiBaseUrl = 'http://10.0.2.2:3001/api';
 } else if (Platform.OS === 'ios') {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 } else { // web y otros
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
-const API_BASE_URL =  'https://cidtec-uc.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 // --- CONFIGURACIÓN DE IDIOMA PARA CALENDARIO ---
 LocaleConfig.locales['es'] = {
@@ -111,7 +111,7 @@ const ProyectoEvento = () => {
     const onDayPressEventoPrincipal = (day) => {
         const newDate = dayjs(day.dateString).hour(fechaHoraSeleccionada.getHours()).minute(fechaHoraSeleccionada.getMinutes()).toDate();
         setFechaHoraSeleccionada(newDate);
-        setMarkedDates({ [day.dateString]: { selected: true, marked: true, selectedColor: '#e95a0c' } });
+        setMarkedDates({ [day.dateString]: { selected: true, marked: true, selectedColor: '#C44B0A' } });
     };
 
     const onChangeTimeEventoPrincipal = (event, selectedDate) => {
@@ -223,11 +223,11 @@ const ProyectoEvento = () => {
             const totalItem = (parseFloat(item.cantidad) || 0) * (parseFloat(item.precio) || 0);
             return (
               <View key={item.key} style={styles.tablaRow}>
-                <TextInput style={[styles.rowInput, { flex: 2.5 }]} value={item.descripcion} onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'descripcion', text)} />
-                <TextInput style={[styles.rowInput, { flex: 1, textAlign: 'center' }]} value={item.cantidad} onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'cantidad', text.replace(/[^0-9.]/g, ''))} keyboardType="numeric" />
-                <TextInput style={[styles.rowInput, { flex: 1, textAlign: 'center' }]} value={item.precio} onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'precio', text.replace(/[^0-9.]/g, ''))} keyboardType="numeric" />
+                <TextInput style={[styles.rowInput, { flex: 2.5 }]} value={item.descripcion} onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'descripcion', text)} accessibilityLabel="Descripción" />
+                <TextInput style={[styles.rowInput, { flex: 1, textAlign: 'center' }]} value={item.cantidad} onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'cantidad', text.replace(/[^0-9.]/g, ''))} keyboardType="numeric" accessibilityLabel="Cantidad" />
+                <TextInput style={[styles.rowInput, { flex: 1, textAlign: 'center' }]} value={item.precio} onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'precio', text.replace(/[^0-9.]/g, ''))} keyboardType="numeric" accessibilityLabel="Precio" />
                 <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
-                <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={styles.deleteButtonSmall}><Ionicons name="close-circle" size={20} color="#e74c3c" /></TouchableOpacity>
+                <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={styles.deleteButtonSmall} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Eliminar fila" accessibilityRole="button"><Ionicons name="close-circle" size={20} color="#e74c3c" /></TouchableOpacity>
               </View>
             );
           })}
@@ -245,45 +245,45 @@ const ProyectoEvento = () => {
                 <View style={styles.formSection}>
                     <Text style={styles.sectionTitle}>I. Datos Generales</Text>
                     <Text style={styles.label}>Nombre del Evento</Text>
-                    <View style={styles.inputGroup}><Ionicons name="text-outline" size={20} style={styles.inputIcon} /><TextInput style={styles.input} value={nombreevento} onChangeText={setNombreevento} placeholder="Nombre del evento" /></View>
+                    <View style={styles.inputGroup}><Ionicons name="text-outline" size={20} style={styles.inputIcon} /><TextInput style={styles.input} value={nombreevento} onChangeText={setNombreevento} placeholder="Nombre del evento" accessibilityLabel="Nombre del evento" /></View>
                     <Text style={styles.label}>Lugar del Evento</Text>
-                    <View style={styles.inputGroup}><Ionicons name="location-outline" size={20} style={styles.inputIcon} /><TextInput style={styles.input} value={lugarevento} onChangeText={setLugarevento} placeholder="Lugar (opcional)" /></View>
+                    <View style={styles.inputGroup}><Ionicons name="location-outline" size={20} style={styles.inputIcon} /><TextInput style={styles.input} value={lugarevento} onChangeText={setLugarevento} placeholder="Lugar (opcional)" accessibilityLabel="Lugar (opcional)" /></View>
                     <Text style={styles.label}>Nombre del Responsable</Text>
-                    <View style={styles.inputGroup}><Ionicons name="person-outline" size={20} style={styles.inputIcon} /><TextInput style={styles.input} value={nombreResponsable} onChangeText={setNombreResponsable} placeholder="Nombre del responsable" /></View>
+                    <View style={styles.inputGroup}><Ionicons name="person-outline" size={20} style={styles.inputIcon} /><TextInput style={styles.input} value={nombreResponsable} onChangeText={setNombreResponsable} placeholder="Nombre del responsable" accessibilityLabel="Nombre del responsable" /></View>
                     <Text style={styles.label}>Fecha del Evento</Text>
-                    <View style={styles.calendarContainer}><Calendar onDayPress={onDayPressEventoPrincipal} markedDates={markedDates} theme={{ todayTextColor: '#e95a0c', arrowColor: '#e95a0c', selectedDayTextColor: '#ffffff' }} /></View>
+                    <View style={styles.calendarContainer}><Calendar onDayPress={onDayPressEventoPrincipal} markedDates={markedDates} theme={{ todayTextColor: '#C44B0A', arrowColor: '#C44B0A', selectedDayTextColor: '#ffffff' }} /></View>
                     <Text style={styles.label}>Hora del Evento</Text>
-                    <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.datePickerButton}><Ionicons name="time-outline" size={20} color="#e95a0c" style={{marginRight: 10}} /><Text style={styles.datePickerText}>{fechaHoraSeleccionada.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.datePickerButton}><Ionicons name="time-outline" size={20} color="#C44B0A" style={{marginRight: 10}} /><Text style={styles.datePickerText}>{fechaHoraSeleccionada.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</Text></TouchableOpacity>
                     {showTimePicker && <DateTimePicker value={fechaHoraSeleccionada} mode="time" is24Hour={true} display="default" onChange={onChangeTimeEventoPrincipal} />}
                     <Text style={styles.label}>Tipo de Evento</Text>
-                    {[{ key: 'curricular', label: 'Curricular' }, { key: 'extracurricular', label: 'Extracurricular' }, { key: 'marketing', label: 'Marketing' }, { key: 'internacionalizacion', label: 'Internacionalización' }].map((item) => (<TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setTipoEvento, item.key)}><Ionicons name={tipoEvento[item.key] ? "checkbox" : "square-outline"} size={24} color={tipoEvento[item.key] ? "#e95a0c" : "#888"} /><Text style={styles.checkboxLabel}>{item.label}</Text></TouchableOpacity>))}
-                    <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setTipoEvento, 'otro')}><Ionicons name={tipoEvento.otro ? "checkbox" : "square-outline"} size={24} color={tipoEvento.otro ? "#e95a0c" : "#888"} /><Text style={styles.checkboxLabel}>Otro</Text></TouchableOpacity>
-                    {tipoEvento.otro && (<View style={styles.otroInputContainer}><TextInput style={styles.input} value={tipoEvento.otroTexto} onChangeText={(text) => handleOtroTextChange(setTipoEvento, text)} placeholder="¿Cuál?" /></View>)}
+                    {[{ key: 'curricular', label: 'Curricular' }, { key: 'extracurricular', label: 'Extracurricular' }, { key: 'marketing', label: 'Marketing' }, { key: 'internacionalizacion', label: 'Internacionalización' }].map((item) => (<TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setTipoEvento, item.key)}><Ionicons name={tipoEvento[item.key] ? "checkbox" : "square-outline"} size={24} color={tipoEvento[item.key] ? "#C44B0A" : "#888"} /><Text style={styles.checkboxLabel}>{item.label}</Text></TouchableOpacity>))}
+                    <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setTipoEvento, 'otro')}><Ionicons name={tipoEvento.otro ? "checkbox" : "square-outline"} size={24} color={tipoEvento.otro ? "#C44B0A" : "#888"} /><Text style={styles.checkboxLabel}>Otro</Text></TouchableOpacity>
+                    {tipoEvento.otro && (<View style={styles.otroInputContainer}><TextInput style={styles.input} value={tipoEvento.otroTexto} onChangeText={(text) => handleOtroTextChange(setTipoEvento, text)} placeholder="¿Cuál?" accessibilityLabel="Tipo de evento" /></View>)}
                 </View>
 
                 {/* --- SECCIÓN II: OBJETIVOS --- */}
                 <View style={styles.formSection}>
                     <Text style={styles.sectionTitle}>II. Objetivos del Evento</Text>
                     <Text style={styles.label}>Seleccione uno o más objetivos:</Text>
-                    {[{ key: 'modeloPedagogico', label: 'Modelo Pedagógico' }, { key: 'posicionamiento', label: 'Posicionamiento' }, { key: 'internacionalizacion', label: 'Internacionalización' }, { key: 'rsu', label: 'RSU' }, { key: 'fidelizacion', label: 'Fidelización' }].map((item) => (<TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}><Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#e95a0c" : "#888"} /><Text style={styles.checkboxLabel}>{item.label}</Text></TouchableOpacity>))}
-                    <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, 'otro')}><Ionicons name={objetivos.otro ? "checkbox" : "square-outline"} size={24} color={objetivos.otro ? "#e95a0c" : "#888"} /><Text style={styles.checkboxLabel}>Otro</Text></TouchableOpacity>
-                    {objetivos.otro && (<View style={styles.otroInputContainer}><TextInput style={styles.input} value={objetivos.otroTexto} onChangeText={(text) => handleOtroTextChange(setObjetivos, text)} placeholder="¿Cuál?" /></View>)}
+                    {[{ key: 'modeloPedagogico', label: 'Modelo Pedagógico' }, { key: 'posicionamiento', label: 'Posicionamiento' }, { key: 'internacionalizacion', label: 'Internacionalización' }, { key: 'rsu', label: 'RSU' }, { key: 'fidelizacion', label: 'Fidelización' }].map((item) => (<TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}><Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} /><Text style={styles.checkboxLabel}>{item.label}</Text></TouchableOpacity>))}
+                    <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, 'otro')}><Ionicons name={objetivos.otro ? "checkbox" : "square-outline"} size={24} color={objetivos.otro ? "#C44B0A" : "#888"} /><Text style={styles.checkboxLabel}>Otro</Text></TouchableOpacity>
+                    {objetivos.otro && (<View style={styles.otroInputContainer}><TextInput style={styles.input} value={objetivos.otroTexto} onChangeText={(text) => handleOtroTextChange(setObjetivos, text)} placeholder="¿Cuál?" accessibilityLabel="Otro objetivo" /></View>)}
                     <Text style={styles.label}>Argumentación</Text>
-                    <View style={[styles.inputGroup, {alignItems: 'flex-start'}]}><Ionicons name="text-outline" size={20} style={[styles.inputIcon,{paddingTop:14 }]} /><TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={4} placeholder="Breve descripción..." value={argumentacion} onChangeText={setArgumentacion} /></View>
+                    <View style={[styles.inputGroup, {alignItems: 'flex-start'}]}><Ionicons name="text-outline" size={20} style={[styles.inputIcon,{paddingTop:14 }]} /><TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={4} placeholder="Breve descripción..." value={argumentacion} onChangeText={setArgumentacion} accessibilityLabel="Argumentación" /></View>
                 </View>
 
                 {/* --- SECCIÓN III: RESULTADOS ESPERADOS --- */}
                 <View style={styles.formSection}>
                     <Text style={styles.sectionTitle}>III. Resultados Esperados</Text>
-                    <View style={styles.resultadoRow}><Text style={styles.resultadoLabel}>Participación Efectiva</Text><TextInput style={styles.resultadoInput} placeholder="Ej: 150 asistentes" value={resultadosEsperados.participacion} onChangeText={(text) => handleResultadoChange('participacion', text)} /></View>
-                    <View style={styles.resultadoRow}><Text style={styles.resultadoLabel}>Índice de Satisfacción</Text><TextInput style={styles.resultadoInput} placeholder="Ej: 90% de satisfacción" value={resultadosEsperados.satisfaccion} onChangeText={(text) => handleResultadoChange('satisfaccion', text)} /></View>
-                    <View style={styles.resultadoRow}><Text style={styles.resultadoLabel}>Otro</Text><TextInput style={styles.resultadoInput} placeholder="Otro resultado medible" value={resultadosEsperados.otro} onChangeText={(text) => handleResultadoChange('otro', text)} /></View>
+                    <View style={styles.resultadoRow}><Text style={styles.resultadoLabel}>Participación Efectiva</Text><TextInput style={styles.resultadoInput} placeholder="Ej: 150 asistentes" value={resultadosEsperados.participacion} onChangeText={(text) => handleResultadoChange('participacion', text)} accessibilityLabel="Participación Efectiva" /></View>
+                    <View style={styles.resultadoRow}><Text style={styles.resultadoLabel}>Índice de Satisfacción</Text><TextInput style={styles.resultadoInput} placeholder="Ej: 90% de satisfacción" value={resultadosEsperados.satisfaccion} onChangeText={(text) => handleResultadoChange('satisfaccion', text)} accessibilityLabel="Índice de Satisfacción" /></View>
+                    <View style={styles.resultadoRow}><Text style={styles.resultadoLabel}>Otro</Text><TextInput style={styles.resultadoInput} placeholder="Otro resultado medible" value={resultadosEsperados.otro} onChangeText={(text) => handleResultadoChange('otro', text)} accessibilityLabel="Otro resultado" /></View>
                 </View>
 
                 {/* --- SECCIÓN V: RECURSOS --- */}
                 <View style={styles.formSection}>
                     <Text style={styles.sectionTitle}>V. Recursos Necesarios</Text>
-                    <View style={[styles.inputGroup, { alignItems: 'flex-start' }]}><Ionicons name="cube-outline" size={20} style={[styles.inputIcon, { paddingTop: 14 }]} /><TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={5} placeholder="Detalle aquí los recursos..." value={recursosNecesarios} onChangeText={setRecursosNecesarios} /></View>
+                    <View style={[styles.inputGroup, { alignItems: 'flex-start' }]}><Ionicons name="cube-outline" size={20} style={[styles.inputIcon, { paddingTop: 14 }]} /><TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={5} placeholder="Detalle aquí los recursos..." value={recursosNecesarios} onChangeText={setRecursosNecesarios} accessibilityLabel="Recursos Necesarios" /></View>
                 </View>
 
                 {/* --- SECCIÓN VI: PRESUPUESTO --- */}
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     balanceContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#e0e0e0', padding: 12, borderRadius: 8, marginTop: 10 },
     balanceText: { fontWeight: 'bold', fontSize: 16 },
     balanceAmount: { fontWeight: 'bold', fontSize: 16 },
-    submitButton: { backgroundColor: '#e95a0c', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 20 },
+    submitButton: { backgroundColor: '#C44B0A', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 20 },
     buttonDisabled: { backgroundColor: '#f9bda3' },
     submitButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 });

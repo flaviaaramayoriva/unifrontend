@@ -18,13 +18,13 @@ import * as SecureStore from 'expo-secure-store';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -32,7 +32,7 @@ const getTokenAsync = async () => {
 
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { localStorage.removeItem(TOKEN_KEY); } catch { }
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch { }
   } else {
     try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch { }
   }
@@ -41,7 +41,7 @@ const deleteTokenAsync = async () => {
 const COLORS = {
   accent: '#0052A0',
   secondary: '#2980b9',
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   background: '#f8fafc',
   surface: '#ffffff',
   success: '#27ae60',
@@ -361,7 +361,7 @@ const EventDetailScreen = () => {
     const serviciosHtml = event.serviciosContratados?.length > 0 ? `<div class="section"><div class="section-title">Servicios Contratados</div><ul>${event.serviciosContratados.map(s => `<li><strong>${s.nombreServicio || 'Servicio'}</strong><br/>${s.caracteristica ? `Características: ${s.caracteristica}<br/>` : ''}Fecha Entrega: ${formatDate(s.fechaInicio)}${s.observaciones ? `<br/>Obs: ${s.observaciones}` : ''}</li>`).join('')}</ul></div>` : '';
     const layoutHtml = event.layout ? `<div class="section"><div class="section-title">Layout del Evento</div><div>${event.layout.nombre || `Layout ID: ${event.layout.idlayout}`}</div></div>` : '';
     
-    return `<html><head><meta charset="UTF-8"><style>@page { margin: 1cm; } body { font-family: Arial, sans-serif; padding: 1.5cm; line-height: 1.6; color: #333; } h1 { color: #E95A0C; margin-bottom: 0.5cm; border-bottom: 2px solid #E95A0C; padding-bottom: 0.3cm; } .section { margin-bottom: 1cm; } .section-title { font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 0.3cm; padding-bottom: 0.2cm; border-bottom: 1px solid #ddd; } .detail-row { margin-bottom: 0.2cm; } .label { font-weight: bold; color: #2980b9; } ul { padding-left: 1cm; margin: 0.2cm 0; } li { margin-bottom: 0.3cm; } .budget { font-weight: bold; } .positive { color: #27ae60; } .negative { color: #e74c3c; }</style></head><body><h1>${event.title}</h1><div class="section"><div class="section-title">Datos Generales</div><div class="detail-row"><span class="label">Fecha:</span> ${event.date}</div><div class="detail-row"><span class="label">Hora:</span> ${event.time}</div><div class="detail-row"><span class="label">Ubicación:</span> ${event.location}</div><div class="detail-row"><span class="label">Estado:</span> ${event.status}</div>${event.responsable ? `<div class="detail-row"><span class="label">Responsable:</span> ${event.responsable}</div>` : ''}</div>${event.creador ? `<div class="section"><div class="section-title">Propuesto por</div><div>${event.creador.nombre}</div><div>Rol: ${event.creador.role}</div><div>Email: ${event.creador.email}</div></div>` : ''}${event.Clasificacion ? `<div class="section"><div class="section-title">Clasificación Estratégica</div><div>${event.Clasificacion.nombreClasificacion} - ${event.Clasificacion.nombresubcategoria}</div></div>` : ''}${event.tiposEvento?.length > 0 ? `<div class="section"><div class="section-title">Tipos de Evento</div><ul>${event.tiposEvento.map(t => `<li>${t.nombretipo || 'Tipo desconocido'}</li>`).join('')}</ul></div>` : ''}${event.resultados ? `<div class="section"><div class="section-title">Resultados Esperados</div>${event.resultados.participacion_esperada ? `<div class="detail-row">Participación: ${event.resultados.participacion_esperada}</div>` : ''}${event.resultados.satisfaccion_esperada ? `<div class="detail-row">Satisfacción: ${event.resultados.satisfaccion_esperada}</div>` : ''}${event.resultados.otros_resultados ? `<div class="detail-row">Otros: ${event.resultados.otros_resultados}</div>` : ''}</div>` : ''}${event.recursos?.length > 0 ? `<div class="section"><div class="section-title">Recursos</div><ul>${event.recursos.map(r => `<li>${r.cantidad || 1} x ${r.nombre_recurso} (${r.recurso_tipo})</li>`).join('')}</ul></div>` : ''}${event.comite?.length > 0 ? `<div class="section"><div class="section-title">Comité del Evento</div><ul>${event.comite.map(m => `<li>${[m.nombre, m.apellidopat, m.apellidomat].filter(Boolean).join(' ')} (${m.role}) - ${m.email}</li>`).join('')}</ul></div>` : ''}${actividadesHtml('Actividades Previas', event.actividadesPrevias)}${actividadesHtml('Actividades Durante el Evento', event.actividadesDurante)}${actividadesHtml('Actividades Después del Evento', event.actividadesPost)}${serviciosHtml}${layoutHtml}${event.presupuesto ? `<div class="section"><div class="section-title">Presupuesto</div><div class="detail-row">Total Egresos: Bs ${(event.presupuesto.total_egresos || 0).toFixed(2)}</div><div class="detail-row">Total Ingresos: Bs ${(event.presupuesto.total_ingresos || 0).toFixed(2)}</div><div class="detail-row budget ${(event.presupuesto.balance || 0) >= 0 ? 'positive' : 'negative'}">Balance: Bs ${(event.presupuesto.balance || 0).toFixed(2)}</div></div>` : ''}</body></html>`;
+    return `<html><head><meta charset="UTF-8"><style>@page { margin: 1cm; } body { font-family: Arial, sans-serif; padding: 1.5cm; line-height: 1.6; color: #333; } h1 { color: #C44B0A; margin-bottom: 0.5cm; border-bottom: 2px solid #C44B0A; padding-bottom: 0.3cm; } .section { margin-bottom: 1cm; } .section-title { font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 0.3cm; padding-bottom: 0.2cm; border-bottom: 1px solid #ddd; } .detail-row { margin-bottom: 0.2cm; } .label { font-weight: bold; color: #2980b9; } ul { padding-left: 1cm; margin: 0.2cm 0; } li { margin-bottom: 0.3cm; } .budget { font-weight: bold; } .positive { color: #27ae60; } .negative { color: #e74c3c; }</style></head><body><h1>${event.title}</h1><div class="section"><div class="section-title">Datos Generales</div><div class="detail-row"><span class="label">Fecha:</span> ${event.date}</div><div class="detail-row"><span class="label">Hora:</span> ${event.time}</div><div class="detail-row"><span class="label">Ubicación:</span> ${event.location}</div><div class="detail-row"><span class="label">Estado:</span> ${event.status}</div>${event.responsable ? `<div class="detail-row"><span class="label">Responsable:</span> ${event.responsable}</div>` : ''}</div>${event.creador ? `<div class="section"><div class="section-title">Propuesto por</div><div>${event.creador.nombre}</div><div>Rol: ${event.creador.role}</div><div>Email: ${event.creador.email}</div></div>` : ''}${event.Clasificacion ? `<div class="section"><div class="section-title">Clasificación Estratégica</div><div>${event.Clasificacion.nombreClasificacion} - ${event.Clasificacion.nombresubcategoria}</div></div>` : ''}${event.tiposEvento?.length > 0 ? `<div class="section"><div class="section-title">Tipos de Evento</div><ul>${event.tiposEvento.map(t => `<li>${t.nombretipo || 'Tipo desconocido'}</li>`).join('')}</ul></div>` : ''}${event.resultados ? `<div class="section"><div class="section-title">Resultados Esperados</div>${event.resultados.participacion_esperada ? `<div class="detail-row">Participación: ${event.resultados.participacion_esperada}</div>` : ''}${event.resultados.satisfaccion_esperada ? `<div class="detail-row">Satisfacción: ${event.resultados.satisfaccion_esperada}</div>` : ''}${event.resultados.otros_resultados ? `<div class="detail-row">Otros: ${event.resultados.otros_resultados}</div>` : ''}</div>` : ''}${event.recursos?.length > 0 ? `<div class="section"><div class="section-title">Recursos</div><ul>${event.recursos.map(r => `<li>${r.cantidad || 1} x ${r.nombre_recurso} (${r.recurso_tipo})</li>`).join('')}</ul></div>` : ''}${event.comite?.length > 0 ? `<div class="section"><div class="section-title">Comité del Evento</div><ul>${event.comite.map(m => `<li>${[m.nombre, m.apellidopat, m.apellidomat].filter(Boolean).join(' ')} (${m.role}) - ${m.email}</li>`).join('')}</ul></div>` : ''}${actividadesHtml('Actividades Previas', event.actividadesPrevias)}${actividadesHtml('Actividades Durante el Evento', event.actividadesDurante)}${actividadesHtml('Actividades Después del Evento', event.actividadesPost)}${serviciosHtml}${layoutHtml}${event.presupuesto ? `<div class="section"><div class="section-title">Presupuesto</div><div class="detail-row">Total Egresos: Bs ${(event.presupuesto.total_egresos || 0).toFixed(2)}</div><div class="detail-row">Total Ingresos: Bs ${(event.presupuesto.total_ingresos || 0).toFixed(2)}</div><div class="detail-row budget ${(event.presupuesto.balance || 0) >= 0 ? 'positive' : 'negative'}">Balance: Bs ${(event.presupuesto.balance || 0).toFixed(2)}</div></div>` : ''}</body></html>`;
   };
 
   const generateEventPDF = async () => {
@@ -398,9 +398,9 @@ const EventDetailScreen = () => {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}><Ionicons name="arrow-back" size={24} color={COLORS.white} /></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="arrow-back" size={24} color={COLORS.white} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Detalles del Evento</Text>
-        <TouchableOpacity onPress={fetchEventDetails}><Ionicons name="refresh" size={24} color={COLORS.white} /></TouchableOpacity>
+        <TouchableOpacity onPress={fetchEventDetails} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="refresh" size={24} color={COLORS.white} /></TouchableOpacity>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -785,7 +785,7 @@ const EventDetailScreen = () => {
             </View>
             <View style={styles.modalBody}>
               <Text style={styles.modalLabel}>Motivo del rechazo <Text style={styles.required}>*</Text></Text>
-              <TextInput style={styles.reasonInput} placeholder="Ingresa el motivo del rechazo..." placeholderTextColor={COLORS.grayText} value={rejectReason} onChangeText={setRejectReason} multiline numberOfLines={4} textAlignVertical="top" autoFocus />
+              <TextInput style={styles.reasonInput} placeholder="Ingresa el motivo del rechazo..." placeholderTextColor={COLORS.grayText} accessibilityLabel="Motivo del rechazo" value={rejectReason} onChangeText={setRejectReason} multiline numberOfLines={4} textAlignVertical="top" autoFocus />
               <Text style={styles.modalHint}>{rejectReason.length} caracteres</Text>
             </View>
             <View style={styles.modalFooter}>

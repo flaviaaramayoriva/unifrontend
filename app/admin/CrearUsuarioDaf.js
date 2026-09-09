@@ -20,7 +20,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import axios from 'axios';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const CrearUsuarioDaf = () => {
   const router = useRouter();
   const role = 'daf';
@@ -80,7 +80,7 @@ const CrearUsuarioDaf = () => {
       let token;
       try {
         if (Platform.OS === 'web') {
-          token = localStorage.getItem(TOKEN_KEY);
+          token = sessionStorage.getItem(TOKEN_KEY);
         } else {
           token = await SecureStore.getItemAsync(TOKEN_KEY);
         }
@@ -282,6 +282,7 @@ const CrearUsuarioDaf = () => {
             options.icon && styles.inputWithIcon,
             errors[field] && styles.inputError
           ]}
+          accessibilityLabel={label}
           placeholder={placeholder}
           value={formData[field]}
           onChangeText={(value) => updateFormData(field, value)}
@@ -386,7 +387,7 @@ const CrearUsuarioDaf = () => {
           options={{ 
             title: 'Nuevo Usuario DAF',
             headerStyle: {
-              backgroundColor: '#e95a0c',
+              backgroundColor: '#C44B0A',
             },
             headerTintColor: '#fff',
             headerTitleStyle: {
@@ -415,7 +416,7 @@ const CrearUsuarioDaf = () => {
                 onPress={prevStep}
                 disabled={isLoading}
               >
-                <Ionicons name="arrow-back" size={20} color="#e95a0c" />
+                <Ionicons name="arrow-back" size={20} color="#C44B0A" />
                 <Text style={styles.secondaryButtonText}>Anterior</Text>
               </TouchableOpacity>
             )}
@@ -452,7 +453,7 @@ const CrearUsuarioDaf = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
   },
   container: {
     flex: 1,
@@ -484,7 +485,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressCircleActive: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
   },
   progressNumber: {
     fontSize: 16,
@@ -501,7 +502,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   progressLineActive: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
   },
   stepTitle: {
     fontSize: 24,
@@ -633,7 +634,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#e95a0c',
+    borderLeftColor: '#C44B0A',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -642,7 +643,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   primaryButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 12,
@@ -650,7 +651,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     flex: 1,
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: {
       width: 0,
       height: 4,
@@ -669,7 +670,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flex: 1,
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
   },
   fullWidthButton: {
     flex: 1,
@@ -685,7 +686,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   secondaryButtonText: {
-    color: '#e95a0c',
+    color: '#C44B0A',
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,

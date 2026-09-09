@@ -5,16 +5,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import { useRouter } from 'expo-router';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY    = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FFEDD5',
-  success: '#10B981', warning: '#F59E0B',
+  primary: '#C44B0A', primaryLight: '#FFEDD5',
+  success: '#047857', warning: '#F59E0B',
   accent: '#EF4444',  secondary: '#4B5563',
-  surface: '#FFFFFF', background: '#F9FAFB',
+  surface: '#FFFFFF', background: '#F1F3F6',
   border: '#E5E7EB',  textPrimary: '#1F2937',
   textSecondary: '#6B7280', textTertiary: '#9CA3AF',
   white: '#FFFFFF',
@@ -26,111 +25,191 @@ const ROL_COLORS = {
 };
 
 const getToken = async () => {
-  if (Platform.OS === 'web') return localStorage.getItem(TOKEN_KEY);
+  if (Platform.OS === 'web') return sessionStorage.getItem(TOKEN_KEY);
   return await SecureStore.getItemAsync(TOKEN_KEY);
 };
 
 // ==========================================
-// 1. COMPONENTE BURBUJA (CON SOPORTE PARA BOT)
+// 0. UTILIDADES VISUALES
 // ==========================================
-const Burbuja = ({ item, myId }) => {
+const initialDe = (nombre) => (nombre || '?').trim().charAt(0).toUpperCase();
+
+const formatTime = (ts) => {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  return `${hh}:${mm}`;
+};
+
+const fechaStr = (e) => {
+  const v = e?.fechaevento || e?.fechaEvento || '';
+  return String(v).split('T')[0];
+};
+
+const hoyStr = () => {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+};
+
+const formatearFecha = (f) => {
+  const s = (f || '').toString().split('T')[0];
+  if (s.length !== 10) return 'Fecha por definir';
+  const [y, m, d] = s.split('-').map(Number);
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  if (!y || !m || !d) return 'Fecha por definir';
+  return `${String(d).padStart(2, '0')} ${meses[m - 1]} ${y}`;
+};
+
+const Avatar = ({ nombre, color, size = 32 }) => (
+  <View style={{
+    width: size, height: size, borderRadius: size / 2,
+    backgroundColor: color + '22', borderWidth: 1, borderColor: color + '55',
+    alignItems: 'center', justifyContent: 'center',
+  }}>
+    <Text style={{ fontSize: size * 0.42, fontWeight: '700', color }}>{initialDe(nombre)}</Text>
+  </View>
+);
+
+// ==========================================
+// 1. COMPONENTE BURBUJA (AGRUPA MENSAJES SEGUIDOS DEL MISMO AUTOR)
+// ==========================================
+const Burbuja = ({ item, myId, esPrimero }) => {
   if (item.system) return (
     <View style={{ alignItems: 'center', marginVertical: 6 }}>
-      <Text style={{ fontSize: 11, color: '#bbb', fontStyle: 'italic' }}>{item.text}</Text>
+      <Text style={{ fontSize: 11, color: '#b0b3bb', fontStyle: 'italic' }}>{item.text}</Text>
     </View>
   );
 
-  // 👉 NUEVO: Mensaje del bot IA
-  if (item.esBot || item.userId === 0) {
+  const isBot = Boolean(item.esBot) || item.userId === 0;
+
+  // Mensaje del bot IA
+  if (isBot) {
     return (
-      <View style={{ flexDirection: 'row', marginVertical: 3, justifyContent: 'flex-start' }}>
-        <View style={{ maxWidth: '80%' }}>
-          <Text style={{ fontSize: 11, color: '#9B59B6', fontWeight: '600', marginBottom: 2, marginLeft: 4 }}>
-            🤖 Asistente IA
-          </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: esPrimero ? 5 : 1, justifyContent: 'flex-start' }}>
+        {esPrimero ? <Avatar nombre="IA" color="#9B59B6" /> : <View style={{ width: 32, height: 32 }} />}
+        <View style={{ maxWidth: '76%' }}>
+          {esPrimero && (
+            <Text style={{ fontSize: 11, color: '#9B59B6', fontWeight: '700', marginBottom: 3, marginLeft: 4 }}>
+              🤖 Asistente IA
+            </Text>
+          )}
           <View style={{
-            backgroundColor: '#F3E5F5',
-            paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16,
-            borderBottomLeftRadius: 2,
+            backgroundColor: '#F3E5F5', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
+            borderTopLeftRadius: esPrimero ? 5 : 18,
             borderLeftWidth: 3, borderLeftColor: '#9B59B6',
-            shadowColor: '#000', shadowOpacity: 0.05,
-            shadowOffset: { width: 0, height: 1 }, shadowRadius: 2, elevation: 1,
           }}>
-            <Text style={{ fontSize: 14, color: '#1F2937' }}>{item.message}</Text>
+            <Text style={{ fontSize: 14, color: '#1F2937', lineHeight: 20 }}>{item.message}</Text>
           </View>
+          <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginLeft: 4 }}>
+            {formatTime(item.timestamp)}
+          </Text>
         </View>
       </View>
     );
   }
 
-  // Mensaje normal de usuario
   const isMe = String(item.userId) === String(myId);
-  const color = ROL_COLORS[item.role] || '#888';
+  const color = ROL_COLORS[item.role] || COLORS.secondary;
+
+  if (isMe) {
+    return (
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginVertical: esPrimero ? 5 : 1 }}>
+        <View style={{ maxWidth: '76%', alignItems: 'flex-end' }}>
+          <View style={{
+            backgroundColor: COLORS.primary, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
+            borderBottomRightRadius: esPrimero ? 5 : 18,
+          }}>
+            <Text style={{ fontSize: 14, color: '#fff', lineHeight: 20 }}>{item.message}</Text>
+          </View>
+          <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginRight: 4 }}>
+            {formatTime(item.timestamp)}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
-    <View style={{ flexDirection: 'row', marginVertical: 3, justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-      <View style={{ maxWidth: '75%' }}>
-        {!isMe && (
-          <Text style={{ fontSize: 11, color, fontWeight: '600', marginBottom: 2, marginLeft: 4 }}>
-            {item.userName || item.userId}
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: esPrimero ? 5 : 1, justifyContent: 'flex-start' }}>
+      {esPrimero ? <Avatar nombre={item.userName} color={color} /> : <View style={{ width: 32, height: 32 }} />}
+      <View style={{ maxWidth: '76%' }}>
+        {esPrimero && (
+          <Text style={{ fontSize: 11, color, fontWeight: '700', marginBottom: 3, marginLeft: 4 }}>
+            {item.userName || 'Usuario'}
           </Text>
         )}
         <View style={{
-          backgroundColor: isMe ? COLORS.primary : COLORS.white,
-          paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16,
-          borderBottomRightRadius: isMe ? 2 : 16,
-          borderBottomLeftRadius: isMe ? 16 : 2,
-          shadowColor: '#000', shadowOpacity: 0.05,
-          shadowOffset: { width: 0, height: 1 }, shadowRadius: 2, elevation: 1,
+          backgroundColor: COLORS.white, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
+          borderTopLeftRadius: esPrimero ? 5 : 18,
+          borderWidth: 1, borderColor: COLORS.border,
         }}>
-          <Text style={{ fontSize: 14, color: isMe ? '#fff' : COLORS.textPrimary }}>{item.message}</Text>
+          <Text style={{ fontSize: 14, color: COLORS.textPrimary, lineHeight: 20 }}>{item.message}</Text>
         </View>
+        <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginLeft: 4 }}>
+          {formatTime(item.timestamp)}
+        </Text>
       </View>
     </View>
   );
 };
 
-const InputPanel = ({ input, setInput, onSend, connected }) => (
-  <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-    <View style={{
-      flexDirection: 'row', padding: 10, backgroundColor: COLORS.white,
-      borderTopWidth: 1, borderColor: COLORS.border, gap: 8, alignItems: 'flex-end',
-    }}>
-      <TextInput
-        value={input} onChangeText={setInput}
-        placeholder={connected ? 'Escribe un mensaje...' : 'Conectando...'}
-        placeholderTextColor="#999"
-        editable={connected}
-        multiline
-        style={{
-          flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 20,
-          paddingHorizontal: 14, paddingVertical: 8, fontSize: 14,
-          backgroundColor: '#f9f9f9', maxHeight: 100,
-        }}
-      />
-      <TouchableOpacity
-        onPress={onSend}
-        disabled={!input.trim() || !connected}
-        style={{
-          backgroundColor: (!input.trim() || !connected) ? '#ccc' : COLORS.primary,
-          borderRadius: 20, width: 44, height: 44,
-          justifyContent: 'center', alignItems: 'center',
-        }}
-      >
-        <Ionicons name="send" size={18} color="#fff" />
-      </TouchableOpacity>
-    </View>
-  </KeyboardAvoidingView>
-);
+// ==========================================
+// 1b. PANEL DE ENTRADA
+// ==========================================
+const InputPanel = ({ input, setInput, onSend, connected }) => {
+  const disabled = !input.trim() || !connected;
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={{
+        flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+        paddingHorizontal: 12, paddingVertical: 10,
+        backgroundColor: COLORS.white, borderTopWidth: 1, borderColor: COLORS.border,
+      }}>
+        <View style={{
+          flex: 1, backgroundColor: '#F3F4F6', borderRadius: 22,
+          paddingHorizontal: 14, paddingVertical: Platform.OS === 'ios' ? 10 : 5,
+          maxHeight: 110,
+        }}>
+          <TextInput
+            value={input}
+            onChangeText={setInput}
+            placeholder={connected ? 'Escribe un mensaje...' : 'Conectando...'}
+            placeholderTextColor={COLORS.textTertiary}
+            accessibilityLabel="Escribe un mensaje"
+            editable={connected}
+            multiline
+            style={{ fontSize: 14, color: COLORS.textPrimary, maxHeight: 100, padding: 0 }}
+          />
+        </View>
+        <TouchableOpacity
+          onPress={onSend}
+          disabled={disabled}
+          activeOpacity={0.7}
+          style={{
+            width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: disabled ? COLORS.border : COLORS.primary,
+          }}
+        >
+          <Ionicons name="send" size={17} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+};
 
 // ==========================================
-// 2. VISTA CHAT (CON INDICADOR DE ESCRITURA)
+// 2. VISTA CHAT
 // ==========================================
 const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, userName, onVolver }) => {
   const [messages, setMessages]   = useState([]);
   const [input, setInput]         = useState('');
   const [connected, setConnected] = useState(false);
-  const [botTyping, setBotTyping] = useState(false); // 👉 NUEVO: Estado para el indicador
+  const [botTyping, setBotTyping] = useState(false);
+  const [usuarios, setUsuarios]   = useState([]);
   const socketRef  = useRef(null);
   const flatRef    = useRef(null);
 
@@ -179,10 +258,10 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
         if (_roomId.startsWith('private_')) {
           socket.emit('join_private', { roomId: _roomId, userId: _userId, userName: _userName });
         } else {
-          socket.emit('join_event', { 
-            eventoId: String(_eventoId), 
-            userId: _userId, 
-            role: _userRole, 
+          socket.emit('join_event', {
+            eventoId: String(_eventoId),
+            userId: _userId,
+            role: _userRole,
             userName: _userName
           });
         }
@@ -208,14 +287,27 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
         setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 100);
       });
 
-      // 👉 NUEVO: Escuchar cuando el bot está "escribiendo"
+      socket.on('user_list', (l) => {
+        if (isMounted) setUsuarios(l || []);
+      });
+
+      socket.on('user_joined', (u) => {
+        if (!isMounted) return;
+        setUsuarios(prev => prev.some(x => String(x.userId) === String(u.userId)) ? prev : [...prev, u]);
+      });
+
+      socket.on('user_left', (u) => {
+        if (!isMounted) return;
+        setUsuarios(prev => prev.filter(x => String(x.userId) !== String(u.userId)));
+      });
+
       socket.on('bot_typing', () => {
         if (!isMounted) return;
         setBotTyping(true);
-        setTimeout(() => setBotTyping(false), 2000); // Se oculta después de 2 segundos
+        setTimeout(() => setBotTyping(false), 2000);
       });
 
-      socket.on('connect_error', (err) => {
+      socket.on('connect_error', () => {
         if (isMounted) setConnected(false);
       });
 
@@ -282,24 +374,53 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
     setInput('');
   };
 
+  const esPrivado = roomId.startsWith('private_');
+  const statusText = connected
+    ? `${subtitulo}${usuarios.length ? ` · ${usuarios.length} en línea` : ''}`
+    : 'Conectando...';
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 10,
-        paddingHorizontal: 12, paddingVertical: 10,
+        paddingHorizontal: 10, paddingVertical: 10,
         backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border,
       }}>
-        <TouchableOpacity onPress={onVolver}>
-          <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
+        <TouchableOpacity
+          onPress={onVolver}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={{
+            width: 36, height: 36, borderRadius: 18,
+            backgroundColor: COLORS.primaryLight,
+            alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
         </TouchableOpacity>
+
+        {esPrivado
+          ? <Avatar nombre={titulo} color={COLORS.primary} size={38} />
+          : (
+            <View style={{
+              width: 38, height: 38, borderRadius: 19,
+              backgroundColor: COLORS.primaryLight,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Ionicons name="chatbubbles" size={20} color={COLORS.primary} />
+            </View>
+          )}
+
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.textPrimary }} numberOfLines={1}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.textPrimary }} numberOfLines={1}>
             {titulo}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: connected ? '#34C759' : '#FF3B30' }} />
-            <Text style={{ fontSize: 10, color: COLORS.textTertiary }}>
-              {subtitulo} · {connected ? 'En línea' : 'Conectando...'}
+            <View style={{
+              width: 7, height: 7, borderRadius: 4,
+              backgroundColor: connected ? COLORS.success : COLORS.accent,
+            }} />
+            <Text style={{ fontSize: 11, color: COLORS.textTertiary }} numberOfLines={1}>
+              {statusText}
             </Text>
           </View>
         </View>
@@ -310,8 +431,15 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
         data={messages}
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 12, flexGrow: 1 }}
-        renderItem={({ item }) => <Burbuja item={item} myId={userId} />}
-        
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item, index }) => {
+          const prev = index > 0 ? messages[index - 1] : null;
+          const esPrimero = !prev
+            || String(prev.userId) !== String(item.userId)
+            || Boolean(prev.esBot) !== Boolean(item.esBot);
+          return <Burbuja item={item} myId={userId} esPrimero={esPrimero} />;
+        }}
+
         ListFooterComponent={
           botTyping ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 6 }}>
@@ -320,14 +448,20 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
             </View>
           ) : null
         }
-        
+
         ListEmptyComponent={
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
-            <Ionicons name="chatbubbles-outline" size={40} color="#ddd" />
-            <Text style={{ color: '#ccc', fontSize: 13, marginTop: 8 }}>
-              {connected ? 'Aún no hay mensajes' : 'Conectando al chat...'}
+            <View style={{
+              width: 72, height: 72, borderRadius: 36,
+              backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center',
+              shadowColor: '#000', shadowOpacity: 0.05,
+              shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2,
+            }}>
+              <Ionicons name="chatbubbles-outline" size={34} color="#d3d6dc" />
+            </View>
+            <Text style={{ color: '#a6aab2', fontSize: 13, marginTop: 12 }}>
+              {connected ? 'Aún no hay mensajes. ¡Escribe el primero!' : 'Conectando al chat...'}
             </Text>
-           
           </View>
         }
       />
@@ -337,8 +471,10 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
   );
 };
 
-const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
-  const router = useRouter();
+// ==========================================
+// 3. CHAT DE EVENTO (GRUPAL + MIEMBROS + PRIVADO)
+// ==========================================
+const VistaEvento = ({ evento, userId, userRole, userName, onVolver, onRoomChange }) => {
   const [tab, setTab]         = useState('grupal');
   const [chatPrivado, setChatPrivado] = useState(null);
 
@@ -348,6 +484,13 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
   const miembros = String(userId) !== creadorId 
     ? [...miembrosComite, { idusuario: creadorId, nombre: 'Creador del evento', rol_comite: 'creador' }]
     : miembrosComite;
+
+  useEffect(() => {
+    const room = chatPrivado
+      ? 'private_' + [userId, chatPrivado.idusuario].map(String).map(Number).sort((a, b) => a - b).join('_')
+      : String(evento.idevento);
+    onRoomChange && onRoomChange(room);
+  }, [chatPrivado, evento]);
 
   if (chatPrivado) {
     const roomId = 'private_' + [userId, chatPrivado.idusuario]
@@ -375,7 +518,7 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
         paddingHorizontal: 12, paddingVertical: 10,
         backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border,
       }}>
-        <TouchableOpacity onPress={onVolver}>
+        <TouchableOpacity onPress={onVolver} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: COLORS.textPrimary }} numberOfLines={1}>
@@ -383,36 +526,28 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
         </Text>
       </View>
 
-
-<View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
-  {[
-    { id: 'grupal',   label: 'Chat',           icon: 'chatbubbles-outline' },
-    { id: 'miembros', label: 'Miembros',       icon: 'people-outline' },
-    { id: 'analisis', label: 'Análisis de IA', icon: 'analytics-outline' },
-  ].map(t => (
-    <TouchableOpacity
-      key={t.id}
-      onPress={() => {
-        if (t.id === 'analisis') {
-          router.push(`/admin/ChatAnalysis?eventId=${evento.idevento}`);
-        } else {
-          setTab(t.id);
-        }
-      }}
-      style={{
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 6, paddingVertical: 12,
-        borderBottomWidth: tab === t.id ? 2 : 0,
-        borderBottomColor: COLORS.primary,
-      }}
-    >
-      <Ionicons name={t.icon} size={16} color={tab === t.id ? COLORS.primary : COLORS.textTertiary} />
-      <Text style={{ fontSize: 11, fontWeight: '600', color: tab === t.id ? COLORS.primary : COLORS.textTertiary }} numberOfLines={1}>
-        {t.label}
-      </Text>
-    </TouchableOpacity>
-  ))}
-</View>
+      <View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
+        {[
+          { id: 'grupal',   label: 'Chat',     icon: 'chatbubbles-outline' },
+          { id: 'miembros', label: 'Miembros', icon: 'people-outline' },
+        ].map(t => (
+          <TouchableOpacity
+            key={t.id}
+            onPress={() => setTab(t.id)}
+            style={{
+              flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+              gap: 6, paddingVertical: 12,
+              borderBottomWidth: tab === t.id ? 2 : 0,
+              borderBottomColor: COLORS.primary,
+            }}
+          >
+            <Ionicons name={t.icon} size={16} color={tab === t.id ? COLORS.primary : COLORS.textTertiary} />
+            <Text style={{ fontSize: 11, fontWeight: '600', color: tab === t.id ? COLORS.primary : COLORS.textTertiary }} numberOfLines={1}>
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {tab === 'grupal' ? (
         <VistaChat
@@ -427,21 +562,21 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           {miembros.length === 0 ? (
             <View style={{ alignItems: 'center', paddingTop: 40 }}>
-              <Ionicons name="people-outline" size={40} color="#ddd" />
-              <Text style={{ color: '#ccc', fontSize: 13, marginTop: 8 }}>No hay otros miembros</Text>
+              <Ionicons name="people-outline" size={40} color="#d3d6dc" />
+              <Text style={{ color: '#a6aab2', fontSize: 13, marginTop: 8 }}>No hay otros miembros</Text>
             </View>
           ) : (
             miembros.map((m) => {
               const nombre = m.nombre || m.usuario?.nombre || `Usuario ${m.idusuario}`;
               const apellido = m.apellidopat || m.usuario?.apellidopat || '';
               const rol = m.rol_comite || m.role || 'miembro';
-              const initial = nombre.charAt(0).toUpperCase();
               const colorRol = ROL_COLORS[rol] || COLORS.secondary;
 
               return (
                 <TouchableOpacity
                   key={m.idusuario}
                   onPress={() => setChatPrivado(m)}
+                  activeOpacity={0.7}
                   style={{
                     flexDirection: 'row', alignItems: 'center', gap: 12,
                     backgroundColor: COLORS.white, borderRadius: 12,
@@ -450,14 +585,7 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
                     shadowOffset: { width: 0, height: 1 }, shadowRadius: 3, elevation: 1,
                   }}
                 >
-                  <View style={{
-                    width: 44, height: 44, borderRadius: 22,
-                    backgroundColor: colorRol + '20',
-                    justifyContent: 'center', alignItems: 'center',
-                    borderWidth: 2, borderColor: colorRol + '40',
-                  }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: colorRol }}>{initial}</Text>
-                  </View>
+                  <Avatar nombre={`${nombre} ${apellido}`} color={colorRol} size={44} />
 
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.textPrimary }}>
@@ -487,58 +615,66 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver }) => {
   );
 };
 
-const ChatEmbed = ({ userId, userRole, userName }) => {
-  const [vista, setVista]               = useState('eventos');
+// ==========================================
+// 4. CHAT EMBED (CHAT GENERAL + LISTA DE EVENTOS)
+// ==========================================
+const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
+  const [vista, setVista]               = useState('eventos'); // 'chat' (general) | 'eventos'
   const [eventos, setEventos]           = useState([]);
   const [loadingEventos, setLoading]    = useState(true);
   const [eventoActual, setEventoActual] = useState(null);
+  const [abriendoEvento, setAbriendoEvento] = useState(false);
+
+  const onRoomChangeRef = useRef(onRoomChange);
+  useEffect(() => { onRoomChangeRef.current = onRoomChange; }, [onRoomChange]);
+
+  useEffect(() => {
+    if (eventoActual) return;
+    onRoomChangeRef.current && onRoomChangeRef.current(vista === 'chat' ? 'general' : null);
+  }, [vista, eventoActual]);
 
   useEffect(() => {
     const cargar = async () => {
       try {
         const token = await getToken();
 
-        const resComite = await fetch(`${API_BASE_URL}/dashboard/my-committee-events`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const [resComite, resCreados] = await Promise.all([
+          fetch(`${API_BASE_URL}/dashboard/my-committee-events`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch(`${API_BASE_URL}/eventos`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
         const dataComite = await resComite.json();
+        const dataCreados = await resCreados.json();
         const eventosComite = dataComite.events || [];
 
-        const resCreados = await fetch(`${API_BASE_URL}/eventos`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const dataCreados = await resCreados.json();
-         const hoy = new Date();
-         hoy.setHours(0, 0, 0, 0)    
+        const hoy = hoyStr();
+
+        const esFuturo = (e) => {
+          const s = fechaStr(e);
+          return s.length === 10 && s >= hoy;
+        };
+
+        const eventosComiteFuturos = eventosComite.filter(esFuturo);
+
         const eventosCreados = Array.isArray(dataCreados)
           ? dataCreados.filter(e => {
-            return e.estado === 'aprobado' 
+            return e.estado === 'aprobado'
               && String(e.idacademico) === String(userId)
-              && e.fechaEvento 
-              && e.fechaEvento >= hoy;
+              && esFuturo(e);
           })
           : [];
 
-        const eventosCompletos = await Promise.all(
-          [...eventosComite, ...eventosCreados].map(async (evento) => {
-            try {
-              const resDetalle = await fetch(`${API_BASE_URL}/eventos/${evento.idevento}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              const detalle = await resDetalle.json();
-              return detalle;
-            } catch (e) {
-              return evento;
-            }
-          })
-        );
-
         const idsVistos = new Set();
-        const eventosUnicos = eventosCompletos.filter(e => {
-          if (idsVistos.has(e.idevento)) return false;
-          idsVistos.add(e.idevento);
-          return true;
-        });
+        const eventosUnicos = [...eventosComiteFuturos, ...eventosCreados]
+          .filter(e => {
+            if (idsVistos.has(e.idevento)) return false;
+            idsVistos.add(e.idevento);
+            return true;
+          })
+          .sort((a, b) => (fechaStr(a) || '9999').localeCompare(fechaStr(b) || '9999'));
 
         setEventos(eventosUnicos);
       } catch (e) {
@@ -550,23 +686,83 @@ const ChatEmbed = ({ userId, userRole, userName }) => {
     cargar();
   }, [userId]);
 
-  if (vista === 'evento' && eventoActual) {
+  const abrirEvento = async (evento) => {
+    setAbriendoEvento(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/eventos/${evento.idevento}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const detalle = await res.json();
+      setEventoActual(detalle);
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo abrir el evento');
+    } finally {
+      setAbriendoEvento(false);
+    }
+  };
+
+  if (eventoActual) {
     return (
       <VistaEvento
         evento={eventoActual}
         userId={userId} userRole={userRole} userName={userName}
+        onRoomChange={onRoomChangeRef.current}
         onVolver={() => { setVista('eventos'); setEventoActual(null); }}
+      />
+    );
+  }
+
+  if (vista === 'chat') {
+    return (
+      <VistaChat
+        eventoId="general"
+        titulo="Chat General"
+        subtitulo="Todos los usuarios de la plataforma"
+        roomId="general"
+        userId={userId} userRole={userRole} userName={userName}
+        onVolver={() => setVista('eventos')}
       />
     );
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <View style={{ padding: 14, backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.textSecondary }}>
-          Selecciona un evento
-        </Text>
+      <View style={{
+        padding: 14, backgroundColor: COLORS.white,
+        borderBottomWidth: 1, borderColor: COLORS.border,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.textPrimary }}>
+            Tus eventos
+          </Text>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textSecondary }}>
+            {eventos.length} próximo{eventos.length !== 1 ? 's' : ''}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => { setVista('chat'); setEventoActual(null); }}
+          activeOpacity={0.7}
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: 8,
+            backgroundColor: COLORS.primaryLight, borderRadius: 10,
+            paddingHorizontal: 12, paddingVertical: 10,
+          }}
+        >
+          <Ionicons name="chatbubbles" size={18} color={COLORS.primary} />
+          <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.primary }}>Ir al Chat General</Text>
+        </TouchableOpacity>
       </View>
+
+      {abriendoEvento && (
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(255,255,255,0.6)', zIndex: 10,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      )}
 
       {loadingEventos ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -574,9 +770,16 @@ const ChatEmbed = ({ userId, userRole, userName }) => {
         </View>
       ) : eventos.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <Ionicons name="people-outline" size={40} color="#ccc" />
-          <Text style={{ color: '#aaa', marginTop: 10, textAlign: 'center' }}>
-            No eres miembro de ningún comité aún
+          <View style={{
+            width: 72, height: 72, borderRadius: 36,
+            backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center',
+            shadowColor: '#000', shadowOpacity: 0.05,
+            shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2,
+          }}>
+            <Ionicons name="calendar-outline" size={34} color="#d3d6dc" />
+          </View>
+          <Text style={{ color: '#a6aab2', marginTop: 12, textAlign: 'center' }}>
+            No tienes eventos próximos
           </Text>
         </View>
       ) : (
@@ -584,45 +787,74 @@ const ChatEmbed = ({ userId, userRole, userName }) => {
           {eventos.map((evento) => {
             const comite = evento.Comite || evento.comite || [];
             const nMiembros = comite.length;
+            const hoy = hoyStr();
+            const esHoy = fechaStr(evento) === hoy;
 
             return (
               <TouchableOpacity
                 key={evento.idevento}
-                onPress={() => { 
-                  setEventoActual(evento); 
-                  setVista('evento'); 
-                }}
+                onPress={() => abrirEvento(evento)}
+                activeOpacity={0.7}
                 style={{
-                  backgroundColor: COLORS.white, borderRadius: 12, padding: 14,
-                  marginBottom: 10, flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: COLORS.white, borderRadius: 14, padding: 12,
+                  marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12,
                   borderLeftWidth: 4, borderLeftColor: COLORS.primary,
-                  shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
                 }}
               >
+                <View style={{
+                  width: 46, height: 46, borderRadius: 12,
+                  backgroundColor: esHoy ? '#FFF7ED' : COLORS.primaryLight,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Ionicons name="calendar" size={20} color={esHoy ? COLORS.primary : COLORS.primary} />
+                </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 3 }} numberOfLines={1}>
                     {evento.nombreevento || 'Sin nombre'}
                   </Text>
-                  <Text style={{ fontSize: 12, color: COLORS.textTertiary }}>
-                    {evento.fechaevento?.split('T')[0] || '–'} · {evento.lugarevento || '–'}
-                  </Text>
-                  {nMiembros > 0 && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
-                      <Ionicons name="people-outline" size={12} color={COLORS.primary} />
-                      <Text style={{ fontSize: 11, color: COLORS.primary, fontWeight: '600' }}>
-                        {nMiembros} miembro{nMiembros !== 1 ? 's' : ''} en el comité
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+                    <Ionicons name="time-outline" size={12} color={COLORS.textTertiary} />
+                    <Text style={{ fontSize: 12, color: COLORS.textSecondary }} numberOfLines={1}>
+                      {formatearFecha(fechaStr(evento))} {esHoy ? '· Hoy' : ''}
+                    </Text>
+                  </View>
+                  {evento.lugarevento ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Ionicons name="location-outline" size={12} color={COLORS.textTertiary} />
+                      <Text style={{ fontSize: 12, color: COLORS.textTertiary }} numberOfLines={1}>
+                        {evento.lugarevento}
                       </Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
-                <View style={{ alignItems: 'center', gap: 4 }}>
-                  <Ionicons name="chatbubbles-outline" size={22} color={COLORS.primary} />
-                  <Text style={{ fontSize: 10, color: COLORS.primary, fontWeight: '600' }}>Abrir</Text>
+                <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                  {nMiembros > 0 && (
+                    <View style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 4,
+                      backgroundColor: COLORS.primaryLight, borderRadius: 12,
+                      paddingHorizontal: 8, paddingVertical: 3,
+                    }}>
+                      <Ionicons name="people-outline" size={11} color={COLORS.primary} />
+                      <Text style={{ fontSize: 10, color: COLORS.primary, fontWeight: '700' }}>{nMiembros}</Text>
+                    </View>
+                  )}
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 4,
+                    backgroundColor: COLORS.primary, borderRadius: 16,
+                    paddingHorizontal: 10, paddingVertical: 5,
+                  }}>
+                    <Ionicons name="chatbubbles-outline" size={13} color="#fff" />
+                    <Text style={{ fontSize: 11, color: '#fff', fontWeight: '700' }}>Abrir</Text>
+                  </View>
                 </View>
               </TouchableOpacity>
             );
           })}
+          <Text style={{ textAlign: 'center', color: '#a6aab2', fontSize: 11, marginVertical: 6 }}>
+            {eventos.length > 0 ? 'Solo se muestran eventos próximos' : ''}
+          </Text>
         </ScrollView>
       )}
     </View>

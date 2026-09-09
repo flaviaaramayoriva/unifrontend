@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet, View, Text, ScrollView, TouchableOpacity,
   StatusBar, Alert, ActivityIndicator, Pressable, Animated,
-  useWindowDimensions, Platform, Modal,
+  useWindowDimensions, Platform, Modal, Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,13 +15,13 @@ import {useTheme} from '../../context/ThemeContext'
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 const BOT_USERNAME = 'EventUniBot';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -29,15 +29,15 @@ const getTokenAsync = async () => {
 
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { localStorage.removeItem(TOKEN_KEY); } catch {}
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch {}
   } else {
     try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch {}
   }
 };
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FFEDD5', secondary: '#4B5563',
-  accent: '#EF4444', success: '#10B981', warning: '#F59E0B',
+  primary: '#C44B0A', primaryLight: '#FFEDD5', secondary: '#4B5563',
+  accent: '#EF4444', success: '#047857', warning: '#F59E0B',
   info: '#3B82F6', background: '#F9FAFB', surface: '#FFFFFF',
   textPrimary: '#1F2937', textSecondary: '#6B7280', textTertiary: '#9CA3AF',
   border: '#E5E7EB', divider: '#F3F4F6', white: '#FFFFFF', black: '#000000',
@@ -200,6 +200,9 @@ const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificatio
   return (
     <View style={styles.header}>
       <View style={styles.headerTop}>
+        <View style={styles.logoBadge}>
+          <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
+        </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerGreeting}>{greeting},</Text>
           <Text style={styles.headerName}>{nombreUsuario}</Text>
@@ -207,7 +210,7 @@ const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificatio
         </View>
         <View style={styles.headerActions}>
           {/* Botón de Telegram */}
-          <TouchableOpacity style={styles.telegramBell} onPress={onTelegramPress}>
+          <TouchableOpacity style={styles.telegramBell} onPress={onTelegramPress} accessibilityLabel="Enviar mensaje" accessibilityRole="button">
             <Ionicons 
               name="send" 
               size={22} 
@@ -217,13 +220,13 @@ const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificatio
               <View style={styles.telegramLinkedDot} />
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIconBtn} onPress={onRefresh} disabled={refreshing}>
+          <TouchableOpacity style={styles.headerIconBtn} onPress={onRefresh} disabled={refreshing} accessibilityLabel="Actualizar" accessibilityRole="button">
             {refreshing
               ? <ActivityIndicator size="small" color={COLORS.primary} />
               : <Ionicons name="refresh-outline" size={22} color={COLORS.textSecondary} />
             }
           </TouchableOpacity>
-          <TouchableOpacity style={styles.notifBtn} onPress={onNotificationPress}>
+          <TouchableOpacity style={styles.notifBtn} onPress={onNotificationPress} accessibilityLabel="Notificaciones" accessibilityRole="button">
             <Ionicons name="notifications-outline" size={24} color={COLORS.textSecondary} />
             {unreadCount > 0 && (
               <View style={styles.notifBadge}>
@@ -521,6 +524,7 @@ const saveThemeColor = useCallback(async (color) => {
   };
 
   const handleActionPress = (route) => {
+    setIsBannerExpanded(false);
     if (route) router.push(route);
     else Alert.alert('En Desarrollo', 'Esta característica estará disponible próximamente.');
   };
@@ -711,6 +715,7 @@ const saveThemeColor = useCallback(async (color) => {
     transparent={true}
     animationType="slide"
     onRequestClose={() => setShowTelegramModal(false)}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.telegramModalOverlay}>
       <View style={styles.telegramModalContent}>
@@ -895,6 +900,14 @@ const saveThemeColor = useCallback(async (color) => {
   </Modal>
 )}
 
+      {isBannerExpanded && (
+        <Pressable
+          style={styles.dockOverlay}
+          onPress={() => setIsBannerExpanded(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar menú"
+        />
+      )}
       <MinimalBottomDock
         onLogout={handleLogout}
         onActionPress={handleActionPress}
@@ -920,6 +933,14 @@ const styles = StyleSheet.create({
     elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4,
   },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
+  logoBadge: {
+    width: 54, height: 38, borderRadius: 8, backgroundColor: '#fff',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    marginRight: 12,
+    borderWidth: 2, borderColor: COLORS.primary,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4,
+  },
+  logo: { width: 50, height: 34, resizeMode: 'contain' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerIconBtn: { padding: 6, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
   headerGreeting: { fontSize: 15, color: COLORS.textSecondary },
@@ -1258,8 +1279,12 @@ telegramQRCode: {
     marginTop: 10,
   },
 
+  dockOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.35)', zIndex: 5,
+  },
   dock: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
+    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
     backgroundColor: COLORS.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8,
     elevation: 10, overflow: 'hidden',

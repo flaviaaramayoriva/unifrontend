@@ -13,7 +13,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import dayjs from 'dayjs';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const parseDateLocal = (dateInput) => {
@@ -104,8 +104,8 @@ const formatAmbienteForSubmit = (ambiente) => ({
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); }
-    catch (e) { console.error("Error localStorage:", e); return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); }
+    catch (e) { console.error("Error sessionStorage:", e); return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); }
     catch (e) { console.error("Error SecureStore:", e); return null; }
@@ -167,6 +167,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
               }}
               placeholder="Nombre de la Actividad"
               placeholderTextColor="#aaa"
+              accessibilityLabel="Nombre de la Actividad"
             />
           </View>
           {errors[`${titulo}_${index}_nombre`] && <Text style={styles.errorText}>{errors[`${titulo}_${index}_nombre`]}</Text>}
@@ -186,6 +187,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
               }}
               placeholder="Nombre del responsable"
               placeholderTextColor="#aaa"
+              accessibilityLabel="Responsable"
             />
           </View>
           {errors[`${titulo}_${index}_responsable`] && <Text style={styles.errorText}>{errors[`${titulo}_${index}_responsable`]}</Text>}
@@ -213,7 +215,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
                 }}
                 style={styles.datePickerButton}
               >
-                <Ionicons name="calendar-outline" size={20} color="#e95a0c" style={styles.inputIcon} />
+                <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
                 <Text style={styles.datePickerText}>{formatToISODate(actividad.fechaInicio).split('-').reverse().join('/')}</Text>
               </TouchableOpacity>
               {actividad.showDatePickerInicio && (
@@ -251,7 +253,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
                 }}
                 style={styles.datePickerButton}
               >
-                <Ionicons name="calendar-outline" size={20} color="#e95a0c" style={styles.inputIcon} />
+                <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
                 <Text style={styles.datePickerText}>{formatToISODate(actividad.fechaFin).split('-').reverse().join('/')}</Text>
               </TouchableOpacity>
               {actividad.showDatePickerFin && (
@@ -268,7 +270,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
         </View>
       ))}
       <TouchableOpacity onPress={agregarActividad} style={styles.addButton}>
-        <Ionicons name="add-circle" size={26} color="#e95a0c" />
+        <Ionicons name="add-circle" size={26} color="#C44B0A" />
         <Text style={styles.addButtonText}>Añadir Actividad</Text>
       </TouchableOpacity>
     </View>
@@ -542,7 +544,7 @@ const programacionEvento = () => {
   if (isEditing && isLoadingEventos) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#e95a0c" />
+        <ActivityIndicator size="large" color="#C44B0A" />
         <Text style={{ marginTop: 10, color: '#555' }}>Cargando evento...</Text>
       </View>
     );
@@ -708,6 +710,7 @@ const programacionEvento = () => {
                   onChangeText={(text) => actualizarServicio(index, 'nombreServicio', text)}
                   placeholder="Nombre Servicio"
                   placeholderTextColor="#aaa"
+                  accessibilityLabel="Nombre del Servicio"
                 />
               </View>
 
@@ -720,6 +723,7 @@ const programacionEvento = () => {
                   onChangeText={(text) => actualizarServicio(index, 'caracteristica', text)}
                   placeholder="Característica"
                   placeholderTextColor="#aaa"
+                  accessibilityLabel="Característica"
                 />
               </View>
 
@@ -740,7 +744,7 @@ const programacionEvento = () => {
                     onPress={() => actualizarServicio(index, 'showDatePickerInicio', true)}
                     style={styles.datePickerButton}
                   >
-                    <Ionicons name="calendar-outline" size={20} color="#e95a0c" style={styles.inputIcon} />
+                    <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
                     <Text style={styles.datePickerText}>
                       {formatToISODate(servicio.fechaInicio).split('-').reverse().join('/')}
                     </Text>
@@ -767,12 +771,13 @@ const programacionEvento = () => {
                   placeholderTextColor="#aaa"
                   multiline
                   numberOfLines={3}
+                  accessibilityLabel="Observaciones"
                 />
               </View>
             </View>
           ))}
           <TouchableOpacity onPress={agregarServicio} style={styles.addButton}>
-            <Ionicons name="add-circle" size={26} color="#e95a0c" />
+            <Ionicons name="add-circle" size={26} color="#C44B0A" />
             <Text style={styles.addButtonText}>Añadir Servicio</Text>
           </TouchableOpacity>
         </View>
@@ -797,6 +802,7 @@ const programacionEvento = () => {
                   onChangeText={(text) => actualizarAmbiente(index, 'nombre', text)}
                   placeholder="Nombre Ambiente"
                   placeholderTextColor="#aaa"
+                  accessibilityLabel="Nombre del Ambiente"
                 />
               </View>
               <Text style={styles.label}>Requisito</Text>
@@ -808,6 +814,7 @@ const programacionEvento = () => {
                   onChangeText={(text) => actualizarAmbiente(index, 'requisito', text)}
                   placeholder="Requisito"
                   placeholderTextColor="#aaa"
+                  accessibilityLabel="Requisito"
                 />
               </View>
               <Text style={styles.label}>Observaciones</Text>
@@ -821,12 +828,13 @@ const programacionEvento = () => {
                   placeholderTextColor="#aaa"
                   multiline
                   numberOfLines={3}
+                  accessibilityLabel="Observaciones"
                 />
               </View>
             </View>
           ))}
           <TouchableOpacity onPress={agregarAmbiente} style={styles.addButton}>
-            <Ionicons name="add-circle" size={26} color="#e95a0c" />
+            <Ionicons name="add-circle" size={26} color="#C44B0A" />
             <Text style={styles.addButtonText}>Añadir Ambiente</Text>
           </TouchableOpacity>
         </View>
@@ -836,7 +844,7 @@ const programacionEvento = () => {
           <Text style={styles.sectionTitle}>Layouts Disponibles</Text>
           {cargandoLayouts ? (
             <View style={styles.centered}>
-              <ActivityIndicator size="small" color="#e95a0c" />
+              <ActivityIndicator size="small" color="#C44B0A" />
               <Text style={{ marginTop: 8, color: '#666' }}>Cargando layouts...</Text>
             </View>
           ) : layoutsDisponibles.length === 0 ? (
@@ -848,7 +856,7 @@ const programacionEvento = () => {
                 onPress={() => cargarLayouts(authToken)}
                 style={styles.retryButton}
               >
-                <Ionicons name="reload" size={20} color="#e95a0c" />
+                <Ionicons name="reload" size={20} color="#C44B0A" />
                 <Text style={styles.retryButtonText}>Reintentar carga</Text>
               </TouchableOpacity>
             </View>
@@ -876,7 +884,7 @@ const programacionEvento = () => {
                       </Text>
                       {isSelected && (
                         <View style={styles.selectedBadge}>
-                          <Ionicons name="checkmark-circle" size={18} color="#e95a0c" />
+                          <Ionicons name="checkmark-circle" size={18} color="#C44B0A" />
                           <Text style={styles.selectedBadgeText}>Seleccionado</Text>
                         </View>
                       )}
@@ -909,8 +917,8 @@ const programacionEvento = () => {
 };
 
 const styles = StyleSheet.create({
-  retryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 15, borderWidth: 1, borderColor: '#e95a0c', borderRadius: 8, alignSelf: 'center', marginTop: 10 },
-  retryButtonText: { marginLeft: 8, color: '#e95a0c', fontSize: 16, fontWeight: '500' },
+  retryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 15, borderWidth: 1, borderColor: '#C44B0A', borderRadius: 8, alignSelf: 'center', marginTop: 10 },
+  retryButtonText: { marginLeft: 8, color: '#C44B0A', fontSize: 16, fontWeight: '500' },
   keyboardAvoidingContainer: { flex: 1, backgroundColor: '#F4F7F9' },
   scrollView: { flex: 1 },
   scrollContentContainer: { padding: 20, paddingBottom: 60 },
@@ -938,15 +946,15 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     outlineStyle: 'none',
   },
-  button: { backgroundColor: '#e95a0c', paddingVertical: 15, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 10, flexDirection: 'row', shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.23, shadowRadius: 2.62, elevation: 4 },
+  button: { backgroundColor: '#C44B0A', paddingVertical: 15, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 10, flexDirection: 'row', shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.23, shadowRadius: 2.62, elevation: 4 },
   buttonDisabled: { backgroundColor: '#f9bda3' },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
   actividadPreviaItemContainer: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, padding: 15, marginBottom: 15, backgroundColor: '#fdfdfd' },
   actividadItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   actividadPreviaTitle: { fontSize: 16, fontWeight: '600', color: '#333' },
   deleteButton: { padding: 6 },
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: '#fff3ec', borderRadius: 8, borderWidth: 1, borderColor: '#e95a0c', marginTop: 10 },
-  addButtonText: { marginLeft: 8, color: '#e95a0c', fontSize: 16, fontWeight: '500' },
+  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: '#fff3ec', borderRadius: 8, borderWidth: 1, borderColor: '#C44B0A', marginTop: 10 },
+  addButtonText: { marginLeft: 8, color: '#C44B0A', fontSize: 16, fontWeight: '500' },
   ambienteItemContainer: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, padding: 15, marginBottom: 15, backgroundColor: '#fdfdfd' },
   ambienteItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   servicioItemContainer: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, padding: 15, marginBottom: 15, backgroundColor: '#fdfdfd' },
@@ -972,7 +980,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   layoutItemSelected: {
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     backgroundColor: '#fffaf5',
   },
   layoutImage: {
@@ -997,7 +1005,7 @@ const styles = StyleSheet.create({
   },
   selectedBadgeText: {
     fontSize: 11,
-    color: '#e95a0c',
+    color: '#C44B0A',
     fontWeight: '600',
   },
 });

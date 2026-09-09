@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, ActivityIndicator,
+  View, Text, StyleSheet, FlatList, ActivityIndicator,
   StatusBar, Platform, TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
@@ -9,12 +9,12 @@ import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   primaryDark: '#C94A0A',
   secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
   successLight: '#D1FAE5',
   warning: '#F59E0B',
   info: '#3B82F6',
@@ -30,7 +30,7 @@ const COLORS = {
   black: '#000000',
 };
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'studentAuthToken';
 
 const MESES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
@@ -39,7 +39,7 @@ const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const getToken = async () => {
   try {
     const token = Platform.OS === 'web'
-      ? localStorage.getItem(TOKEN_KEY)
+      ? sessionStorage.getItem(TOKEN_KEY)
       : await SecureStore.getItemAsync(TOKEN_KEY);
     console.log('🔑 Token obtenido:', token ? 'EXISTS' : 'NULL');
     return token;
@@ -254,7 +254,7 @@ const InscripcionScreen = () => {
         }} 
       />
 
-      <ScrollView 
+      <FlatList
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -265,60 +265,65 @@ const InscripcionScreen = () => {
             colors={[COLORS.primary]}
           />
         }
-      >
-        {!loading && !error && eventos.length > 0 && (
-          <View style={styles.statsHeader}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{eventos.length}</Text>
-              <Text style={styles.statLabel}>
-                {eventos.length === 1 ? 'evento' : 'eventos'}
-              </Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: COLORS.success }]}>
-                {proximosCount}
-              </Text>
-              <Text style={styles.statLabel}>
-                {proximosCount === 1 ? 'próximo' : 'próximos'}
-              </Text>
-            </View>
-            {pasadosCount > 0 && (
-              <>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, { color: COLORS.textMuted }]}>
-                    {pasadosCount}
-                  </Text>
-                  <Text style={styles.statLabel}>
-                    {pasadosCount === 1 ? 'finalizado' : 'finalizados'}
-                  </Text>
-                </View>
-              </>
-            )}
-          </View>
+        data={eventos}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => (
+          <InscripcionCard
+            evento={item}
+            isNext={item.id === nextEventId}
+            isPast={item.fechaevento && new Date(item.fechaevento) < hoy}
+            onPress={() => handleCardPress(item)}
+          />
         )}
-
-        {loading ? (
-          <LoadingState />
-        ) : error ? (
-          <ErrorState error={error} onRetry={fetchMisInscripciones} />
-        ) : eventos.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <View style={styles.cardsContainer}>
-            {eventos.map((ev, index) => (
-              <InscripcionCard
-                key={`${ev.id}-${index}`}
-                evento={ev}
-                isNext={ev.id === nextEventId}
-                isPast={ev.fechaevento && new Date(ev.fechaevento) < hoy}
-                onPress={() => handleCardPress(ev)}
-              />
-            ))}
-          </View>
-        )}
-      </ScrollView>
+        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        ListHeaderComponent={
+          !loading && !error && eventos.length > 0 ? (
+            <View style={styles.statsHeader}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{eventos.length}</Text>
+                <Text style={styles.statLabel}>
+                  {eventos.length === 1 ? 'evento' : 'eventos'}
+                </Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={[styles.statNumber, { color: COLORS.success }]}>
+                  {proximosCount}
+                </Text>
+                <Text style={styles.statLabel}>
+                  {proximosCount === 1 ? 'próximo' : 'próximos'}
+                </Text>
+              </View>
+              {pasadosCount > 0 && (
+                <>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statNumber, { color: COLORS.textMuted }]}>
+                      {pasadosCount}
+                    </Text>
+                    <Text style={styles.statLabel}>
+                      {pasadosCount === 1 ? 'finalizado' : 'finalizados'}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          loading ? (
+            <LoadingState />
+          ) : error ? (
+            <ErrorState error={error} onRetry={fetchMisInscripciones} />
+          ) : (
+            <EmptyState />
+          )
+        }
+      />
     </View>
   );
 };

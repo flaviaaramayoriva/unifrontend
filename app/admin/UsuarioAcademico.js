@@ -15,21 +15,23 @@ import {
   Pressable,
   ScrollView
 } from 'react-native';
-import { useRouter, Stack, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const { width } = Dimensions.get('window');
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
+
 const getTokenAsync = async () => {
   const TOKEN_KEY = 'adminAuthToken';
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -46,9 +48,9 @@ const deleteTokenAsync = async () => {
   const TOKEN_KEY = 'adminAuthToken';
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al eliminar token de localStorage en web:", e);
+      console.error("Error al eliminar token de sessionStorage en web:", e);
     }
   } else {
     try {
@@ -59,7 +61,7 @@ const deleteTokenAsync = async () => {
   }
 };
 
-const groupUsersByRole = (users) =>{ 
+const groupUsersByRole = (users) => {
   const groups = {};
   users.forEach(user => {
     const role = user.role?.toLowerCase() || 'sin_rol';
@@ -69,28 +71,56 @@ const groupUsersByRole = (users) =>{
   return groups;
 };
 
+const isUserActive = (user) =>
+  !(user.habilitado === 0 || user.habilitado === false || user.habilitado === '0' || user.habilitado === 'false');
+
+const getIniciales = (user) => {
+  const n = (user.nombre || '').trim();
+  const a = (user.apellidopat || '').trim();
+  const u = (user.username || '').trim();
+  if (n && a) return (n[0] + a[0]).toUpperCase();
+  if (n) return n[0].toUpperCase();
+  return (u[0] || 'U').toUpperCase();
+};
+
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
-  secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#16A34A',
   warning: '#F59E0B',
   info: '#3B82F6',
-  background: '#F9FAFB',
+  background: '#F6F7F9',
   surface: '#FFFFFF',
-  textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
+  textPrimary: '#0F172A',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
   divider: '#D1D5DB',
   shadow: 'rgba(0, 0, 0, 0.05)',
   white: '#FFFFFF',
-  black: '#000000',
+};
+
+const ROLE_META = {
+  admin:    { icon: 'shield-checkmark-outline', color: '#EF4444' },
+  user:     { icon: 'person-outline',            color: '#3B82F6' },
+  daf:      { icon: 'people-outline',            color: '#F59E0B' },
+  student:  { icon: 'school-outline',            color: '#8B5CF6' },
+  academico:{ icon: 'book-outline',              color: '#C44B0A' },
+  sin_rol:  { icon: 'help-circle-outline',       color: '#94A3B8' },
+};
+
+const getRoleMeta = (role) => ROLE_META[role?.toLowerCase()] || ROLE_META.sin_rol;
+const getRoleColor = (role) => getRoleMeta(role).color;
+const getRoleIcon = (role) => getRoleMeta(role).icon;
+
+const ROLE_LABELS = { admin: 'Admin', daf: 'DAF', student: 'Estudiante', academico: 'Académico', user: 'Usuario' };
+const getRoleLabel = (role) => {
+  const r = role?.toLowerCase();
+  return ROLE_LABELS[r] || (r ? r.charAt(0).toUpperCase() + r.slice(1) : 'Sin rol');
 };
 
 const UsuarioAcademico = () => {
-  console.log("UsuariosA: Renderizando componente");
   const router = useRouter();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -101,7 +131,7 @@ const UsuarioAcademico = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [filterRole, setFilterRole] = useState('all');
   const [currentUser, setCurrentUser] = useState(null);
-  
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({
     nombre: '',
@@ -111,7 +141,7 @@ const UsuarioAcademico = () => {
     email: ''
   });
   const [isUpdating, setIsUpdating] = useState(false);
-  
+
   const params = useLocalSearchParams();
 
   const fetchUsers = async (isRefresh = false) => {
@@ -125,8 +155,6 @@ const UsuarioAcademico = () => {
 
     try {
       localToken = await getTokenAsync();
-      console.log('🔑 Token:', localToken ? 'Existe' : 'NO ENCONTRADO');
-      console.log('🌐 URL a la que se llama:', `${API_BASE_URL}/users`);
 
       if (!localToken) {
         Alert.alert(
@@ -143,7 +171,6 @@ const UsuarioAcademico = () => {
         headers: { 'Authorization': `Bearer ${localToken}` }
       });
 
-      console.log('📦 Datos recibidos de la API:', response.data);
       const usersData = Array.isArray(response.data) ? response.data : (response.data.data || []);
       const processedUsers = usersData.map(user => ({
         ...user,
@@ -154,11 +181,7 @@ const UsuarioAcademico = () => {
       setFilteredUsers(processedUsers);
 
     } catch (error) {
-      console.error("❌ Error completo:", error);
-      console.error("❌ Respuesta del error:", error.response);
-      console.error("❌ Estado del error:", error.response?.status);
-      console.error("❌ Datos del error:", error.response?.data);
-  
+      console.error("Error al cargar usuarios:", error);
       let errorMessage = 'No se pudieron cargar los usuarios.';
       if (error.response?.status === 401) {
         errorMessage = 'No autorizado. Tu sesión podría haber expirado.';
@@ -205,68 +228,62 @@ const UsuarioAcademico = () => {
     let filtered = users;
 
     if (searchTerm !== '') {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(user =>
-        (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        (user.nombre && user.nombre.toLowerCase().includes(term)) ||
+        (user.apellidopat && user.apellidopat.toLowerCase().includes(term)) ||
+        (user.apellidomat && user.apellidomat.toLowerCase().includes(term)) ||
+        (user.username && user.username.toLowerCase().includes(term)) ||
+        (user.email && user.email.toLowerCase().includes(term))
       );
     }
 
     if (filterRole !== 'all') {
-      filtered = filtered.filter(user => user.role === filterRole);
+      filtered = filtered.filter(user => user.role?.toLowerCase() === filterRole);
     }
 
     setFilteredUsers(filtered);
   }, [searchTerm, users, filterRole]);
 
   useEffect(() => {
-  const getCurrentUser = async () => {
-    try {
-      const token = await getTokenAsync();
-      if (token) {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split('')
-            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
-        );
-        const payload = JSON.parse(jsonPayload);
+    const getCurrentUser = async () => {
+      try {
+        const token = await getTokenAsync();
+        if (token) {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          const payload = JSON.parse(jsonPayload);
 
-        const userId = payload.idusuario;
-        console.log("🔍 ID del token JWT:", userId);
-        console.log("📋 Payload completo del token:", payload);
-        
-        if (users && users.length > 0) {
-          console.log(" Todos los usuarios cargados:", users.map(u => ({ id: u.idusuario || u.id, nombre: u.nombre, username: u.username })));
-          
-          const currentUserData = users.find(u => u.idusuario === userId || u.id === userId);
-          
-          if (currentUserData) {
-            console.log("✅ Usuario encontrado:", currentUserData);
-            setCurrentUser({
-              id: currentUserData.idusuario || currentUserData.id,
-              username: currentUserData.username,
-              email: currentUserData.email,
-              role: currentUserData.role,
-              nombre: currentUserData.nombre,
-              apellidopat: currentUserData.apellidopat,
-              apellidomat: currentUserData.apellidomat,
-            });
-          } else {
-            console.warn("⚠️ No se encontró el usuario con ID:", userId, "en la lista de usuarios");
+          const userId = payload.idusuario;
+
+          if (users && users.length > 0) {
+            const currentUserData = users.find(u => u.idusuario === userId || u.id === userId);
+            if (currentUserData) {
+              setCurrentUser({
+                id: currentUserData.idusuario || currentUserData.id,
+                username: currentUserData.username,
+                email: currentUserData.email,
+                role: currentUserData.role,
+                nombre: currentUserData.nombre,
+                apellidopat: currentUserData.apellidopat,
+                apellidomat: currentUserData.apellidomat,
+              });
+            }
           }
-        } else {
-          console.log("⏳ Esperando a que se carguen los usuarios...");
         }
+      } catch (error) {
+        console.error("Error al obtener usuario actual:", error);
       }
-    } catch (error) {
-      console.error("❌ Error al obtener usuario actual:", error);
-    }
-  };
-  
-  getCurrentUser();
-}, [users]);
+    };
+
+    getCurrentUser();
+  }, [users]);
 
   const handleAddUser = () => {
     router.push('/admin/CrearUsuarioA');
@@ -292,7 +309,7 @@ const UsuarioAcademico = () => {
 
   const handleUpdateCurrentUser = async () => {
     if (!currentUser) return;
-    
+
     if (!editFormData.nombre || !editFormData.email || !editFormData.username) {
       Alert.alert('Campos obligatorios', 'Nombre, usuario y correo electrónico son requeridos.');
       return;
@@ -302,72 +319,54 @@ const UsuarioAcademico = () => {
     try {
       const token = await getTokenAsync();
       const response = await axios.put(
-        `${API_BASE_URL}/users/${currentUser.id}`, 
+        `${API_BASE_URL}/users/${currentUser.id}`,
         editFormData,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
       Alert.alert('Éxito', 'Tu perfil ha sido actualizado correctamente.');
       setShowEditModal(false);
-      
+
       const updatedUser = { ...currentUser, ...editFormData };
       setCurrentUser(updatedUser);
 
-      setUsers(prevUsers => 
+      setUsers(prevUsers =>
         prevUsers.map(u => (u.id === currentUser.id ? { ...u, ...editFormData } : u))
       );
 
     } catch (error) {
-      console.error("❌ Error al actualizar perfil:", error);
+      console.error("Error al actualizar perfil:", error);
       Alert.alert('Error', 'No se pudo actualizar el perfil. Verifica tu conexión o intenta más tarde.');
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const getRoleColor = (role) => {
-    switch (role?.toLowerCase()) {
-      case 'admin': return COLORS.accent;
-      case 'user': return COLORS.info;
-      case 'daf': return COLORS.warning;
-      case 'student': return COLORS.secondary;
-      case 'academico': return COLORS.primary;
-      default: return COLORS.textTertiary;
-    }
-  };
-
-  const getRoleIcon = (role) => {
-    switch (role?.toLowerCase()) {
-      case 'admin': return 'shield-checkmark-outline';
-      case 'user': return 'person-outline';
-      case 'daf': return 'people-outline';
-      case 'student': return 'school-outline';
-      case 'academico': return 'book-outline';
-      default: return 'help-circle-outline';
-    }
-  };
+  const stats = React.useMemo(() => {
+    const habilitados = users.filter(isUserActive).length;
+    const deshabilitados = users.length - habilitados;
+    const academico = users.filter(u => u.role?.toLowerCase() === 'academico').length;
+    return { total: users.length, habilitados, deshabilitados, academico };
+  }, [users]);
 
   const renderFilterChips = () => {
     const roles = ['all', 'admin', 'user', 'daf', 'student', 'academico'];
     return (
-      <View style={styles.filterContainer}>
-        {roles.map((role) => (
-          <TouchableOpacity
-            key={role}
-            style={[
-              styles.filterChip,
-              filterRole === role && styles.filterChipActive
-            ]}
-            onPress={() => setFilterRole(role)}
-          >
-            <Text style={[
-              styles.filterChipText,
-              filterRole === role && styles.filterChipTextActive
-            ]}>
-              {role === 'all' ? 'Todos' : role.charAt(0).toUpperCase() + role.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View style={styles.chipRow}>
+        {roles.map((role) => {
+          const active = filterRole === role;
+          return (
+            <TouchableOpacity
+              key={role}
+              style={[styles.filterChip, active && styles.filterChipActive]}
+              onPress={() => setFilterRole(role)}
+            >
+              <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                {role === 'all' ? 'Todos' : getRoleLabel(role)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     );
   };
@@ -378,19 +377,24 @@ const UsuarioAcademico = () => {
       transparent={true}
       animationType="fade"
       onRequestClose={() => setShowUserModal(false)}
+      accessibilityViewIsModal={true}
     >
       <Pressable
         style={styles.modalOverlay}
         onPress={() => setShowUserModal(false)}
       >
-        <View style={styles.modalContent}>
+        <View style={styles.modalContentContainer}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Detalles del Usuario</Text>
             <TouchableOpacity
               onPress={() => setShowUserModal(false)}
               style={styles.modalCloseButton}
+              accessibilityLabel="Cerrar"
+              accessibilityRole="button"
             >
-              <Ionicons name="close" size={24} color="#666" />
+              <Ionicons name="close" size={24} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -398,32 +402,43 @@ const UsuarioAcademico = () => {
             <View style={styles.modalBody}>
               <View style={styles.modalUserAvatar}>
                 <View style={[styles.modalAvatar, { backgroundColor: getRoleColor(selectedUser.role) }]}>
-                  <Text style={styles.modalAvatarText}>
-                    {(selectedUser.username || selectedUser.email || 'U').charAt(0).toUpperCase()}
-                  </Text>
+                  <Text style={styles.modalAvatarText}>{getIniciales(selectedUser)}</Text>
                 </View>
               </View>
 
               <View style={styles.modalUserInfo}>
                 <Text style={styles.modalUserName}>
-                  {selectedUser.username || 'Sin nombre'}
+                  {selectedUser.nombre
+                    ? `${selectedUser.nombre} ${selectedUser.apellidopat || ''}`.trim()
+                    : (selectedUser.username || 'Sin nombre')}
                 </Text>
                 <Text style={styles.modalUserEmail}>
                   {selectedUser.email || 'Sin email'}
                 </Text>
-                <View style={styles.modalRoleContainer}>
-                  <Ionicons
-                    name={getRoleIcon(selectedUser.role)}
-                    size={16}
-                    color={getRoleColor(selectedUser.role)}
-                  />
-                  <Text style={[styles.modalUserRole, { color: getRoleColor(selectedUser.role) }]}>
-                    {selectedUser.role || 'Sin rol'}
-                  </Text>
+                <View style={styles.modalInfoRow}>
+                  <View style={[styles.modalRoleBadge, { backgroundColor: getRoleColor(selectedUser.role) + '1A' }]}>
+                    <Ionicons name={getRoleIcon(selectedUser.role)} size={14} color={getRoleColor(selectedUser.role)} />
+                    <Text style={[styles.modalRoleText, { color: getRoleColor(selectedUser.role) }]}>
+                      {getRoleLabel(selectedUser.role)}
+                    </Text>
+                  </View>
+                  <View style={[styles.modalRoleBadge, { backgroundColor: isUserActive(selectedUser) ? COLORS.success + '1A' : COLORS.accent + '1A' }]}>
+                    <Ionicons
+                      name={isUserActive(selectedUser) ? 'checkmark-circle-outline' : 'close-circle-outline'}
+                      size={14}
+                      color={isUserActive(selectedUser) ? COLORS.success : COLORS.accent}
+                    />
+                    <Text style={[styles.modalRoleText, { color: isUserActive(selectedUser) ? COLORS.success : COLORS.accent }]}>
+                      {isUserActive(selectedUser) ? 'Activo' : 'Inactivo'}
+                    </Text>
+                  </View>
                 </View>
+                <Text style={styles.modalUserEmail}>@{selectedUser.username || 'sin usuario'}</Text>
               </View>
             </View>
           )}
+        </View>
+          </Pressable>
         </View>
       </Pressable>
     </Modal>
@@ -435,73 +450,88 @@ const UsuarioAcademico = () => {
       transparent={true}
       animationType="slide"
       onRequestClose={() => setShowEditModal(false)}
+      accessibilityViewIsModal={true}
     >
       <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Editar Mi Perfil</Text>
-            <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.modalCloseButton}>
-              <Ionicons name="close" size={24} color="#666" />
-            </TouchableOpacity>
+        <View style={styles.modalContentContainer}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Editar Mi Perfil</Text>
+                  <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.modalCloseButton} accessibilityLabel="Cerrar" accessibilityRole="button">
+                    <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
+                  <Text style={styles.inputLabel}>Nombre</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editFormData.nombre}
+                    onChangeText={(text) => setEditFormData({ ...editFormData, nombre: text })}
+                    placeholder="Tu nombre"
+                    placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Nombre"
+                  />
+
+                  <Text style={styles.inputLabel}>Apellido Paterno</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editFormData.apellidopat}
+                    onChangeText={(text) => setEditFormData({ ...editFormData, apellidopat: text })}
+                    placeholder="Apellido paterno"
+                    placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Apellido Paterno"
+                  />
+
+                  <Text style={styles.inputLabel}>Apellido Materno</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editFormData.apellidomat}
+                    onChangeText={(text) => setEditFormData({ ...editFormData, apellidomat: text })}
+                    placeholder="Apellido materno"
+                    placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Apellido Materno"
+                  />
+
+                  <Text style={styles.inputLabel}>Nombre de Usuario</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editFormData.username}
+                    onChangeText={(text) => setEditFormData({ ...editFormData, username: text })}
+                    placeholder="Nombre de usuario"
+                    autoCapitalize="none"
+                    placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Nombre de Usuario"
+                  />
+
+                  <Text style={styles.inputLabel}>Correo Electrónico</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editFormData.email}
+                    onChangeText={(text) => setEditFormData({ ...editFormData, email: text })}
+                    placeholder="correo@ejemplo.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholderTextColor={COLORS.textTertiary}
+                    accessibilityLabel="Correo Electrónico"
+                  />
+
+                  <TouchableOpacity
+                    style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]}
+                    onPress={handleUpdateCurrentUser}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <ActivityIndicator color={COLORS.white} />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+                    )}
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </Pressable>
           </View>
-          <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
-            <Text style={styles.inputLabel}>Nombre</Text>
-            <TextInput
-              style={styles.input}
-              value={editFormData.nombre}
-              onChangeText={(text) => setEditFormData({ ...editFormData, nombre: text })}
-              placeholder="Tu nombre"
-            />
-            
-            <Text style={styles.inputLabel}>Apellido Paterno</Text>
-            <TextInput
-              style={styles.input}
-              value={editFormData.apellidopat}
-              onChangeText={(text) => setEditFormData({ ...editFormData, apellidopat: text })}
-              placeholder="Apellido paterno"
-            />
-            
-            <Text style={styles.inputLabel}>Apellido Materno</Text>
-            <TextInput
-              style={styles.input}
-              value={editFormData.apellidomat}
-              onChangeText={(text) => setEditFormData({ ...editFormData, apellidomat: text })}
-              placeholder="Apellido materno"
-            />
-            
-            <Text style={styles.inputLabel}>Nombre de Usuario</Text>
-            <TextInput
-              style={styles.input}
-              value={editFormData.username}
-              onChangeText={(text) => setEditFormData({ ...editFormData, username: text })}
-              placeholder="Nombre de usuario"
-              autoCapitalize="none"
-            />
-            
-            <Text style={styles.inputLabel}>Correo Electrónico</Text>
-            <TextInput
-              style={styles.input}
-              value={editFormData.email}
-              onChangeText={(text) => setEditFormData({ ...editFormData, email: text })}
-              placeholder="correo@ejemplo.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            
-            <TouchableOpacity 
-              style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]} 
-              onPress={handleUpdateCurrentUser}
-              disabled={isUpdating}
-            >
-              {isUpdating ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.saveButtonText}>Guardar Cambios</Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </Pressable>
+        </Pressable>
     </Modal>
   );
 
@@ -518,22 +548,15 @@ const UsuarioAcademico = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: 'Gestionar Usuarios',
-          headerStyle: {
-            backgroundColor: COLORS.primary,
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-          headerRight: () => (
-            <TouchableOpacity onPress={handleAddUser} style={styles.headerButton}>
-              <Ionicons name="add-circle" size={28} color="#fff" />
-            </TouchableOpacity>
-          ),
-        }}
+      <AdminHeader
+        title="Gestionar Usuarios"
+        subtitle="UFT Eventos · Universidad Privada Franz Tamayo"
+        eyebrow="Administración"
+        rightActions={(
+          <TouchableOpacity onPress={handleAddUser} style={styles.headerButton} accessibilityRole="button" accessibilityLabel="Agregar usuario">
+            <Ionicons name="add" size={26} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
       />
 
       <ScrollView
@@ -562,36 +585,66 @@ const UsuarioAcademico = () => {
             </View>
             <View style={styles.currentUserContent}>
               <View style={styles.currentUserAvatar}>
-                <Text style={styles.currentUserAvatarText}>
-                  {(currentUser.nombre || currentUser.username || 'U').charAt(0).toUpperCase()}
-                </Text>
+                <Text style={styles.currentUserAvatarText}>{getIniciales(currentUser)}</Text>
               </View>
               <View style={styles.currentUserDetails}>
                 <Text style={styles.currentUserUsername}>
                   {currentUser.nombre} {currentUser.apellidopat}
                 </Text>
                 <Text style={styles.currentUserEmail}>{currentUser.email || 'Sin email'}</Text>
-                <View style={styles.currentUserRoleBadge}>
-                  <Text style={styles.currentUserRoleText}>{currentUser.role || 'Sin rol'}</Text>
+                <View style={[styles.currentUserRoleBadge, { backgroundColor: COLORS.primaryLight }]}>
+                  <Text style={styles.currentUserRoleText}>{getRoleLabel(currentUser.role)}</Text>
                 </View>
               </View>
             </View>
           </View>
         )}
 
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { borderLeftColor: COLORS.primary }]}>
+            <View style={[styles.statIcon, { backgroundColor: COLORS.primaryLight }]}>
+              <Ionicons name="people-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={styles.statValue}>{stats.total}</Text>
+            <Text style={styles.statLabel}>Usuarios</Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: COLORS.success }]}>
+            <View style={[styles.statIcon, { backgroundColor: COLORS.success + '18' }]}>
+              <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.success} />
+            </View>
+            <Text style={styles.statValue}>{stats.habilitados}</Text>
+            <Text style={styles.statLabel}>Activos</Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: COLORS.accent }]}>
+            <View style={[styles.statIcon, { backgroundColor: COLORS.accent + '18' }]}>
+              <Ionicons name="close-circle-outline" size={22} color={COLORS.accent} />
+            </View>
+            <Text style={styles.statValue}>{stats.deshabilitados}</Text>
+            <Text style={styles.statLabel}>Inactivos</Text>
+          </View>
+          <View style={[styles.statCard, { borderLeftColor: COLORS.info }]}>
+            <View style={[styles.statIcon, { backgroundColor: COLORS.info + '18' }]}>
+              <Ionicons name="book-outline" size={22} color={COLORS.info} />
+            </View>
+            <Text style={styles.statValue}>{stats.academico}</Text>
+            <Text style={styles.statLabel}>Acad.</Text>
+          </View>
+        </View>
+
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
-            <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+            <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar por nombre o email..."
+              placeholder="Buscar por nombre, usuario o email..."
+              accessibilityLabel="Buscar"
               value={searchTerm}
               onChangeText={setSearchTerm}
-              placeholderTextColor="#888"
+              placeholderTextColor={COLORS.textTertiary}
             />
             {searchTerm !== '' && (
               <TouchableOpacity onPress={() => setSearchTerm('')} style={styles.clearButton}>
-                <Ionicons name="close-circle" size={20} color="#666" />
+                <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -608,7 +661,7 @@ const UsuarioAcademico = () => {
 
         {!loading && filteredUsers.length === 0 ? (
           <View style={styles.centered}>
-            <Ionicons name="people-outline" size={80} color="#ccc" />
+            <Ionicons name="people-outline" size={80} color={COLORS.border} />
             <Text style={styles.noUsersText}>
               {searchTerm || filterRole !== 'all'
                 ? 'No se encontraron usuarios con los filtros aplicados.'
@@ -628,62 +681,77 @@ const UsuarioAcademico = () => {
           </View>
         ) : (
           <View style={styles.listContentContainer}>
-            {Object.entries(groupUsersByRole(filteredUsers)).map(([role, usersList]) => (
-              <View key={role} style={styles.roleSection}>
-                <View style={styles.roleHeader}>
-                  <Ionicons name={getRoleIcon(role)} size={20} color={getRoleColor(role)} />
-                  <Text style={styles.roleTitle}>
-                    {role === 'sin_rol'
-                      ? 'Sin Rol'
-                      : role.charAt(0).toUpperCase() + role.slice(1)} ({usersList.length})
-                  </Text>
-                </View>
-                {usersList.map((user) => (
-                  <View key={user.id} style={[styles.userItemContainer, { marginBottom: 8 }]}>
-                    <View style={styles.userAvatarContainer}>
-                      <View style={[styles.userAvatar, { backgroundColor: getRoleColor(user.role) }]}>
-                        <Text style={styles.avatarText}>
-                          {(user.username || user.email || 'U').charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={[styles.roleIndicator, { backgroundColor: getRoleColor(user.role) }]}>
-                        <Ionicons name={getRoleIcon(user.role)} size={12} color="#fff" />
-                      </View>
+            {Object.entries(groupUsersByRole(filteredUsers)).map(([role, usersList]) => {
+              const roleColor = getRoleColor(role);
+              return (
+                <View key={role} style={styles.roleSection}>
+                  <View style={styles.roleHeader}>
+                    <View style={[styles.roleIconWrap, { backgroundColor: roleColor + '1A' }]}>
+                      <Ionicons name={getRoleIcon(role)} size={18} color={roleColor} />
                     </View>
-
-                    <View style={styles.userInfo}>
-                      <Text style={styles.username} numberOfLines={1}>
-                        {user.username || 'Sin nombre'}
-                      </Text>
-                      <Text style={styles.userEmail} numberOfLines={1}>
-                        {user.email || 'Sin email'}
-                      </Text>
-                      <View style={styles.roleContainer}>
-                        <Text style={[styles.userRole, { color: getRoleColor(user.role) }]}>
-                          {user.role || 'Sin rol'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.userActions}>
-                      <TouchableOpacity
-                        onPress={() => handleViewUser(user)}
-                        style={[styles.actionButton, styles.viewButton]}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="eye-outline" size={20} color={COLORS.info} />
-                      </TouchableOpacity>
-                    </View>
+                    <Text style={styles.roleTitle}>
+                      {role === 'sin_rol' ? 'Sin Rol' : getRoleLabel(role)}
+                      <Text style={styles.roleCount}>  · {usersList.length}</Text>
+                    </Text>
                   </View>
-                ))}
-              </View>
-            ))}
+                  {usersList.map((user) => {
+                    const active = isUserActive(user);
+                    const userRoleColor = getRoleColor(user.role);
+                    return (
+                      <View key={user.id} style={styles.userItemContainer}>
+                        <View style={styles.userAvatarContainer}>
+                          <View style={[styles.userAvatar, { backgroundColor: userRoleColor }]}>
+                            <Text style={styles.avatarText}>{getIniciales(user)}</Text>
+                          </View>
+                          <View style={[styles.onlineDot, { backgroundColor: active ? COLORS.success : COLORS.textTertiary }]} />
+                        </View>
+
+                        <View style={styles.userInfo}>
+                          <Text style={styles.username} numberOfLines={1}>
+                            {user.nombre
+                              ? `${user.nombre} ${user.apellidopat || ''}`.trim()
+                              : (user.username || 'Sin nombre')}
+                          </Text>
+                          <Text style={styles.userEmail} numberOfLines={1}>
+                            {user.email || 'Sin email'}
+                          </Text>
+                          <View style={styles.userBadges}>
+                            <View style={[styles.roleBadge, { backgroundColor: userRoleColor + '1A' }]}>
+                              <Ionicons name={getRoleIcon(user.role)} size={12} color={userRoleColor} />
+                              <Text style={[styles.roleBadgeText, { color: userRoleColor }]}>
+                                {getRoleLabel(user.role)}
+                              </Text>
+                            </View>
+                            <View style={[styles.stateBadge, { backgroundColor: active ? COLORS.success + '1A' : COLORS.accent + '1A' }]}>
+                              <View style={[styles.stateDot, { backgroundColor: active ? COLORS.success : COLORS.accent }]} />
+                              <Text style={[styles.stateBadgeText, { color: active ? COLORS.success : COLORS.accent }]}>
+                                {active ? 'Activo' : 'Inactivo'}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        <View style={styles.userActions}>
+                          <TouchableOpacity
+                            onPress={() => handleViewUser(user)}
+                            style={[styles.actionButton, { backgroundColor: COLORS.info + '1A' }]}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="eye-outline" size={19} color={COLORS.info} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
           </View>
         )}
       </ScrollView>
 
       {renderUserModal()}
-      {renderEditUserModal()} 
+      {renderEditUserModal()}
     </SafeAreaView>
   );
 };
@@ -707,31 +775,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
   },
-  roleSection: {
-    marginBottom: 24,
-  },
-  roleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  roleTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginLeft: 8,
-  },
   headerButton: {
-    marginRight: 15,
-    padding: 5,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  statsRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 15, marginTop: 16 },
+  statCard: {
+    flex: 1, backgroundColor: COLORS.surface, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 10,
+    borderLeftWidth: 3, alignItems: 'center',
+    shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 2,
+  },
+  statIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  statValue: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary },
+  statLabel: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2, textAlign: 'center' },
   currentUserCard: {
     backgroundColor: COLORS.surface,
-    margin: 15,
-    marginTop: 10,
-    borderRadius: 12,
+    marginHorizontal: 15,
+    marginTop: 14,
+    borderRadius: 16,
     padding: 15,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -801,15 +869,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   currentUserRoleBadge: {
-    backgroundColor: 'rgba(233, 90, 12, 0.1)',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 3,
+    borderRadius: 6,
     alignSelf: 'flex-start',
   },
   currentUserRoleText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '700',
     color: COLORS.primary,
     textTransform: 'capitalize',
   },
@@ -822,9 +889,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 15,
     height: 50,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -842,17 +911,12 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 5,
   },
-  filterContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-  },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 15, paddingVertical: 4, gap: 8 },
   filterChip: {
     backgroundColor: COLORS.surface,
     borderRadius: 20,
-    paddingHorizontal: 15,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    marginRight: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -861,42 +925,60 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   filterChipText: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
   filterChipTextActive: {
     color: COLORS.white,
+    fontWeight: '700',
   },
   statsContainer: {
     paddingHorizontal: 15,
+    paddingTop: 8,
     paddingBottom: 10,
   },
   statsText: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    fontStyle: 'italic',
   },
   listContentContainer: {
     paddingHorizontal: 15,
     paddingBottom: 20,
   },
+  roleSection: {
+    marginBottom: 24,
+  },
+  roleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  roleIconWrap: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  roleTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  roleCount: { color: COLORS.textTertiary, fontWeight: '600' },
   userItemContainer: {
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 15,
+    borderRadius: 16,
+    padding: 14,
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
-    elevation: 3,
+    elevation: 2,
   },
   userAvatarContainer: {
     position: 'relative',
-    marginRight: 15,
+    marginRight: 13,
   },
   userAvatar: {
     width: 50,
@@ -907,18 +989,16 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
   },
-  roleIndicator: {
+  onlineDot: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     borderWidth: 2,
     borderColor: '#fff',
   },
@@ -926,40 +1006,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   username: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    marginBottom: 6,
+    marginBottom: 7,
   },
-  roleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userRole: {
-    fontSize: 12,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-    backgroundColor: 'rgba(233, 90, 12, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
+  userBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  roleBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
+  roleBadgeText: { fontSize: 12, fontWeight: '700' },
+  stateBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
+  stateDot: { width: 6, height: 6, borderRadius: 3 },
+  stateBadgeText: { fontSize: 12, fontWeight: '700' },
   userActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   actionButton: {
-    padding: 10,
-    borderRadius: 8,
-    marginLeft: 5,
-  },
-  viewButton: {
-    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   noUsersText: {
     fontSize: 16,
@@ -985,12 +1057,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalContentContainer: {
+    width: width * 0.9,
+    maxWidth: 400,
+    maxHeight: '85%',
+  },
   modalContent: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,
-    width: width * 0.9,
-    maxWidth: 400,
-    maxHeight: '80%',
     overflow: 'hidden',
   },
   modalHeader: {
@@ -1037,26 +1111,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.textPrimary,
     marginBottom: 5,
+    textAlign: 'center',
   },
   modalUserEmail: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginBottom: 10,
-  },
-  modalRoleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  modalUserRole: {
     fontSize: 14,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-    marginLeft: 5,
-    backgroundColor: 'rgba(233, 90, 12, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+    textAlign: 'center',
   },
+  modalInfoRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  modalRoleBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+  modalRoleText: { fontSize: 13, fontWeight: '700' },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',

@@ -23,10 +23,10 @@ let determinedApiBaseUrl;
 } else if (Platform.OS === 'ios') {
   determinedApiBaseUrl = 'http://192.168.0.167:3001/api';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 const TOKEN_KEY = 'adminAuthToken';
 
@@ -50,7 +50,7 @@ const COLORS = {
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
       return null;
     }
@@ -66,7 +66,7 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
       console.error("Error al eliminar token:", e);
     }
@@ -232,11 +232,11 @@ const reenviarNotificacion = async (eventoId, userId) => {
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Eventos Aprobados</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="refresh" size={24} color={COLORS.white} />
         </TouchableOpacity>
       </View>
@@ -257,6 +257,10 @@ const reenviarNotificacion = async (eventoId, userId) => {
         style={styles.eventsList}
         contentContainerStyle={styles.eventsListContent}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

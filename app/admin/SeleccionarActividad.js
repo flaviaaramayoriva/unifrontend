@@ -14,9 +14,9 @@ let determinedApiBaseUrl;
 /*if (Platform.OS === 'android') {
   determinedApiBaseUrl = 'http://10.0.2.2:3001/api';
 } else if (Platform.OS === 'ios') {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unifrontend-production-df6e.up.railway.app';
@@ -170,7 +170,7 @@ export default function SeleccionarActividadScreen() {
     <TouchableOpacity style={styles.itemContainer} onPress={() => handleSelectActividad(item)}>
       <Text style={styles.itemText}>{item.nombreactividad}</Text>
       {/* Podrías mostrar más info aquí, como item.responsable o fechas */}
-      <Ionicons name="chevron-forward-outline" size={20} color="#e95a0c" />
+      <Ionicons name="chevron-forward-outline" size={20} color="#C44B0A" />
     </TouchableOpacity>
   );
 
@@ -180,7 +180,7 @@ export default function SeleccionarActividadScreen() {
       <ScrollView style={styles.formViewContainer} contentContainerStyle={styles.formContentContainer} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: 'Crear Nueva Actividad' }} />
         <TouchableOpacity onPress={() => setShowCreateForm(false)} style={styles.cancelButton}>
-          <Ionicons name="arrow-back-outline" size={24} color="#e95a0c" />
+          <Ionicons name="arrow-back-outline" size={24} color="#C44B0A" />
           <Text style={styles.cancelButtonText}>Volver a la Lista</Text>
         </TouchableOpacity>
 
@@ -190,6 +190,7 @@ export default function SeleccionarActividadScreen() {
         <TextInput
           style={styles.input}
           placeholder="Ej: Reunión de Planificación"
+          accessibilityLabel="Nombre de la Actividad"
           value={nombreNuevaActividad}
           onChangeText={setNombreNuevaActividad}
           placeholderTextColor="#aaa"
@@ -199,6 +200,7 @@ export default function SeleccionarActividadScreen() {
         <TextInput
           style={styles.input}
           placeholder="Ej: Juan Pérez"
+          accessibilityLabel="Responsable"
           value={responsableNuevaActividad}
           onChangeText={setResponsableNuevaActividad}
           placeholderTextColor="#aaa"
@@ -206,7 +208,7 @@ export default function SeleccionarActividadScreen() {
 
         <Text style={styles.label}>Fecha de Inicio</Text>
         <TouchableOpacity onPress={() => setShowDatePickerInicio(true)} style={styles.datePickerButton}>
-          <Ionicons name="calendar-outline" size={20} color="#e95a0c" style={styles.inputIcon} />
+          <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
           <Text style={styles.datePickerText}>
             {fechaInicioNuevaActividad.toLocaleDateString()}
           </Text>
@@ -222,7 +224,7 @@ export default function SeleccionarActividadScreen() {
 
         <Text style={styles.label}>Fecha de Fin</Text>
         <TouchableOpacity onPress={() => setShowDatePickerFin(true)} style={styles.datePickerButton}>
-          <Ionicons name="calendar-outline" size={20} color="#e95a0c" style={styles.inputIcon} />
+          <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
           <Text style={styles.datePickerText}>
             {fechaFinNuevaActividad.toLocaleDateString()}
           </Text>
@@ -242,6 +244,7 @@ export default function SeleccionarActividadScreen() {
         <TextInput
             style={[styles.input, {height: 100, textAlignVertical: 'top'}]}
             placeholder="Detalles adicionales de la actividad..."
+            accessibilityLabel="Descripción"
             value={descripcionNuevaActividad}
             onChangeText={setDescripcionNuevaActividad}
             multiline
@@ -272,6 +275,7 @@ export default function SeleccionarActividadScreen() {
       <TextInput
         style={styles.searchInput}
         placeholder="Buscar actividad..."
+        accessibilityLabel="Buscar"
         value={searchTerm}
         onChangeText={setSearchTerm}
         placeholderTextColor="#aaa"
@@ -283,6 +287,10 @@ export default function SeleccionarActividadScreen() {
           data={filteredActividades}
           renderItem={renderItem}
           keyExtractor={(item) => item.idactividad.toString()} // Asume que el ID se llama idactividad
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={<Text style={styles.emptyText}>No se encontraron actividades. Presiona '+' para agregar.</Text>}
           refreshing={isLoading}
           onRefresh={() => authToken && fetchActividades(authToken)}
@@ -350,7 +358,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 25,
     bottom: 25,
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -407,7 +415,7 @@ const styles = StyleSheet.create({
     // marginRight: 8,
   },
   createButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -433,7 +441,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     marginLeft: 6,
-    color: '#e95a0c',
+    color: '#C44B0A',
     fontSize: 16,
     fontWeight: '500',
   }

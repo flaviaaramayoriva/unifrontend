@@ -23,9 +23,9 @@ let determinedApiBaseUrl;
 } else if (Platform.OS === 'ios') {
   determinedApiBaseUrl = 'http://192.168.0.167:3001/api';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 const TOKEN_KEY = 'adminAuthToken';
 
@@ -52,7 +52,7 @@ const COLORS = {
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
       return null;
     }
@@ -68,7 +68,7 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
       console.error("Error al eliminar token:", e);
     }
@@ -294,6 +294,10 @@ const EventosPendientesSA = () => {
         style={styles.eventsList}
         contentContainerStyle={styles.eventsListContent}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -334,6 +338,10 @@ const EventosPendientesSA = () => {
         style={styles.eventsList}
         contentContainerStyle={styles.eventsListContent}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -470,9 +478,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -55,7 +55,7 @@ function RootLayoutNav() {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      primary: '#E95A0C',       // Tu color primario
+      primary: '#C44B0A',       // Tu color primario
       background: '#F9FAFB',    // Fondo claro
       card: '#FFFFFF',          // Fondo de tarjetas/modales
       text: '#1F2937',          // Texto principal

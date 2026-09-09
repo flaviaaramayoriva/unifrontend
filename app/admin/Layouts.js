@@ -21,11 +21,11 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect } from 'react';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 // Misma paleta que InventarioDAF.js para mantener consistencia visual
 const C = {
-  primary: '#E95A0C', primaryLight: '#FFF0E6',
-  success: '#10B981', successLight: '#D1FAE5',
+  primary: '#C44B0A', primaryLight: '#FFF0E6',
+  success: '#047857', successLight: '#D1FAE5',
   danger: '#EF4444',  dangerLight: '#FEE2E2',
   info: '#3B82F6',    infoLight: '#DBEAFE',
   bg: '#F3F4F6', surface: '#FFFFFF',
@@ -34,7 +34,7 @@ const C = {
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem('adminAuthToken'); } catch (e) { return null; }
+    try { return sessionStorage.getItem('adminAuthToken'); } catch (e) { return null; }
   }
   try { return await SecureStore.getItemAsync('adminAuthToken'); } catch (e) { return null; }
 };
@@ -203,6 +203,7 @@ const eliminarLayout = async (layout) => {
             style={st.input}
             placeholder="Ej: Layout Salón Principal"
             placeholderTextColor={C.t3}
+            accessibilityLabel="Nombre del layout"
             value={nombreLayout}
             onChangeText={setNombreLayout}
           />
@@ -285,12 +286,15 @@ const eliminarLayout = async (layout) => {
         transparent
         animationType="fade"
         onRequestClose={() => setLayoutSeleccionado(null)}
+        accessibilityViewIsModal={true}
       >
         <View style={st.modalOverlay}>
           <View style={st.modalContent}>
             <TouchableOpacity
               style={st.modalClose}
               onPress={() => setLayoutSeleccionado(null)}
+              accessibilityLabel="Cerrar"
+              accessibilityRole="button"
             >
               <Ionicons name="close" size={22} color={C.t1} />
             </TouchableOpacity>

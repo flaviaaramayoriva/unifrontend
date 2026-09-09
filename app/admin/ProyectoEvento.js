@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Platform, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, PanResponder, Dimensions
+  Platform, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, useWindowDimensions
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -11,12 +11,10 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
-
-const { width } = Dimensions.get('window');
-const isMobile = width < 768;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 const TIPOS_DE_EVENTO = [
   { id: '1', label: 'Curricular' },
@@ -151,6 +149,20 @@ const getNotificationIcon = (type) => {
   }
 };
 
+// La API devuelve horaevento como "10:00" o "10:00:00"; parsea ambos y tolera nulos/offsets.
+// No depende del plugin customParseFormat (no registrado en el proyecto).
+const parseHoraEvento = (h) => {
+  const s = String(h || '').split('+')[0].trim();
+  const m = /^(\d{1,2}):(\d{2})(?::\d{1,2})?/.exec(s);
+  if (!m) return null;
+  return dayjs().startOf('day').hour(Number(m[1])).minute(Number(m[2])).second(0);
+};
+
+const formatHoraEvento = (h, fallback = '--:--') => {
+  const d = parseHoraEvento(h);
+  return d ? d.format('HH:mm') : fallback;
+};
+
 const TimePicker = ({ value, onChange }) => {
   const [showModal, setShowModal] = useState(false);
   const [tempHour, setTempHour] = useState(dayjs(value).hour());
@@ -227,7 +239,7 @@ const TimePicker = ({ value, onChange }) => {
           style={styles.timePickerTrigger}
           activeOpacity={0.7}
         >
-          <Ionicons name="time-outline" size={20} color="#e95a0c" />
+          <Ionicons name="time-outline" size={20} color="#C44B0A" />
           <Text style={styles.timePickerTriggerText}>
             {pad(confirmedH)}:{pad(confirmedM)}
           </Text>
@@ -239,15 +251,16 @@ const TimePicker = ({ value, onChange }) => {
           transparent={true}
           animationType="fade"
           onRequestClose={() => setShowModal(false)}
+          accessibilityViewIsModal={true}
         >
           <View style={styles.modalOverlayCentered}>
             <View style={styles.customTimePickerModal}>
               <View style={styles.customTimePickerHeader}>
                 <View style={styles.headerIcon}>
-                  <Ionicons name="alarm" size={24} color="#e95a0c" />
+                  <Ionicons name="alarm" size={24} color="#C44B0A" />
                 </View>
                 <Text style={styles.customTimePickerTitle}>Hora de Inicio</Text>
-                <TouchableOpacity onPress={() => setShowModal(false)}>
+                <TouchableOpacity onPress={() => setShowModal(false)} accessibilityLabel="Cerrar" accessibilityRole="button">
                   <Ionicons name="close" size={24} color="#666" />
                 </TouchableOpacity>
               </View>
@@ -368,7 +381,7 @@ const TimePicker = ({ value, onChange }) => {
         style={styles.timePickerTrigger}
         activeOpacity={0.7}
       >
-        <Ionicons name="time-outline" size={20} color="#e95a0c" />
+        <Ionicons name="time-outline" size={20} color="#C44B0A" />
         <Text style={styles.timePickerTriggerText}>
           {pad(confirmedH)}:{pad(confirmedM)}
         </Text>
@@ -380,12 +393,13 @@ const TimePicker = ({ value, onChange }) => {
         transparent={true}
         animationType="slide"
         onRequestClose={() => setShowNativePicker(false)}
+        accessibilityViewIsModal={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.pickerModalContent}>
             <View style={styles.pickerHeader}>
               <Text style={styles.pickerTitle}>Seleccionar Hora de Inicio</Text>
-              <TouchableOpacity onPress={() => setShowNativePicker(false)}>
+              <TouchableOpacity onPress={() => setShowNativePicker(false)} accessibilityLabel="Cerrar" accessibilityRole="button">
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
@@ -421,9 +435,9 @@ const TimePicker = ({ value, onChange }) => {
   );
 };
 
-const NotificationBell = ({ notificationCount, onPress }) => (
-  <TouchableOpacity onPress={onPress} style={styles.notificationBell}>
-    <Ionicons name="notifications-outline" size={24} color="#333" />
+const NotificationBell = ({ notificationCount, onPress, style, iconColor = '#333' }) => (
+  <TouchableOpacity onPress={onPress} style={[styles.notificationBell, style]} accessibilityLabel="Notificaciones" accessibilityRole="button">
+    <Ionicons name="notifications-outline" size={24} color={iconColor} />
     {notificationCount > 0 && (
       <View style={styles.notificationBadge}>
         <Text style={styles.notificationBadgeText}>
@@ -440,12 +454,13 @@ const NotificationsModal = ({ visible, onClose, notifications, markAsRead }) => 
     transparent={true}
     animationType="slide"
     onRequestClose={onClose}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.notificationsModalOverlay}>
       <View style={styles.notificationsModalContent}>
         <View style={styles.notificationsModalHeader}>
           <Text style={styles.notificationsModalTitle}>Notificaciones</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar" accessibilityRole="button">
             <Ionicons name="close" size={24} color="#333" />
           </TouchableOpacity>
         </View>
@@ -466,7 +481,7 @@ const NotificationsModal = ({ visible, onClose, notifications, markAsRead }) => 
                   <Ionicons
                     name={getNotificationIcon(notification.type || notification.tipo)}
                     size={20}
-                    color="#e95a0c"
+                    color="#C44B0A"
                     style={styles.notificationIcon}
                   />
                   {(!notification.read && notification.estado !== 'leido') && (
@@ -501,7 +516,7 @@ const getTokenAsync = async () => {
   try {
     let token;
     if (Platform.OS === 'web') {
-      token = localStorage.getItem(TOKEN_KEY);
+      token = sessionStorage.getItem(TOKEN_KEY);
     } else {
       token = await SecureStore.getItemAsync(TOKEN_KEY);
     }
@@ -517,58 +532,74 @@ const formatCurrency = (value) => `Bs ${Number(value).toFixed(2).replace(/\d(?=(
 const TablaPresupuesto = ({
   titulo, items, setItems, totalGeneral,
   handlePresupuestoChange, eliminarFilaPresupuesto, agregarFilaPresupuesto
-}) => (
-  <View style={styles.tablaContainer}>
-    <Text style={styles.tablaTitulo}>{titulo}</Text>
-    <View style={styles.tablaHeader}>
-      <Text style={[styles.headerText, { flex: 0.5 }]}>N°</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Descripción</Text>
-      <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Cant.</Text>
-      <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Precio</Text>
-      <Text style={[styles.headerText, { flex: 1.5, textAlign: 'right' }]}>Total</Text>
-      <Text style={[styles.headerText, { flex: 0.5 }]}></Text>
+}) => {
+  const { width: tableWidth } = useWindowDimensions();
+  const tableContent = (
+    <View style={{ minWidth: tableWidth < 768 ? 520 : 0 }}>
+      <View style={styles.tablaHeader}>
+        <Text style={[styles.headerText, { flex: 0.5 }]}>N°</Text>
+        <Text style={[styles.headerText, { flex: 2 }]}>Descripción</Text>
+        <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Cant.</Text>
+        <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Precio</Text>
+        <Text style={[styles.headerText, { flex: 1.5, textAlign: 'right' }]}>Total</Text>
+        <Text style={[styles.headerText, { flex: 0.5 }]}></Text>
+      </View>
+      {items.map((item, index) => {
+        const totalItem = (parseFloat(item.cantidad) || 0) * (parseFloat(item.precio) || 0);
+        return (
+          <View key={item.key} style={styles.tablaRow}>
+            <Text style={[styles.rowText, { flex: 0.5, textAlign: 'center' }]}>{index + 1}</Text>
+            <TextInput
+              style={[styles.rowInput, { flex: 2 }]}
+              value={item.descripcion}
+              onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'descripcion', text)}
+              placeholder="Descripción"
+              accessibilityLabel="Descripción"
+            />
+            <TextInput
+              style={[styles.rowInput, { flex: 1, textAlign: 'center' }]}
+              value={item.cantidad}
+              onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'cantidad', text.replace(/[^0-9.]/g, ''))}
+              keyboardType="numeric"
+              placeholder="0"
+              accessibilityLabel="Cantidad"
+            />
+            <TextInput
+              style={[styles.rowInput, { flex: 1, textAlign: 'center' }]}
+              value={item.precio}
+              onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'precio', text.replace(/[^0-9.]/g, ''))}
+              keyboardType="numeric"
+              placeholder="0.00"
+              accessibilityLabel="Precio"
+            />
+            <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
+            <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={[styles.deleteButtonSmall, { flex: 0.5 }]}>
+              <Ionicons name="close-circle" size={20} color="#e74c3c" />
+            </TouchableOpacity>
+          </View>
+        );
+      })}
+      <TouchableOpacity onPress={() => agregarFilaPresupuesto(setItems)} style={[styles.addButtonSmall, { alignSelf: 'stretch' }]}>
+        <Text style={styles.addButtonTextSmall}>+ Añadir Fila</Text>
+      </TouchableOpacity>
+      <View style={styles.totalRow}>
+        <Text style={styles.totalText}>TOTAL</Text>
+        <Text style={styles.totalAmount}>{formatCurrency(totalGeneral)}</Text>
+      </View>
     </View>
-    {items.map((item, index) => {
-      const totalItem = (parseFloat(item.cantidad) || 0) * (parseFloat(item.precio) || 0);
-      return (
-        <View key={item.key} style={styles.tablaRow}>
-          <Text style={[styles.rowText, { flex: 0.5, textAlign: 'center' }]}>{index + 1}</Text>
-          <TextInput
-            style={[styles.rowInput, { flex: 2 }]}
-            value={item.descripcion}
-            onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'descripcion', text)}
-            placeholder="Descripción"
-          />
-          <TextInput
-            style={[styles.rowInput, { flex: 1, textAlign: 'center' }]}
-            value={item.cantidad}
-            onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'cantidad', text.replace(/[^0-9.]/g, ''))}
-            keyboardType="numeric"
-            placeholder="0"
-          />
-          <TextInput
-            style={[styles.rowInput, { flex: 1, textAlign: 'center' }]}
-            value={item.precio}
-            onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'precio', text.replace(/[^0-9.]/g, ''))}
-            keyboardType="numeric"
-            placeholder="0.00"
-          />
-          <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
-          <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={[styles.deleteButtonSmall, { flex: 0.5 }]}>
-            <Ionicons name="close-circle" size={20} color="#e74c3c" />
-          </TouchableOpacity>
-        </View>
-      );
-    })}
-    <TouchableOpacity onPress={() => agregarFilaPresupuesto(setItems)} style={styles.addButtonSmall}>
-      <Text style={styles.addButtonTextSmall}>+ Añadir Fila</Text>
-    </TouchableOpacity>
-    <View style={styles.totalRow}>
-      <Text style={styles.totalText}>TOTAL</Text>
-      <Text style={styles.totalAmount}>{formatCurrency(totalGeneral)}</Text>
+  );
+
+  return (
+    <View style={styles.tablaContainer}>
+      <Text style={styles.tablaTitulo}>{titulo}</Text>
+      {tableWidth < 768 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{ paddingRight: 10 }}>
+          {tableContent}
+        </ScrollView>
+      ) : tableContent}
     </View>
-  </View>
-);
+  );
+};
 
 const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, 
   setFechaHoraSeleccionada, eventos, title,onDateWarning }) => {
@@ -634,13 +665,13 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
       )}
       <View style={styles.calendarHeader}>
         <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navButton}>
-          <Ionicons name="chevron-back" size={24} color="#e95a0c" />
+          <Ionicons name="chevron-back" size={24} color="#C44B0A" />
         </TouchableOpacity>
         <Text style={styles.monthYearText}>
           {dayjs(fechaHoraSeleccionada).format('MMMM YYYY').toUpperCase()}
         </Text>
         <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navButton}>
-          <Ionicons name="chevron-forward" size={24} color="#e95a0c" />
+          <Ionicons name="chevron-forward" size={24} color="#C44B0A" />
         </TouchableOpacity>
       </View>
       <View style={styles.weekDaysHeader}>
@@ -702,18 +733,18 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
                 </Text>
                 {dayEvents.length > 0 && (
                   <View style={styles.eventIndicators}>
-                    <View style={[styles.eventDot, { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#e95a0c' }]} />
+                    <View style={[styles.eventDot, { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44B0A' }]} />
                     {dayEvents.length > 1 && <Text style={styles.eventCount}>+{dayEvents.length - 1}</Text>}
                   </View>
                 )}
                 {dayEvents.length > 0 && isSelected && (
                   <View style={styles.eventPreview}>
-                    {dayEvents.slice(0, 2).map((evento, idx) => (
+                    {dayEvents.slice(0, 3).map((evento, idx) => (
                       <Text key={idx} style={styles.eventPreviewText}>
-                        {dayjs(evento.horaevento.split('+')[0], 'HH:mm:ss').format('HH:mm')} {evento.nombreevento}
+                        {formatHoraEvento(evento.horaevento)} {evento.nombreevento}
                       </Text>
                     ))}
-                    {dayEvents.length > 2 && <Text style={styles.eventPreviewMore}>+{dayEvents.length - 2} más</Text>}
+                    {dayEvents.length > 3 && <Text style={styles.eventPreviewMore}>+{dayEvents.length - 3} más</Text>}
                   </View>
                 )}
               </View>
@@ -731,6 +762,7 @@ const ConflictModal = ({ showConflictModal, setShowConflictModal, conflictoDetec
     transparent={true}
     animationType="fade"
     onRequestClose={() => setShowConflictModal(false)}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
@@ -744,7 +776,7 @@ const ConflictModal = ({ showConflictModal, setShowConflictModal, conflictoDetec
             <View style={styles.conflictEventCard}>
               <Text style={styles.conflictEventTitle}>{conflictoDetectado.nombreevento}</Text>
               <Text style={styles.conflictEventDetails}>
-                {dayjs(conflictoDetectado.horaevento.split('+')[0], 'HH:mm:ss').format('HH:mm')} - {conflictoDetectado.lugarevento}
+                {formatHoraEvento(conflictoDetectado.horaevento)} - {conflictoDetectado.lugarevento}
               </Text>
               <Text style={styles.conflictEventResponsible}>Responsable: {conflictoDetectado.responsable_evento}</Text>
             </View>
@@ -772,7 +804,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
   return (
     <View style={styles.eventosDelDiaContainer}>
       <View style={styles.eventosDelDiaHeader}>
-        <Ionicons name="calendar-outline" size={20} color="#e95a0c" />
+        <Ionicons name="calendar-outline" size={20} color="#C44B0A" />
         <Text style={styles.eventosDelDiaTitle}>Eventos en {dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')}</Text>
         <View style={styles.eventCountBadge}>
           <Text style={styles.eventCountText}>{eventosDelDia.length}</Text>
@@ -780,9 +812,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
       </View>
       <ScrollView style={styles.eventsList} showsVerticalScrollIndicator={false}>
         {eventosDelDia.map((evento, index) => {
-          const horaEventoString = (evento.horaevento || '').split('+')[0].trim();
-          const horaEvento = dayjs(`2000-01-01 ${horaEventoString}`, 'YYYY-MM-DD HH:mm:ss');
-          const isHoraValida = horaEvento.isValid();
+          const isHoraValida = parseHoraEvento(evento.horaevento) !== null;
           const isConflict = verificarConflictoHorario(
             dayjs(fechaHoraSeleccionada).format('YYYY-MM-DD') + 'T' + dayjs(fechaHoraSeleccionada).format('HH:mm:ss')
           ).some(e => e.id === evento.id || e.idevento === evento.idevento);
@@ -790,9 +820,9 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
             <View key={index} style={[styles.eventoCard, isConflict && styles.eventoCardConflict]}>
               <View style={styles.eventoCardHeader}>
                 <View style={styles.eventoTimeContainer}>
-                  <Ionicons name="time-outline" size={16} color={isConflict ? "#ff6b6b" : "#e95a0c"} />
+                  <Ionicons name="time-outline" size={16} color={isConflict ? "#ff6b6b" : "#C44B0A"} />
                   <Text style={[styles.eventoTime, isConflict && styles.eventoTimeConflict]}>
-                    {isHoraValida ? horaEvento.format('HH:mm') : 'Hora no disponible'}
+                    {isHoraValida ? formatHoraEvento(evento.horaevento) : 'Hora no disponible'}
                   </Text>
                 </View>
                 {isConflict && (
@@ -830,6 +860,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
     transparent={true}
     animationType="slide"
     onRequestClose={() => setShowConfirmModal(false)}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.modalOverlay}>
       <View style={styles.confirmModalContent}>
@@ -863,6 +894,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
 const ProyectoEvento = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { width: winWidth } = useWindowDimensions();
   const [isLoading, setIsLoading] = useState(false);
   const [authToken, setAuthToken] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -1129,7 +1161,7 @@ const ProyectoEvento = () => {
           console.log('⚠️ Token inválido - 401');
           
           if (Platform.OS === 'web') {
-            localStorage.removeItem('adminAuthToken');
+            sessionStorage.removeItem('adminAuthToken');
           } else {
             try {
               await SecureStore.deleteItemAsync('adminAuthToken');
@@ -1181,15 +1213,14 @@ const ProyectoEvento = () => {
 
   const verificarConflictoHorario = (fechaHora) => {
     const fechaFormateada = dayjs(fechaHora).format('YYYY-MM-DD');
-    const horaFormateada = dayjs(fechaHora).format('HH:mm');
     const eventosEnMismaFecha = eventos.filter(evento => dayjs(evento.fechaevento).format('YYYY-MM-DD') === fechaFormateada);
 
     return eventosEnMismaFecha.filter(evento => {
-      const horaEventoString = (evento.horaevento || '').split('+')[0].trim();
-      const horaEvento = dayjs(horaEventoString, 'HH:mm:ss');
-      if (!horaEvento.isValid()) return false;
+      const horaEvento = parseHoraEvento(evento.horaevento);
+      if (!horaEvento) return false;
 
-      const horaSeleccionada = dayjs(horaFormateada, 'HH:mm');
+      const sel = dayjs(fechaHora).startOf('day');
+      const horaSeleccionada = sel.hour(dayjs(fechaHora).hour()).minute(dayjs(fechaHora).minute());
       return Math.abs(horaEvento.diff(horaSeleccionada, 'minutes')) < 240;
     });
   };
@@ -1286,7 +1317,7 @@ const ProyectoEvento = () => {
         console.error("Token inválido:", error.response?.data);
         
         if (Platform.OS === 'web') {
-          localStorage.removeItem('adminAuthToken');
+          sessionStorage.removeItem('adminAuthToken');
         } else {
           await SecureStore.deleteItemAsync('adminAuthToken');
         }
@@ -1386,49 +1417,6 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
   return disponible > 0;
 }, [getCantidadDisponible]);
 
-// 5. En el renderizado de recursos disponibles, modificar esto:
-{recursosDisponibles.map((recurso) => {
-  const idString = String(recurso.idrecurso);
-  const cantidadSeleccionada = recursosSeleccionadosCount[idString] || 0;
-  const cantidadDisponible = getCantidadDisponible(recurso);
-  const isSelected = cantidadSeleccionada > 0;
-  const canSelect = puedeSeleccionarRecurso(recurso);
-
-  return (
-    <TouchableOpacity
-      key={idString}
-      style={[
-        styles.recursoDisponibleCard, 
-        isSelected && styles.recursoDisponibleCardSelected,
-        !canSelect && styles.recursoDisponibleCardDisabled
-      ]}
-      onPress={() => canSelect && handleRecursoChange(recurso.idrecurso, recurso)}
-      disabled={!canSelect}
-    >
-      <View style={styles.recursoCheckboxContainer}>
-        <Ionicons 
-          name={isSelected ? "checkbox" : "square-outline"} 
-          size={24} 
-          color={isSelected ? "#e95a0c" : !canSelect ? "#ccc" : "#888"} 
-        />
-      </View>
-      <View style={styles.recursoInfo}>
-        <Text style={styles.recursoNombre}>{recurso.nombre_recurso}</Text>
-        <Text style={styles.recursoTipo}>
-          {recurso.recurso_tipo === 'tecnologico' ? 'Tecnológico' : 
-           recurso.recurso_tipo === 'mobiliario' ? 'Mobiliario' : 'Vajilla'}
-        </Text>
-        <Text style={[
-          styles.recursoCantidad, 
-          { color: cantidadDisponible <= 2 ? '#e74c3c' : '#27ae60' }
-        ]}>
-          Disponibles: {cantidadDisponible}
-          {cantidadSeleccionada > 0 && ` (Seleccionadas: ${cantidadSeleccionada})`}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-})}
   const handleTipoEventoChange = (id) => {
     setTiposSeleccionados(prev => {
       const newState = { ...prev };
@@ -1775,14 +1763,27 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingContainer}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Crear Evento</Text>
-        <NotificationBell notificationCount={unreadCount} onPress={() => setShowNotificationsModal(true)} />
-      </View>
+      <AdminHeader
+        eyebrow="Administración Académica"
+        title="Crear Evento"
+        subtitle="Proyecto de evento"
+        backTo="/admin/HomeAcademico"
+        rightActions={
+          <NotificationBell
+            notificationCount={unreadCount}
+            onPress={() => setShowNotificationsModal(true)}
+            style={styles.bellOnHero}
+            iconColor="#fff"
+          />
+        }
+      />
+      <Text style={styles.requirementInfo}>
+        Los campos marcados con <Text style={styles.requiredAsterisk}>*</Text> son obligatorios
+      </Text>
 
       <View style={styles.timePickerSection}>
         <View style={styles.timePickerHeader}>
-          <Ionicons name="alarm" size={24} color="#e95a0c" />
+          <Ionicons name="alarm" size={24} color="#C44B0A" />
           <Text style={styles.timePickerSectionTitle}>Hora de Inicio del Evento <Text style={styles.requiredAsterisk}>*</Text>
           </Text>
         </View>
@@ -1792,9 +1793,58 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
         />
       </View>
 
-      <View style={styles.mainContainer}>
-        {width > 768 && (
-          <View style={styles.calendarColumn}>
+      {/* Panel de progreso: muestra el paso actual y qué pasos están bloqueados */}
+      <View style={styles.progressSummary}>
+        <Text style={styles.progressText}>Paso {String(parseInt(seccionObjetivosVisible ? 2 : 1))} de VI</Text>
+        <Text style={styles.progressNote}>
+          {seccionObjetivosVisible ? 'Objetivos visibles' : 'Primer paso: Datos'}
+        </Text>
+      </View>
+
+      {/* Línea de tiempo de eventos */}
+      <View style={styles.timelineSection}>
+        <Text style={styles.timelineTitle}>Línea de tiempo de eventos</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timelineScroll}>
+          {[
+            { fecha: '15/09/2026', nombre: 'Hackatón Universitario' },
+            { fecha: '21/09/2026', nombre: 'Taller Bancario' },
+            { fecha: '22/09/2026', nombre: 'Egreso de estudiantes' },
+          ].map((e) => (
+            <View key={e.fecha} style={styles.timelineEvent}>
+              <Text style={styles.timelineDate}>{e.fecha}</Text>
+              <Text style={styles.timelineNombre}>{e.nombre}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.stepperContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepperContent}>
+          {[
+            { num: 'I', label: 'Datos', locked: false, onPress: () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }) },
+            { num: 'II', label: 'Objetivos', locked: !seccionObjetivosVisible, onPress: scrollToObjetivos },
+            { num: 'III', label: 'Resultados', locked: !seccionResultadosVisible, onPress: scrollToResultados },
+            { num: 'IV', label: 'Comité', locked: !seccionResultadosVisible, onPress: scrollToComite },
+            { num: 'V', label: 'Recursos', locked: !seccionRecursosVisible, onPress: scrollToRecursos },
+            { num: 'VI', label: 'Presupuesto', locked: !seccionPresupuestoVisible, onPress: scrollToPresupuesto },
+          ].map((s) => (
+            <TouchableOpacity
+              key={s.num}
+              disabled={s.locked}
+              onPress={s.onPress}
+              style={[styles.stepChip, s.locked && styles.stepChipLocked]}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.stepChipNum, s.locked && styles.stepChipNumLocked]}>{s.num}</Text>
+              <Text style={[styles.stepChipLabel, s.locked && styles.stepChipLabelLocked]}>{s.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={[styles.mainContainer, winWidth > 768 && styles.mainContainerWide]}>
+        {winWidth > 768 && (
+          <View style={[styles.calendarColumn, winWidth > 768 && styles.calendarColumnWide]}>
             <View style={styles.calendarSection}>
               <GoogleStyleCalendarView
                 fechaHoraSeleccionada={fechaHoraSeleccionada}
@@ -1840,6 +1890,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                 value={nombreevento}
                 onChangeText={(text) => handleInputChange('nombreevento', text)}
                 placeholder="Nombre del evento"
+                accessibilityLabel="Nombre del evento"
               />
             </View>
             {errors.nombreevento && <Text style={styles.errorText}>{errors.nombreevento}</Text>}
@@ -1890,7 +1941,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               </Text>
             </TouchableOpacity>
             {errors.lugarevento && <Text style={styles.errorText}>{errors.lugarevento}</Text>}
-            {width <= 768 && (
+            {winWidth <= 768 && (
               <>
                 <Text style={styles.label}>Fecha de Realización<Text style={styles.requiredAsterisk}>*</Text></Text>
                 <GoogleStyleCalendarView
@@ -1922,14 +1973,14 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
             </Text>
             {TIPOS_DE_EVENTO.map((item) => (
               <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)}>
-                <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#e95a0c" : "#888"} />
+                <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
                 <Text style={styles.checkboxLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
             {errors.tipos && <Text style={styles.errorText}>{errors.tipos}</Text>}
             {tiposSeleccionados['5'] && (
               <View style={styles.otroInputContainer}>
-                <TextInput style={styles.input} value={textoOtroTipo} onChangeText={setTextoOtroTipo} placeholder="¿Cuál?" />
+                <TextInput style={styles.input} value={textoOtroTipo} onChangeText={setTextoOtroTipo} placeholder="¿Cuál?" accessibilityLabel="Tipo de evento" />
               </View>
             )}
             <TouchableOpacity style={styles.gotoButton} onPress={scrollToObjetivos}>
@@ -1956,7 +2007,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     { key: 'internacionalizacion', label: 'Internacionalización' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}>
-                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#e95a0c" : "#888"} />
+                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1968,7 +2019,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     { key: 'otro', label: 'Otro' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}>
-                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#e95a0c" : "#888"} />
+                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1977,7 +2028,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               {errors.objetivos && <Text style={styles.errorText}>{errors.objetivos}</Text>}
               {objetivos.otro && (
                 <View style={styles.otroInputContainer}>
-                  <TextInput style={styles.input} value={objetivos.otroTexto} onChangeText={(text) => handleOtroTextChange(setObjetivos, text)} placeholder="¿Cuál?" />
+                  <TextInput style={styles.input} value={objetivos.otroTexto} onChangeText={(text) => handleOtroTextChange(setObjetivos, text)} placeholder="¿Cuál?" accessibilityLabel="Otro objetivo" />
                   {objetivos.otroTexto.trim() && <Text style={styles.selectedText}>Selección: {objetivos.otroTexto}</Text>}
                 </View>
               )}
@@ -1994,6 +2045,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                       onChangeText={(text) => handleObjetivoPDIChange(index, text)}
                       placeholder={`Objetivo ${index + 1}`}
                       multiline
+                      accessibilityLabel="Objetivo del PDI"
                     />
                   </View>
                 ))}
@@ -2015,7 +2067,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                       }
                     }
                     }>
-                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#e95a0c" : "#888"} />
+                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44B0A" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -2036,7 +2088,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     { key: 'otro', label: 'Otro' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setSegmentoObjetivo, item.key)}>
-                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#e95a0c" : "#888"} />
+                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44B0A" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -2044,7 +2096,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               </View>
               {segmentoObjetivo.otro && (
                 <View style={styles.otroInputContainer}>
-                  <TextInput style={styles.input} value={segmentoObjetivo.otroTexto} onChangeText={(text) => handleOtroTextChange(setSegmentoObjetivo, text)} placeholder="¿Cuál?" />
+                  <TextInput style={styles.input} value={segmentoObjetivo.otroTexto} onChangeText={(text) => handleOtroTextChange(setSegmentoObjetivo, text)} placeholder="¿Cuál?" accessibilityLabel="Otro segmento" />
                   {segmentoObjetivo.otroTexto.trim() && <Text style={styles.selectedText}>Selección: {segmentoObjetivo.otroTexto}</Text>}
                 </View>
               )}
@@ -2058,6 +2110,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                   multiline
                   numberOfLines={4}
                   placeholder="Breve descripción sustentada de la congruencia del evento con los objetivos especificados"
+                  accessibilityLabel="Argumentación"
                   value={argumentacion}
                   onChangeText={setArgumentacion}
                 />
@@ -2076,15 +2129,15 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                 <Text style={styles.sectionTitle}>III. RESULTADOS ESPERADOS</Text>
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Participación Efectiva<Text style={styles.requiredAsterisk}>*</Text></Text>
-                  <TextInput style={styles.resultadoInput} placeholder="Ej: 150" value={resultadosEsperados.participacion} onChangeText={(text) => handleResultadoChange('participacion', text)} keyboardType="numeric" />
+                  <TextInput style={styles.resultadoInput} placeholder="Ej: 150" value={resultadosEsperados.participacion} onChangeText={(text) => handleResultadoChange('participacion', text)} keyboardType="numeric" accessibilityLabel="Participación Efectiva" />
                 </View>
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Índice de Satisfacción<Text style={styles.requiredAsterisk}>*</Text></Text>
-                  <TextInput style={styles.resultadoInput} placeholder="Ej: 90% de satisfacción" value={resultadosEsperados.satisfaccion} onChangeText={(text) => handleResultadoChange('satisfaccion', text)} />
+                  <TextInput style={styles.resultadoInput} placeholder="Ej: 90% de satisfacción" value={resultadosEsperados.satisfaccion} onChangeText={(text) => handleResultadoChange('satisfaccion', text)} accessibilityLabel="Índice de Satisfacción" />
                 </View>
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Otro<Text style={styles.requiredAsterisk}>*</Text></Text>
-                  <TextInput style={styles.resultadoInput} placeholder="Otro resultado medible" value={resultadosEsperados.otro} onChangeText={(text) => handleResultadoChange('otro', text)} />
+                  <TextInput style={styles.resultadoInput} placeholder="Otro resultado medible" value={resultadosEsperados.otro} onChangeText={(text) => handleResultadoChange('otro', text)} accessibilityLabel="Otro resultado" />
                 </View>
               </View>
               <View style={styles.formSection}>
@@ -2093,7 +2146,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                 
                 {comiteLoading ? (
                   <View style={styles.comiteLoadingContainer}>
-                    <ActivityIndicator size="large" color="#e95a0c" />
+                    <ActivityIndicator size="large" color="#C44B0A" />
                     <Text style={styles.comiteLoadingText}>Cargando miembros del comité...</Text>
                   </View>
                 ) : comiteError ? (
@@ -2129,7 +2182,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                           }
                         }}
                       >
-                        <Ionicons name={comiteSeleccionado.includes(usuario.id) ? "checkbox" : "square-outline"} size={24} color={comiteSeleccionado.includes(usuario.id) ? "#e95a0c" : "#888"} />
+                        <Ionicons name={comiteSeleccionado.includes(usuario.id) ? "checkbox" : "square-outline"} size={24} color={comiteSeleccionado.includes(usuario.id) ? "#C44B0A" : "#888"} />
                         <View style={styles.comiteUserText}>
                           <Text style={styles.checkboxLabel}>{usuario.nombreCompleto}</Text>
                          <Text style={[styles.comiteUserRole, { fontSize: 12, color: '#666', fontStyle: 'italic' }]}>
@@ -2177,7 +2230,8 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                         style={[
                           styles.recursoDisponibleCard,
                           isSelected && styles.recursoDisponibleCardSelected,
-                          !canSelect && styles.recursoDisponibleCardDisabled
+                          !canSelect && styles.recursoDisponibleCardDisabled,
+                          winWidth < 768 && styles.recursoDisponibleCardMobile
                         ]}
                         onPress={() => canSelect && handleRecursoChange(recurso.idrecurso, recurso)}
                         disabled={!canSelect}
@@ -2186,7 +2240,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                           <Ionicons
                             name={isSelected ? "checkbox" : "square-outline"}
                             size={24}
-                            color={isSelected ? "#e95a0c" : !canSelect ? "#ccc" : "#888"}
+                            color={isSelected ? "#C44B0A" : !canSelect ? "#ccc" : "#888"}
                           />
                         </View>
                         <View style={styles.recursoInfo}>
@@ -2230,7 +2284,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
             </View>
           )}
 
-          <Modal visible={showClasificacionModal} transparent animationType="fade" onRequestClose={() => setShowClasificacionModal(false)}>
+          <Modal visible={showClasificacionModal} transparent animationType="fade" onRequestClose={() => setShowClasificacionModal(false)} accessibilityViewIsModal={true}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Selecciona Clasificación</Text>
@@ -2248,7 +2302,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
             </View>
           </Modal>
 
-          <Modal visible={showSubcategoriaModal} transparent animationType="fade" onRequestClose={() => setShowSubcategoriaModal(false)}>
+          <Modal visible={showSubcategoriaModal} transparent animationType="fade" onRequestClose={() => setShowSubcategoriaModal(false)} accessibilityViewIsModal={true}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Selecciona Subcategoría</Text>
@@ -2266,7 +2320,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
             </View>
           </Modal>
 
-          <Modal visible={showLugarModal} transparent animationType="fade" onRequestClose={() => setShowLugarModal(false)}>
+          <Modal visible={showLugarModal} transparent animationType="fade" onRequestClose={() => setShowLugarModal(false)} accessibilityViewIsModal={true}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>
@@ -2298,11 +2352,11 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               </View>
             </View>
           </Modal>
-          <Modal visible={showFacultadModal} transparent animationType="fade" onRequestClose={() => setShowFacultadModal(false)}>
+          <Modal visible={showFacultadModal} transparent animationType="fade" onRequestClose={() => setShowFacultadModal(false)} accessibilityViewIsModal={true}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Ionicons name="school" size={28} color="#e95a0c" />
+                  <Ionicons name="school" size={28} color="#C44B0A" />
                   <Text style={styles.modalTitle}>Selecciona la Facultad</Text>
                 </View>
                 <Text style={{ fontSize: 13, color: '#666', marginBottom: 15 }}>
@@ -2322,7 +2376,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                           facultadSeleccionada === fac.facultad_id && { 
                             backgroundColor: '#fff5f0', 
                             borderLeftWidth: 4, 
-                            borderLeftColor: '#e95a0c' 
+                            borderLeftColor: '#C44B0A' 
                           }
                         ]}
                         onPress={() => {
@@ -2334,11 +2388,11 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                           <Ionicons 
                             name={facultadSeleccionada === fac.facultad_id ? "radio-button-on" : "radio-button-off"} 
                             size={20} 
-                            color={facultadSeleccionada === fac.facultad_id ? "#e95a0c" : "#888"} 
+                            color={facultadSeleccionada === fac.facultad_id ? "#C44B0A" : "#888"} 
                           />
                           <Text style={[
                             styles.modalOptionText,
-                            facultadSeleccionada === fac.facultad_id && { color: '#e95a0c', fontWeight: '600' }
+                            facultadSeleccionada === fac.facultad_id && { color: '#C44B0A', fontWeight: '600' }
                           ]}>
                             {fac.nombre_facultad}
                           </Text>
@@ -2407,12 +2461,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff5f0',
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     borderRadius: 25,
     paddingHorizontal: 18,
     paddingVertical: 12,
     gap: 8,
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -2422,21 +2476,22 @@ const styles = StyleSheet.create({
   timePickerTriggerText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     letterSpacing: 1,
     marginHorizontal: 4,
   },
   timePickerSection: {
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
+    marginHorizontal: 20,
+    marginTop: 12,
+    borderRadius: 12,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    paddingHorizontal: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   timePickerHeader: {
     flexDirection: 'row',
@@ -2448,6 +2503,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#333',
+  },
+  stepperContainer: {
+    marginHorizontal: 20,
+    marginTop: 10,
+  },
+  progressSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 8,
+  },
+  progressNote: {
+    fontSize: 12,
+    color: '#666',
+  },
+  stepperContent: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  stepChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  stepChipLocked: {
+    opacity: 0.45,
+  },
+  stepChipNum: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#C44B0A',
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  stepChipNumLocked: {
+    backgroundColor: '#E0E0E0',
+    color: '#888',
+  },
+  stepChipLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+  },
+  stepChipLabelLocked: {
+    color: '#888',
   },
   timePickerModalHeader: {
     flexDirection: 'row',
@@ -2489,7 +2604,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     overflow: 'hidden',
     width: 90,
   },
@@ -2505,7 +2620,7 @@ const styles = StyleSheet.create({
   drumInput: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     paddingVertical: 8,
     textAlign: 'center',
     width: '100%',
@@ -2518,7 +2633,7 @@ const styles = StyleSheet.create({
   drumColon: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     marginTop: 28,
   },
   quickTimesContainer: {
@@ -2547,8 +2662,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   quickTimeBtnActive: {
-    backgroundColor: '#e95a0c',
-    borderColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
+    borderColor: '#C44B0A',
   },
   quickTimeBtnText: {
     fontSize: 14,
@@ -2560,14 +2675,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   timePickerApply: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -2624,7 +2739,7 @@ const styles = StyleSheet.create({
   comiteRetryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -2690,7 +2805,7 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'ios' ? 180 : 'auto',
   },
   doneButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -2702,16 +2817,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   gotoButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 15,
-    alignSelf: 'flex-start',
-    marginBottom: 20,
+    borderRadius: 12,
+    marginTop: 6,
+    alignSelf: 'stretch',
+    shadowColor: '#C44B0A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
   gotoButtonText: {
     color: '#ffffff',
@@ -2738,9 +2857,9 @@ visibilidadOption: {
   gap: 8,
 },
 visibilidadOptionActive: {
-  backgroundColor: '#e95a0c',
-  borderColor: '#e95a0c',
-  shadowColor: '#e95a0c',
+  backgroundColor: '#C44B0A',
+  borderColor: '#C44B0A',
+  shadowColor: '#C44B0A',
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.3,
   shadowRadius: 4,
@@ -2773,8 +2892,8 @@ facultadSelectorContainer: {
   backgroundColor: '#fff5f0',
   borderRadius: 12,
   borderLeftWidth: 4,
-  borderLeftColor: '#e95a0c',
-  shadowColor: '#e95a0c',
+  borderLeftColor: '#C44B0A',
+  shadowColor: '#C44B0A',
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.1,
   shadowRadius: 4,
@@ -2797,16 +2916,17 @@ facultadSelectorButton: {
   alignItems: 'center',
   justifyContent: 'space-between',
   backgroundColor: '#FFFFFF',
-  borderWidth: 2,
-  borderColor: '#e95a0c',
+  borderWidth: 1,
+  borderColor: '#E0E0E0',
   borderRadius: 10,
   paddingVertical: 12,
   paddingHorizontal: 14,
+  minHeight: 46,
   shadowColor: '#000',
   shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.1,
+  shadowOpacity: 0.04,
   shadowRadius: 2,
-  elevation: 2,
+  elevation: 1,
 },
 facultadSelectorButtonContent: {
   flexDirection: 'row',
@@ -2827,7 +2947,7 @@ facultadSelectedHintContainer: {
   marginTop: 10,
   paddingTop: 10,
   borderTopWidth: 1,
-  borderTopColor: 'rgba(233, 90, 12, 0.2)',
+  borderTopColor: 'rgba(196, 75, 10, 0.2)',
   gap: 6,
 },
 facultadSelectedHint: {
@@ -2852,36 +2972,36 @@ facultadSelectedHint: {
   },
   mainContainer: {
     flex: 1,
-    flexDirection: width > 768 ? 'row' : 'column',
+    flexDirection: 'column',
     paddingHorizontal: 20,
+  },
+  mainContainerWide: {
+    flexDirection: 'row',
   },
   calendarColumn: {
     marginTop: 10,
-    width: width > 768 ? '30%' : '100%',
-    marginRight: width > 768 ? 20 : 0,
-    marginBottom: width <= 768 ? 20 : 0,
+    width: '100%',
+    marginBottom: 20,
+  },
+  calendarColumnWide: {
+    width: '31%',
+    minWidth: 300,
+    marginRight: 20,
+    marginBottom: 0,
   },
   formColumn: {
     marginTop: 10,
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
-  scrollContentContainer: { paddingBottom: 60 },
+  scrollContentContainer: { paddingBottom: 8 },
   calendarSection: { marginBottom: 20 },
   notificationMessage: { fontSize: 13, color: '#666', marginBottom: 5, lineHeight: 18 },
   checkboxContainer: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
   formSectionHighlighted: {
     backgroundColor: '#fff5f0',
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     borderWidth: 2,
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -2905,14 +3025,15 @@ facultadSelectedHint: {
     shadowRadius: 2,
     elevation: 2,
   },
-  recursoDisponibleCardSelected: { backgroundColor: '#fff5f0', borderColor: '#e95a0c', borderWidth: 2 },
+  recursoDisponibleCardMobile: { width: '100%' },
+  recursoDisponibleCardSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2 },
   recursoCheckboxContainer: { marginRight: 10 },
   recursoInfo: { flex: 1 },
   recursoNombre: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4 },
   recursoTipo: { fontSize: 12, color: '#666', fontStyle: 'italic', marginBottom: 2 },
   recursoCantidad: { fontSize: 12, color: '#27ae60', fontWeight: '500' },
   noRecursosText: { fontStyle: 'italic', color: '#999', textAlign: 'center', marginTop: 10, fontSize: 14, paddingVertical: 15 },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, minHeight: 40 },
   checkboxLabel: { marginLeft: 8, fontSize: 15, color: '#333' },
   header: {
     flexDirection: 'row',
@@ -2932,6 +3053,7 @@ facultadSelectedHint: {
   },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
   notificationBell: { position: 'relative', padding: 8, borderRadius: 20, backgroundColor: '#f8f9fa' },
+  bellOnHero: { backgroundColor: 'rgba(255,255,255,0.16)' },
   notificationBadge: {
     position: 'absolute', top: 0, right: 0,
     backgroundColor: '#ff4444', borderRadius: 10,
@@ -2941,7 +3063,7 @@ facultadSelectedHint: {
   },
   notificationBadgeText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
   calendarTitleContainer: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
-  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#e95a0c', textAlign: 'left' },
+  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#C44B0A', textAlign: 'left' },
   notificationsModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   notificationsModalContent: {
     backgroundColor: 'white', borderRadius: 16, padding: 20,
@@ -2963,8 +3085,8 @@ facultadSelectedHint: {
     borderRadius: 8, marginBottom: 5, backgroundColor: '#ffffff',
   },
   notificationItemUnread: {
-    backgroundColor: '#f8f9ff', borderLeftWidth: 4, borderLeftColor: '#e95a0c',
-    shadowColor: '#e95a0c', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+    backgroundColor: '#f8f9ff', borderLeftWidth: 4, borderLeftColor: '#C44B0A',
+    shadowColor: '#C44B0A', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
   },
   objetivoPDIRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   objetivoPDINumber: { fontSize: 16, color: '#333', marginRight: 10, marginTop: 12, fontWeight: '500' },
@@ -2994,42 +3116,40 @@ facultadSelectedHint: {
   confirmModalButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   confirmModalButton: { flex: 1, paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   confirmModalButtonCancel: { backgroundColor: '#f8f9fa', borderWidth: 1, borderColor: '#e0e0e0' },
-  confirmModalButtonConfirm: { backgroundColor: '#e95a0c' },
+  confirmModalButtonConfirm: { backgroundColor: '#C44B0A' },
   confirmModalButtonTextCancel: { fontSize: 16, fontWeight: '600', color: '#4a5568' },
   confirmModalButtonTextConfirm: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
   keyboardAvoidingContainer: { flex: 1, backgroundColor: '#F4F7F9' },
   formSection: {
-    backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, marginBottom: 20,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 5,
-    paddingHorizontal: isMobile ? 15 : 20,
-    paddingTop: isMobile ? 15 : 20,
+    backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, marginBottom: 16,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
   },
   sectionTitle: {
-    fontSize: 18, fontWeight: '700', color: '#e95a0c',
-    marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#eee',
-    paddingBottom: 8, textAlign: 'left', backgroundColor: '#f8f9fa',
-    marginHorizontal: -20, marginTop: -12, paddingTop: 12, paddingHorizontal: 20,
-    borderTopLeftRadius: 12, borderTopRightRadius: 12,
+    fontSize: 17, fontWeight: '700', color: '#C44B0A',
+    textAlign: 'left', marginBottom: 16,
+    paddingVertical: 11, paddingHorizontal: 14,
+    backgroundColor: '#fff5f0', borderRadius: 10,
+    borderLeftWidth: 4, borderLeftColor: '#C44B0A',
   },
-  label: { fontSize: 14, color: '#555', marginBottom: 8, fontWeight: '500' },
+  label: { fontSize: 14, color: '#444', marginBottom: 8, fontWeight: '600', flex: 1 },
   inputGroup: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E0E0E0',
-    borderRadius: 8, marginBottom: 18,
+    borderRadius: 10, marginBottom: 18, minHeight: 46,
   },
   inputError: { borderColor: 'red' },
-  errorText: { color: 'red', marginLeft: 10, marginBottom: 10, fontSize: 12 },
+  errorText: { color: 'red', marginLeft: 10, marginBottom: 12, marginTop: -8, fontSize: 12 },
   inputIcon: { paddingHorizontal: 12, color: '#888' },
   input: { flex: 1, paddingVertical: Platform.OS === 'ios' ? 14 : 10, paddingRight: 15, fontSize: 16, color: '#333' },
   textArea: { height: 100, textAlignVertical: 'top' },
   datePickerButton: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, backgroundColor: '#fff', marginBottom: 15 },
   datePickerText: { fontSize: 16, color: '#333' },
-  otroInputContainer: { marginLeft: 36, marginTop: 5, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F8F9FA' },
+  otroInputContainer: { marginTop: -6, marginBottom: 16, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 10, backgroundColor: '#F8F9FA', paddingHorizontal: 12 },
   resultadoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   resultadoLabel: { fontSize: 16, color: '#333', flex: 1 },
   resultadoInput: { flex: 2, backgroundColor: '#F4F7F9', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16, fontSize: 16, color: '#333' },
   comiteDescription: { fontSize: 14, color: '#666', lineHeight: 20, textAlign: 'justify' },
-  tablaContainer: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, marginBottom: 25, padding: 5 },
+  tablaContainer: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, marginBottom: 25, backgroundColor: '#fff', overflow: 'hidden' },
   tablaTitulo: { textAlign: 'center', fontWeight: 'bold', padding: 8, backgroundColor: '#f0f0f0', borderTopLeftRadius: 7, borderTopRightRadius: 7 },
   tablaHeader: { flexDirection: 'row', backgroundColor: '#e0e0e0', paddingHorizontal: 5, paddingVertical: 8 },
   headerText: { fontWeight: 'bold', fontSize: 12 },
@@ -3046,57 +3166,76 @@ facultadSelectedHint: {
   balanceText: { fontWeight: 'bold', fontSize: 16 },
   balanceAmount: { fontWeight: 'bold', fontSize: 16 },
   floatingActionButton: {
-    position: 'absolute', right: 20, bottom: 20,
-    backgroundColor: '#e95a0c', width: 60, height: 60, borderRadius: 30,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 8,
+    backgroundColor: '#C44B0A',
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    shadowColor: '#C44B0A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  fixedBottomContainer: { position: 'relative', height: 80 },
+  fixedBottomContainer: {
+    position: 'relative',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e8e8e8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   buttonDisabled: { backgroundColor: '#f9bda3' },
   submitButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   subsection: {
-    backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, marginBottom: 20,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 5,
+    backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, marginBottom: 16,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
   },
   subsectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 10 },
   subsectionDescription: { fontSize: 13, color: '#666', marginBottom: 15, lineHeight: 18 },
   googleCalendarContainer: {
-    backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, overflow: 'hidden',
+    backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2, overflow: 'hidden',
   },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   navButton: { padding: 8, borderRadius: 20, backgroundColor: '#ffffff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   monthYearText: { fontSize: 18, fontWeight: 'bold', color: '#333', letterSpacing: 1 },
   weekDaysHeader: { flexDirection: 'row', backgroundColor: '#f0f0f0', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
-  weekDayCell: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-  weekDayText: { fontSize: 13, fontWeight: '600', color: '#666' },
+  weekDayCell: { flex: 1, paddingVertical: 8, alignItems: 'center' },
+  weekDayText: { fontSize: 11, fontWeight: '600', color: '#666' },
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: '#ffffff' },
-  dayCell: { width: '14.28%', minHeight: 80, borderRightWidth: 0.5, borderBottomWidth: 0.5, borderColor: '#e8e8e8', paddingTop: 8, paddingHorizontal: 4 },
+  dayCell: { width: '14.28%', minHeight: 50, minWidth: 0, borderRightWidth: 0.5, borderBottomWidth: 0.5, borderColor: '#e8e8e8', paddingTop: 5, paddingHorizontal: 3 },
   dayCellInactive: { backgroundColor: '#f8f9fa' },
-  dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#e95a0c', borderWidth: 2, borderRadius: 6, margin: -1 },
+  dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2, borderRadius: 6, margin: -1 },
   dayCellToday: { backgroundColor: '#e8f4fd' },
   dayCellContent: { flex: 1, alignItems: 'center' },
-  dayNumber: { fontSize: 16, fontWeight: '500', color: '#333', marginBottom: 4 },
+  dayNumber: { fontSize: 14, fontWeight: '500', color: '#333', marginBottom: 2 },
   dayNumberInactive: { color: '#999' },
-  dayNumberSelected: { color: '#e95a0c', fontWeight: 'bold', fontSize: 18 },
-  dayNumberToday: { backgroundColor: '#2196f3', color: 'white', borderRadius: 12, paddingHorizontal: 6, paddingVertical: 2, overflow: 'hidden' },
-  eventIndicators: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  dayNumberSelected: { color: '#C44B0A', fontWeight: 'bold', fontSize: 15 },
+  dayNumberToday: { backgroundColor: '#2196f3', color: 'white', borderRadius: 10, paddingHorizontal: 5, paddingVertical: 1, overflow: 'hidden' },
+  eventIndicators: { flexDirection: 'row', alignItems: 'center', marginTop: 1, flexWrap: 'nowrap' },
   eventDot: { width: 6, height: 6, borderRadius: 3, marginRight: 2 },
   eventCount: { fontSize: 10, color: '#666', fontWeight: '500' },
   eventPreview: { marginTop: 4, width: '100%' },
   eventPreviewText: { fontSize: 8, color: '#333', marginBottom: 1, textAlign: 'center' },
-  eventPreviewMore: { fontSize: 8, color: '#e95a0c', fontWeight: 'bold', textAlign: 'center' },
-  eventosDelDiaContainer: { backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, overflow: 'hidden' },
+  eventPreviewMore: { fontSize: 8, color: '#C44B0A', fontWeight: 'bold', textAlign: 'center' },
+  eventosDelDiaContainer: { backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2, overflow: 'hidden' },
   eventosDelDiaHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   eventosDelDiaTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginLeft: 8, flex: 1 },
-  eventCountBadge: { backgroundColor: '#e95a0c', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  eventCountBadge: { backgroundColor: '#C44B0A', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   eventCountText: { fontSize: 12, color: '#ffffff', fontWeight: 'bold' },
   eventsList: { maxHeight: 200, paddingHorizontal: 16 },
   eventoCard: { backgroundColor: '#ffffff', borderRadius: 8, padding: 12, marginVertical: 8, borderWidth: 1, borderColor: '#e0e0e0', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   eventoCardConflict: { borderColor: '#ff6b6b', backgroundColor: '#fff5f5' },
   eventoCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   eventoTimeContainer: { flexDirection: 'row', alignItems: 'center' },
-  eventoTime: { fontSize: 14, fontWeight: '600', color: '#e95a0c', marginLeft: 4 },
+  eventoTime: { fontSize: 14, fontWeight: '600', color: '#C44B0A', marginLeft: 4 },
   eventoTimeConflict: { color: '#ff6b6b' },
   conflictBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ff6b6b', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   conflictBadgeText: { fontSize: 10, color: '#ffffff', marginLeft: 4, fontWeight: '600' },
@@ -3110,7 +3249,7 @@ facultadSelectedHint: {
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 20, width: '90%', maxWidth: 400, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginLeft: 8 },
-  modalOption: { paddingVertical: 14, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  modalOption: { paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   modalOptionText: { fontSize: 15, color: '#333' },
   modalMessage: { fontSize: 14, color: '#666', marginBottom: 12, lineHeight: 20 },
   conflictEventCard: { backgroundColor: '#f8f9fa', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#e0e0e0' },
@@ -3119,11 +3258,11 @@ facultadSelectedHint: {
   conflictEventResponsible: { fontSize: 14, color: '#666', fontStyle: 'italic' },
   modalWarning: { fontSize: 12, color: '#ff6b6b', marginBottom: 16, textAlign: 'center' },
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
-  modalButtonSecondary: { backgroundColor: '#f0f0f0', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, marginRight: 8, alignItems: 'center' },
+  modalButtonSecondary: { backgroundColor: '#f0f0f0', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
   modalButtonSecondaryText: { fontSize: 14, color: '#333', fontWeight: '600' },
-  modalButtonPrimary: { backgroundColor: '#e95a0c', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
+  modalButtonPrimary: { backgroundColor: '#C44B0A', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
   modalButtonPrimaryText: { fontSize: 14, color: '#ffffff', fontWeight: '600' },
-  selectedText: { fontSize: 14, color: '#e95a0c', marginTop: 5, marginLeft: 10 },
+  selectedText: { fontSize: 14, color: '#C44B0A', marginTop: 5, marginLeft: 10 },
    customTimePickerModal: {
     backgroundColor: '#fff',
     borderRadius: 20,
@@ -3168,12 +3307,12 @@ facultadSelectedHint: {
     marginBottom: 24,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
   },
   timeDisplayText: {
     fontSize: 48,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     letterSpacing: 2,
   },
   pickersRow: {
@@ -3197,7 +3336,7 @@ facultadSelectedHint: {
   scrollSelector: {
     maxHeight: 200,
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     borderRadius: 12,
     backgroundColor: '#fff',
   },
@@ -3209,7 +3348,7 @@ facultadSelectedHint: {
     borderBottomColor: '#f0f0f0',
   },
   timeOptionSelected: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
   },
   timeOptionText: {
     fontSize: 16,
@@ -3223,7 +3362,7 @@ facultadSelectedHint: {
   colonSeparator: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     marginTop: 30,
   },
   quickHoursContainer: {
@@ -3248,8 +3387,8 @@ facultadSelectedHint: {
     marginRight: 10,
   },
   quickHourBtnActive: {
-    backgroundColor: '#e95a0c',
-    borderColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
+    borderColor: '#C44B0A',
   },
   quickHourText: {
     fontSize: 14,
@@ -3261,13 +3400,13 @@ facultadSelectedHint: {
     fontWeight: '700',
   },
   confirmButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -3282,7 +3421,7 @@ facultadSelectedHint: {
   color: '#e74c3c',
   fontSize: 16,
   fontWeight: 'bold',
-  marginLeft: 2,
+  marginLeft: 12,
 },
 requiredNote: {
   fontSize: 12,
@@ -3290,6 +3429,39 @@ requiredNote: {
   fontStyle: 'italic',
   marginBottom: 15,
   paddingHorizontal: 4,
+},
+requirementInfo: {
+  fontSize: 13,
+  marginBottom: 8,
+  color: '#555',
+},
+timelineSection: {
+  marginTop: 20,
+  marginBottom: 20,
+},
+timelineTitle: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#333',
+  marginBottom: 12,
+},
+timelineScroll: {
+  height: 80,
+},
+timelineEvent: {
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  marginRight: 20,
+},
+timelineDate: {
+  fontSize: 12,
+  color: '#666',
+  marginBottom: 4,
+},
+timelineNombre: {
+  fontSize: 14,
+  fontWeight: '500',
+  color: '#333',
 },
 });
 

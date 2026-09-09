@@ -1,21 +1,22 @@
 // app/academico/eventos-aprobados.js
 import React, { useState, useEffect } from 'react';
-import { FlatList, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { FlatList, View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import AdminHeader from '../../../components/admin/AdminHeader';
 
 const API_BASE_URL = Platform.OS === 'android' || Platform.OS === 'ios' 
   ? 'http://192.168.0.167:3001' 
-  : 'http://localhost:3001';
+  : process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 // Usa el token de académico (NO el de admin)
 const TOKEN_KEY = 'authToken'; 
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   } else {
     return await SecureStore.getItemAsync(TOKEN_KEY);
   }
@@ -60,19 +61,36 @@ const EventosAprobadosAcademico = () => {
     });
   };
 
-  if (loading) return <Text>Cargando...</Text>;
+  if (loading) return <View style={{ flex: 1, backgroundColor: '#F6F7F9', justifyContent: 'center', alignItems: 'center' }}><Text>Cargando...</Text></View>;
 
   return (
-    <FlatList
-      data={events}
-      keyExtractor={(item) => item.idevento.toString()}
-      renderItem={({ item }) => (
-        <TouchableOpacity onPress={() => handleEventPress(item.idevento)}>
-          <Text>{item.nombreevento}</Text>
-        </TouchableOpacity>
-      )}
-    />
+    <View style={{ flex: 1, backgroundColor: '#F6F7F9' }}>
+      <AdminHeader
+        title="Mis Eventos Aprobados"
+        subtitle="Eventos aprobados de tu facultad"
+        eyebrow="Académico"
+      />
+      <FlatList
+        data={events}
+        keyExtractor={(item) => item.idevento.toString()}
+        contentContainerStyle={{ padding: 16, gap: 10 }}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.card} onPress={() => handleEventPress(item.idevento)}>
+            <Text style={styles.cardTitle}>{item.nombreevento}</Text>
+          </TouchableOpacity>
+        )}
+      />
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  card: { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#E6E9EF' },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
+});
 
 export default EventosAprobadosAcademico;

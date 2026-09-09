@@ -17,21 +17,22 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import AdminHeader from '../../components/admin/AdminHeader';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   accent: '#EF4444',
-  background: '#F9FAFB',
+  background: '#F6F7F9',
   surface: '#FFFFFF',
-  textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
-  success: '#10B981',
+  textPrimary: '#0F172A',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
+  success: '#16A34A',
   warning: '#F59E0B',
   danger: '#DC2626',
   white: '#FFFFFF',
@@ -75,7 +76,7 @@ const getDaysSinceExpired = (eventDate) => {
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -316,13 +317,7 @@ const EventosVencidos = () => {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Eventos Vencidos</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <AdminHeader title="Eventos Vencidos" subtitle="Revisión de eventos vencidos" eyebrow="Gestión" />
         <View style={styles.emptyContainer}>
           <Ionicons name="close-circle-outline" size={80} color={COLORS.textTertiary} />
           <Text style={styles.emptyTitle}>Sin eventos vencidos</Text>
@@ -340,32 +335,45 @@ const EventosVencidos = () => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
 
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Eventos Vencidos</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} disabled={refreshing}>
-          <Ionicons name={refreshing ? "sync" : "refresh-outline"} size={22} color={COLORS.white} style={refreshing ? { transform: [{ rotate: '90deg' }] } : {}} />
-        </TouchableOpacity>
-      </View>
+      <AdminHeader
+        title="Eventos Vencidos"
+        subtitle="Revisión de eventos vencidos"
+        eyebrow="Gestión"
+        rightActions={(
+          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} disabled={refreshing} accessibilityRole="button" accessibilityLabel="Actualizar">
+            <Ionicons name={refreshing ? "sync" : "refresh-outline"} size={22} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      />
 
       <View style={styles.statsWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsScroll}>
-          <View style={[styles.statCard, { backgroundColor: COLORS.danger }]}>
-            <Ionicons name="close-circle-outline" size={18} color={COLORS.white} />
-            <Text style={styles.statNumber}>{totalEvents}</Text>
-            <Text style={styles.statLabel}>Vencidos</Text>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconChip, { backgroundColor: COLORS.danger + '18' }]}>
+              <Ionicons name="close-circle-outline" size={20} color={COLORS.danger} />
+            </View>
+            <View style={styles.statCardText}>
+              <Text style={styles.statNumber}>{totalEvents}</Text>
+              <Text style={styles.statLabel}>Vencidos</Text>
+            </View>
           </View>
-          <View style={[styles.statCard, { backgroundColor: COLORS.warning }]}>
-            <Ionicons name="school-outline" size={18} color={COLORS.white} />
-            <Text style={styles.statNumber}>{uniqueFacultades.length}</Text>
-            <Text style={styles.statLabel}>Facultades</Text>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconChip, { backgroundColor: COLORS.warning + '18' }]}>
+              <Ionicons name="school-outline" size={20} color={COLORS.warning} />
+            </View>
+            <View style={styles.statCardText}>
+              <Text style={styles.statNumber}>{uniqueFacultades.length}</Text>
+              <Text style={styles.statLabel}>Facultades</Text>
+            </View>
           </View>
-          <View style={[styles.statCard, { backgroundColor: COLORS.primary }]}>
-            <Ionicons name="person-outline" size={18} color={COLORS.white} />
-            <Text style={styles.statNumber}>{uniqueAcademicos}</Text>
-            <Text style={styles.statLabel}>Académicos</Text>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconChip, { backgroundColor: COLORS.primary + '18' }]}>
+              <Ionicons name="person-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.statCardText}>
+              <Text style={styles.statNumber}>{uniqueAcademicos}</Text>
+              <Text style={styles.statLabel}>Académicos</Text>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -377,6 +385,7 @@ const EventosVencidos = () => {
             style={styles.searchInput}
             placeholder="Buscar por nombre, facultad, académico..."
             placeholderTextColor={COLORS.textTertiary}
+            accessibilityLabel="Buscar"
             value={searchQuery}
             onChangeText={setSearchQuery}
             clearButtonMode="while-editing"
@@ -455,19 +464,25 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.white },
-  refreshButton: { padding: 4 },
+  refreshButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.14)', justifyContent: 'center', alignItems: 'center' },
 
-  statsWrapper: { backgroundColor: COLORS.primary, paddingBottom: 14 },
-  statsScroll: { paddingHorizontal: 16, gap: 10 },
+  statsWrapper: { paddingHorizontal: 16, backgroundColor: COLORS.surface, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  statsScroll: { paddingTop: 12, gap: 10 },
   statCard: {
-    width: 104, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', gap: 2,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    minWidth: 132, paddingVertical: 10, paddingHorizontal: 12,
+    backgroundColor: COLORS.surface, borderRadius: 14,
+    borderWidth: 1, borderColor: COLORS.border,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
   },
-  statNumber: { fontSize: 20, fontWeight: '800', color: COLORS.white },
-  statLabel: { fontSize: 10, color: COLORS.white, opacity: 0.9, textAlign: 'center', includeFontPadding: false },
+  statIconChip: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  statCardText: { flexShrink: 1 },
+  statNumber: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary, includeFontPadding: false },
+  statLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600', marginTop: 1 },
 
   searchContainer: {
-    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10,
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
     backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   searchInputWrapper: {
@@ -486,7 +501,7 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' },
   chipTextActive: { color: COLORS.white },
 
-  listContent: { paddingBottom: 16 },
+  listContent: { paddingBottom: 20 },
   
   sectionHeader: {
     flexDirection: 'row',
@@ -494,10 +509,8 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: COLORS.background,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    marginTop: 8,
+    paddingTop: 18,
+    paddingBottom: 10,
   },
   sectionHeaderText: {
     fontSize: 13,
@@ -508,11 +521,11 @@ const styles = StyleSheet.create({
   },
 
   eventCard: {
-    backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, paddingLeft: 18,
-    marginHorizontal: 16, marginTop: 12, marginBottom: 0,
+    backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, paddingLeft: 18,
+    marginHorizontal: 16, marginTop: 0, marginBottom: 12,
     borderWidth: 1, borderColor: COLORS.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
     position: 'relative', overflow: 'hidden',
   },
   expiredIndicator: { position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, backgroundColor: COLORS.danger },
@@ -523,7 +536,10 @@ const styles = StyleSheet.create({
     borderRadius: 12, gap: 4, backgroundColor: COLORS.danger + '15',
   },
   statusText: { fontSize: 12, fontWeight: '700', color: COLORS.danger },
-  daysExpired: { fontSize: 11, color: COLORS.textTertiary, fontWeight: '500' },
+  daysExpired: {
+    fontSize: 11, color: COLORS.textSecondary, fontWeight: '600',
+    backgroundColor: COLORS.background, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+  },
   eventDate: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500' },
 
   eventTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 6, lineHeight: 22 },

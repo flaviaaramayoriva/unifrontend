@@ -4,11 +4,11 @@ import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
   background: '#F9FAFB',
@@ -58,8 +58,11 @@ const MinimalHeader = ({ nombreUsuario, unreadCount, onNotificationPress }) => {
           color: COLORS.textSecondary,
         }}>admin</Text>
         <TouchableOpacity
-          style={{ position: 'relative', padding: 4 }}
+          style={{ position: 'relative', padding: 10 }}
           onPress={onNotificationPress}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Notificaciones"
+          accessibilityRole="button"
         >
           <Ionicons name="notifications-outline" size={24} color={COLORS.textSecondary} />
           {unreadCount > 0 && (

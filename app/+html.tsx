@@ -6,7 +6,7 @@ import { ScrollViewStyleReset } from 'expo-router/html';
 // do not have access to the DOM or browser APIs.
 export default function Root({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -20,6 +20,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
         {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
+        <style dangerouslySetInnerHTML={{ __html: adminBackButton }} />
         {/* Add any additional <head> elements that you want globally available on web... */}
       </head>
       <body>{children}</body>
@@ -35,4 +36,28 @@ body {
   body {
     background-color: #000;
   }
+}`;
+
+// Agranda el botón "atrás" del stack admin en web (target táctil ~48px)
+const adminBackButton = `
+a[aria-label$="back"] {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+  background-color: rgba(254, 80, 0, 0.12) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  min-width: 48px !important;
+}
+a[aria-label$="back"] img {
+  width: 26px !important;
+  height: 26px !important;
+}
+a[aria-label$="back"]:hover {
+  background-color: rgba(254, 80, 0, 0.2) !important;
+}
+a[aria-label$="back"]:active {
+  background-color: rgba(254, 80, 0, 0.3) !important;
 }`;

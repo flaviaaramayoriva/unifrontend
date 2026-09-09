@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   StyleSheet, View, Text, ScrollView, TouchableOpacity,
   StatusBar, Alert, ActivityIndicator, Pressable, Animated,
-  useWindowDimensions, Platform, FlatList, TextInput, KeyboardAvoidingView, Modal
+  useWindowDimensions, Platform, FlatList, TextInput, KeyboardAvoidingView, Modal, Image
 } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import Svg, { Line, Circle, Text as SvgText, Path, G, Rect } from 'react-native-svg';
@@ -12,17 +12,18 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import QRCode from 'react-qr-code';
 import dayjs from 'dayjs';
+import ChatAlertas from '../../components/ChatAlertas';
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const RASA_WEBHOOK_URL = 'https://unirasa.onrender.com/webhooks/rest/webhook';
 const TOKEN_KEY = 'adminAuthToken';
 const BOT_USERNAME = 'EventUniBot';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -31,8 +32,8 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   try {
     if (Platform.OS === 'web') {
-      localStorage.removeItem(TOKEN_KEY);
-      console.log('Token eliminado de localStorage');
+      sessionStorage.removeItem(TOKEN_KEY);
+      console.log('Token eliminado de sessionStorage');
     } else {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       console.log('Token eliminado de SecureStore');
@@ -43,12 +44,13 @@ const deleteTokenAsync = async () => {
 };
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FFEDD5', secondary: '#4B5563',
-  accent: '#EF4444', success: '#10B981', warning: '#F59E0B',
-  info: '#3B82F6', background: '#F9FAFB', surface: '#FFFFFF',
-  textPrimary: '#1F2937', textSecondary: '#6B7280', textTertiary: '#9CA3AF',
-  border: '#E5E7EB', divider: '#D1D5DB', shadow: 'rgba(0,0,0,0.05)',
+  primary: '#C44200', primaryLight: '#FFF0E6', secondary: '#0F172A',
+  accent: '#EF4444', success: '#047857', warning: '#F59E0B',
+  info: '#3B82F6', background: '#F6F7F9', surface: '#FFFFFF',
+  textPrimary: '#1F2937', textSecondary: '#64748B', textTertiary: '#94A3B8',
+  border: '#E6E9EF', divider: '#D1D5DB', shadow: 'rgba(0,0,0,0.05)',
   white: '#FFFFFF', black: '#000000',
+  ufGreen: '#003F29', ufLime: '#67B900',
 };
 
 const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -185,19 +187,23 @@ const DashboardCard = ({ title, value, icon, color, trend, description }) => {
   return (
     <View style={styles.dashboardCardMinimal}>
       <View style={styles.dashboardCardTopRow}>
-        <Ionicons name={icon || 'information-circle-outline'} size={32} color={safeColor} />
-        <Text style={styles.dashboardCardValueMinimal}>{value || '0'}</Text>
-      </View>
-      <Text style={styles.dashboardCardTitleMinimal}>{title || 'Sin título'}</Text>
-      {description && <Text style={styles.dashboardCardDescriptionMinimal}>{description}</Text>}
-      {trend != null && (
-        <View style={styles.dashboardCardTrendMinimal}>
-          <Ionicons name={trend > 0 ? 'arrow-up' : 'arrow-down'} size={14} color={trendColor} />
-          <Text style={[styles.dashboardCardTrendTextMinimal, { color: trendColor }]}>
-            {Math.abs(trend)}% {trend > 0 ? 'más' : 'menos'}
-          </Text>
+        <View style={[styles.dashboardCardIconChip, { backgroundColor: safeColor + '14' }]}>
+          <Ionicons name={icon || 'information-circle-outline'} size={22} color={safeColor} />
         </View>
-      )}
+        <Text style={[styles.dashboardCardValueMinimal, { color: safeColor }]}>{value || '0'}</Text>
+      </View>
+      <View>
+        <Text style={styles.dashboardCardTitleMinimal}>{title || 'Sin título'}</Text>
+        {description && <Text style={styles.dashboardCardDescriptionMinimal}>{description}</Text>}
+        {trend != null && (
+          <View style={styles.dashboardCardTrendMinimal}>
+            <Ionicons name={trend > 0 ? 'arrow-up' : 'arrow-down'} size={14} color={trendColor} />
+            <Text style={[styles.dashboardCardTrendTextMinimal, { color: trendColor }]}>
+              {Math.abs(trend)}% {trend > 0 ? 'más' : 'menos'}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -234,8 +240,11 @@ const ManagementToolCard = ({ title, description, icon, color, badge, onPress, c
 const Section = ({ title, subtitle, children }) => (
   <View style={styles.section}>
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {subtitle && <Text style={styles.sectionSubtitle}>{subtitle}</Text>}
+      <View style={styles.sectionAccent} />
+      <View style={styles.sectionHeaderText}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {subtitle && <Text style={styles.sectionSubtitle}>{subtitle}</Text>}
+      </View>
     </View>
     {children}
   </View>
@@ -353,7 +362,8 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
     { id: 'add-user', title: 'Nuevo Usuario', icon: 'person-add-outline', color: COLORS.primary, action: '/admin/UsuariosA' },
     { id: 'pendientes', title: 'Pendientes', icon: 'document-text-outline', color: COLORS.warning, action: '/admin/EventosPendientes' },
     { id: 'aprobados', title: 'Aprobados', icon: 'checkmark-circle-outline', color: COLORS.success, action: '/admin/EventosAprobados' },
-    { id: 'rechazados', title: 'Rechazados', icon: 'close-circle-outline', color: COLORS.accent, action: '/admin/EventosRechazados' },  
+    { id: 'rechazados', title: 'Rechazados', icon: 'close-circle-outline', color: COLORS.accent, action: '/admin/EventosRechazados' },
+    { id: 'completados', title: 'Completados', icon: 'trophy-outline', color: COLORS.primary, action: '/admin/EventosCompletados' },  
   ];
 
   return (
@@ -390,34 +400,37 @@ const MinimalHeader = ({ nombreUsuario, unreadCount, onNotificationPress, lastUp
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
   return (
-    <View style={styles.header}>
-      <View style={styles.headerTop}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerGreeting}>{greeting},</Text>
-          <Text style={styles.headerName}>{nombreUsuario}</Text>
+    <View style={styles.hero}>
+      <View style={styles.heroHeaderRow}>
+        <View style={styles.logoBadge}>
+          <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
+        </View>
+        <View style={styles.heroLeft}>
+          <Text style={styles.heroGreeting}>{greeting}</Text>
+          <Text style={styles.heroName}>{nombreUsuario}</Text>
         </View>
         <View style={styles.headerActions}>
           {/* Botón de Telegram */}
-          <TouchableOpacity style={styles.telegramBell} onPress={onTelegramPress}>
+           <TouchableOpacity style={styles.telegramBell} onPress={onTelegramPress} accessibilityLabel="Enviar mensaje" accessibilityRole="button">
             <Ionicons 
               name="send" 
               size={22} 
-              color={isTelegramLinked ? '#0088cc' : COLORS.textTertiary} 
+              color={isTelegramLinked ? '#00BFFF' : 'rgba(255,255,255,0.85)'} 
             />
             {isTelegramLinked && (
               <View style={styles.telegramLinkedDot} />
             )}
           </TouchableOpacity>
           {/* Refresh button */}
-          <TouchableOpacity style={styles.headerIconBtn} onPress={onRefresh} disabled={refreshing}>
+          <TouchableOpacity style={styles.headerIconBtn} onPress={onRefresh} disabled={refreshing} accessibilityLabel="Actualizar" accessibilityRole="button">
             {refreshing
-              ? <ActivityIndicator size="small" color={COLORS.primary} />
-              : <Ionicons name="refresh-outline" size={22} color={COLORS.textSecondary} />
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="refresh-outline" size={22} color="#fff" />
             }
           </TouchableOpacity>
           {/* Notifications */}
-          <TouchableOpacity style={styles.notifBtn} onPress={onNotificationPress}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.textSecondary} />
+          <TouchableOpacity style={styles.notifBtn} onPress={onNotificationPress} accessibilityLabel="Notificaciones" accessibilityRole="button">
+            <Ionicons name="notifications-outline" size={24} color="#fff" />
             {unreadCount > 0 && (
               <View style={styles.notifBadge}>
                 <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -426,7 +439,9 @@ const MinimalHeader = ({ nombreUsuario, unreadCount, onNotificationPress, lastUp
           </TouchableOpacity>
         </View>
       </View>
+      <View style={styles.heroDivider} />
       <Text style={styles.headerTitle}>Panel de Administración</Text>
+      <Text style={styles.headerSubtitle}>UFT Eventos · Universidad Privada Franz Tamayo</Text>
       {lastUpdated && (
         <Text style={styles.lastUpdatedText}>
           Actualizado: {lastUpdated.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
@@ -438,24 +453,171 @@ const MinimalHeader = ({ nombreUsuario, unreadCount, onNotificationPress, lastUp
 const SALA_GENERAL = 'general';
 const ROL_COLORS = { admin: '#FF6B35', creador: '#007AFF', logistica: '#34C759' };
 
-const ChatEmbed = ({ userId, userRole }) => {
+const initialDe = (nombre) => (nombre || '?').trim().charAt(0).toUpperCase();
+
+const formatTime = (ts) => {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  return `${hh}:${mm}`;
+};
+
+const Avatar = ({ nombre, color, size = 32 }) => (
+  <View style={{
+    width: size, height: size, borderRadius: size / 2,
+    backgroundColor: color + '22', borderWidth: 1, borderColor: color + '55',
+    alignItems: 'center', justifyContent: 'center',
+  }}>
+    <Text style={{ fontSize: size * 0.42, fontWeight: '700', color }}>{initialDe(nombre)}</Text>
+  </View>
+);
+
+const BurbujaAdmin = ({ item, myId, esPrimero }) => {
+  if (item.system) return (
+    <View style={{ alignItems: 'center', marginVertical: 6 }}>
+      <Text style={{ fontSize: 11, color: '#b0b3bb', fontStyle: 'italic' }}>{item.text}</Text>
+    </View>
+  );
+
+  const isBot = Boolean(item.esBot) || item.userId === 0;
+
+  if (isBot) {
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: esPrimero ? 5 : 1, justifyContent: 'flex-start' }}>
+        {esPrimero ? <Avatar nombre="IA" color="#9B59B6" /> : <View style={{ width: 32, height: 32 }} />}
+        <View style={{ maxWidth: '76%' }}>
+          {esPrimero && (
+            <Text style={{ fontSize: 11, color: '#9B59B6', fontWeight: '700', marginBottom: 3, marginLeft: 4 }}>
+              🤖 Asistente IA
+            </Text>
+          )}
+          <View style={{
+            backgroundColor: '#F3E5F5', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
+            borderTopLeftRadius: esPrimero ? 5 : 18,
+            borderLeftWidth: 3, borderLeftColor: '#9B59B6',
+          }}>
+            <Text style={{ fontSize: 14, color: COLORS.textPrimary, lineHeight: 20 }}>{item.message}</Text>
+          </View>
+          <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginLeft: 4 }}>
+            {formatTime(item.timestamp)}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  const isMe = String(item.userId) === String(myId);
+  const color = ROL_COLORS[item.role] || COLORS.secondary;
+
+  if (isMe) {
+    return (
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginVertical: esPrimero ? 5 : 1 }}>
+        <View style={{ maxWidth: '76%', alignItems: 'flex-end' }}>
+          <View style={{
+            backgroundColor: COLORS.primary, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
+            borderBottomRightRadius: esPrimero ? 5 : 18,
+          }}>
+            <Text style={{ fontSize: 14, color: '#fff', lineHeight: 20 }}>{item.message}</Text>
+          </View>
+          <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginRight: 4 }}>
+            {formatTime(item.timestamp)}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: esPrimero ? 5 : 1, justifyContent: 'flex-start' }}>
+      {esPrimero ? <Avatar nombre={item.userName} color={color} /> : <View style={{ width: 32, height: 32 }} />}
+      <View style={{ maxWidth: '76%' }}>
+        {esPrimero && (
+          <Text style={{ fontSize: 11, color, fontWeight: '700', marginBottom: 3, marginLeft: 4 }}>
+            {item.userName || 'Usuario'}
+          </Text>
+        )}
+        <View style={{
+          backgroundColor: COLORS.white, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
+          borderTopLeftRadius: esPrimero ? 5 : 18,
+          borderWidth: 1, borderColor: COLORS.border,
+        }}>
+          <Text style={{ fontSize: 14, color: COLORS.textPrimary, lineHeight: 20 }}>{item.message}</Text>
+        </View>
+        <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginLeft: 4 }}>
+          {formatTime(item.timestamp)}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+const InputPanelAdmin = ({ input, setInput, onSend, connected }) => {
+  const disabled = !input.trim() || !connected;
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={{
+        flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+        paddingHorizontal: 12, paddingVertical: 10,
+        backgroundColor: COLORS.white, borderTopWidth: 1, borderColor: COLORS.border,
+      }}>
+        <View style={{
+          flex: 1, backgroundColor: '#F3F4F6', borderRadius: 22,
+          paddingHorizontal: 14, paddingVertical: Platform.OS === 'ios' ? 10 : 5,
+          maxHeight: 110,
+        }}>
+          <TextInput
+            value={input}
+            onChangeText={setInput}
+            placeholder={connected ? 'Escribe un mensaje...' : 'Conectando...'}
+            placeholderTextColor={COLORS.textTertiary}
+            accessibilityLabel="Escribe un mensaje"
+            editable={connected}
+            multiline
+            style={{ fontSize: 14, color: COLORS.textPrimary, maxHeight: 100, padding: 0 }}
+          />
+        </View>
+        <TouchableOpacity
+          onPress={onSend}
+          disabled={disabled}
+          activeOpacity={0.7}
+          style={{
+            width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: disabled ? COLORS.border : COLORS.primary,
+          }}
+        >
+          <Ionicons name="send" size={17} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+};
+
+const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
   const [vista, setVista]           = useState('eventos'); // 'eventos' | 'chat'
   const [eventos, setEventos]       = useState([]);
   const [loadingEventos, setLoadingEventos] = useState(true);
-  const [eventoActual, setEventoActual]     = useState(null);
+  const [eventoActual, setEventoActual]     = useState(null); // null = chat general
   const [messages, setMessages]     = useState([]);
   const [input, setInput]           = useState('');
   const [connected, setConnected]   = useState(false);
+  const [botTyping, setBotTyping]   = useState(false);
+  const [usuarios, setUsuarios]     = useState([]);
   const socketRef   = useRef(null);
   const flatListRef = useRef(null);
   const ioRef       = useRef(null);
-  
+  const salaRef     = useRef(SALA_GENERAL);
+  const onRoomChangeRef = useRef(onRoomChange);
+
+  useEffect(() => { onRoomChangeRef.current = onRoomChange; }, [onRoomChange]);
+  useEffect(() => { onRoomChangeRef.current && onRoomChangeRef.current(null); }, []);
 
   useEffect(() => {
     const cargarEventos = async () => {
       try {
         const token = Platform.OS === 'web'
-          ? localStorage.getItem('adminAuthToken')
+          ? sessionStorage.getItem('adminAuthToken')
           : await SecureStore.getItemAsync('adminAuthToken');
 
         const res = await fetch(`${API_BASE_URL}/eventos`, {
@@ -476,8 +638,9 @@ const ChatEmbed = ({ userId, userRole }) => {
     cargarEventos();
   }, []);
 
-  const abrirChat = (evento) => {
-    setEventoActual(evento);
+  const conectarSala = (eventoId) => {
+    salaRef.current = String(eventoId);
+    onRoomChangeRef.current && onRoomChangeRef.current(String(eventoId));
     setMessages([]);
     setVista('chat');
 
@@ -497,10 +660,10 @@ const ChatEmbed = ({ userId, userRole }) => {
       socket.on('connect', () => {
         setConnected(true);
         socket.emit('join_event', {
-          eventoId: String(evento.idevento || evento.id),
+          eventoId: String(eventoId),
           userId,
           role: userRole,
-          userName: userId
+          userName: userName || userId
         });
       });
 
@@ -515,14 +678,42 @@ const ChatEmbed = ({ userId, userRole }) => {
         setMessages(prev => [...prev, { ...msg, id: `m_${Date.now()}` }]);
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       });
+
+      socket.on('user_list', (l) => {
+        setUsuarios(l || []);
+      });
+
+      socket.on('user_joined', (u) => {
+        setUsuarios(prev => prev.some(x => String(x.userId) === String(u.userId)) ? prev : [...prev, u]);
+      });
+
+      socket.on('user_left', (u) => {
+        setUsuarios(prev => prev.filter(x => String(x.userId) !== String(u.userId)));
+      });
+
+      socket.on('bot_typing', () => {
+        setBotTyping(true);
+        setTimeout(() => setBotTyping(false), 2000);
+      });
     });
+  };
+
+  const abrirChat = (evento) => {
+    setEventoActual(evento);
+    conectarSala(evento.idevento || evento.id);
+  };
+
+  const abrirGeneral = () => {
+    setEventoActual(null);
+    conectarSala(SALA_GENERAL);
   };
 
   const volverAEventos = () => {
     if (socketRef.current) {
-      socketRef.current.emit('leave_event', { eventoId: String(eventoActual?.idevento || eventoActual?.id) });
+      socketRef.current.emit('leave_event', { eventoId: salaRef.current });
       socketRef.current.disconnect();
     }
+    onRoomChangeRef.current && onRoomChangeRef.current(null);
     setVista('eventos');
     setConnected(false);
     setMessages([]);
@@ -532,8 +723,8 @@ const ChatEmbed = ({ userId, userRole }) => {
     const texto = input.trim();
     if (!texto || !socketRef.current?.connected) return;
     socketRef.current.emit('send_message', {
-      eventoId: String(eventoActual?.idevento || eventoActual?.id),
-      userId, role: userRole, userName: userId, message: texto
+      eventoId: salaRef.current,
+      userId, role: userRole, userName: userName || userId, message: texto
     });
     setInput('');
   };
@@ -542,9 +733,20 @@ const ChatEmbed = ({ userId, userRole }) => {
     return (
       <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
         <View style={{ padding: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee' }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#666' }}>
-            Selecciona un evento para chatear
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#666', marginBottom: 10 }}>
+            Selecciona un evento o vuelve al chat general
           </Text>
+          <TouchableOpacity
+            onPress={abrirGeneral}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+              backgroundColor: COLORS.primaryLight, borderRadius: 10,
+              paddingHorizontal: 12, paddingVertical: 10,
+            }}
+          >
+            <Ionicons name="chatbubbles" size={18} color={COLORS.primary} />
+            <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.primary }}>Ir al Chat General</Text>
+          </TouchableOpacity>
         </View>
 
         {loadingEventos ? (
@@ -594,24 +796,50 @@ const ChatEmbed = ({ userId, userRole }) => {
     );
   }
 
+  const statusText = connected
+    ? `${eventoActual ? `${(eventoActual.Comite || []).length} miembros` : 'Todos los usuarios'}${usuarios.length ? ` · ${usuarios.length} en línea` : ''}`
+    : 'Conectando...';
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
-      {/* Sub-header del evento */}
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      {/* Sub-header del chat */}
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 10,
-        paddingHorizontal: 12, paddingVertical: 10,
-        backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee'
+        paddingHorizontal: 10, paddingVertical: 10,
+        backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border,
       }}>
-        <TouchableOpacity onPress={volverAEventos}>
-          <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
+        <TouchableOpacity
+          onPress={volverAEventos}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={{
+            width: 36, height: 36, borderRadius: 18,
+            backgroundColor: COLORS.primaryLight,
+            alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
         </TouchableOpacity>
+
+        <View style={{
+          width: 38, height: 38, borderRadius: 19,
+          backgroundColor: COLORS.primaryLight,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Ionicons name="chatbubbles" size={20} color={COLORS.primary} />
+        </View>
+
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: '#1A1A1A' }} numberOfLines={1}>
-            {eventoActual?.nombreevento || 'Evento'}
+          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.textPrimary }} numberOfLines={1}>
+            {eventoActual ? (eventoActual.nombreevento || 'Evento') : 'Chat General'}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: connected ? '#34C759' : '#FF3B30' }} />
-            <Text style={{ fontSize: 10, color: '#888' }}>{connected ? 'En línea' : 'Conectando...'}</Text>
+            <View style={{
+              width: 7, height: 7, borderRadius: 4,
+              backgroundColor: connected ? COLORS.success : COLORS.accent,
+            }} />
+            <Text style={{ fontSize: 11, color: COLORS.textTertiary }} numberOfLines={1}>
+              {statusText}
+            </Text>
           </View>
         </View>
       </View>
@@ -620,72 +848,45 @@ const ChatEmbed = ({ userId, userRole }) => {
         ref={flatListRef}
         data={messages}
         keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 12 }}
-        renderItem={({ item }) => {
-          if (item.system) return (
-            <View style={{ alignItems: 'center', marginVertical: 6 }}>
-              <Text style={{ fontSize: 11, color: '#bbb', fontStyle: 'italic' }}>{item.text}</Text>
-            </View>
-          );
-          const isMe = String(item.userId) === String(userId);
-          const color = ROL_COLORS[item.role] || '#888';
-          return (
-            <View style={{ flexDirection: 'row', marginVertical: 3, justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-              <View style={{ maxWidth: '75%' }}>
-                {!isMe && (
-                  <Text style={{ fontSize: 11, color, fontWeight: '600', marginBottom: 2, marginLeft: 4 }}>
-                    {item.userName}
-                  </Text>
-                )}
-                <View style={{
-                  backgroundColor: isMe ? COLORS.primary : '#fff',
-                  paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16,
-                  borderBottomRightRadius: isMe ? 2 : 16,
-                  borderBottomLeftRadius: isMe ? 16 : 2
-                }}>
-                  <Text style={{ fontSize: 14, color: isMe ? '#fff' : '#1A1A1A' }}>{item.message}</Text>
-                </View>
-              </View>
-            </View>
-          );
+        contentContainerStyle={{ padding: 12, flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        renderItem={({ item, index }) => {
+          const prev = index > 0 ? messages[index - 1] : null;
+          const esPrimero = !prev
+            || String(prev.userId) !== String(item.userId)
+            || Boolean(prev.esBot) !== Boolean(item.esBot);
+          return <BurbujaAdmin item={item} myId={userId} esPrimero={esPrimero} />;
         }}
+        ListFooterComponent={
+          botTyping ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 6 }}>
+              <ActivityIndicator size="small" color="#9B59B6" />
+              <Text style={{ fontSize: 12, color: '#9B59B6' }}>🤖 Asistente IA está escribiendo...</Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
-          <View style={{ alignItems: 'center', paddingTop: 40 }}>
-            <Ionicons name="chatbubbles-outline" size={36} color="#ddd" />
-            <Text style={{ color: '#ccc', fontSize: 13, marginTop: 8 }}>Aún no hay mensajes en este evento</Text>
+          <View style={{ alignItems: 'center', paddingTop: 60 }}>
+            <View style={{
+              width: 72, height: 72, borderRadius: 36,
+              backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center',
+              shadowColor: '#000', shadowOpacity: 0.05,
+              shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2,
+            }}>
+              <Ionicons name="chatbubbles-outline" size={34} color="#d3d6dc" />
+            </View>
+            <Text style={{ color: '#a6aab2', fontSize: 13, marginTop: 12 }}>
+              {connected ? 'Aún no hay mensajes. ¡Escribe el primero!' : 'Conectando al chat...'}
+            </Text>
           </View>
         }
       />
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={{
-          flexDirection: 'row', padding: 10, backgroundColor: '#fff',
-          borderTopWidth: 1, borderColor: '#eee', gap: 8
-        }}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder="Escribe un mensaje..."
-            placeholderTextColor="#999"
-            style={{
-              flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 20,
-              paddingHorizontal: 14, paddingVertical: 8, fontSize: 14, backgroundColor: '#f9f9f9'
-            }}
-            multiline
-            editable={connected}
-          />
-          <TouchableOpacity
-            onPress={handleSend}
-            disabled={!input.trim() || !connected}
-            style={{
-              backgroundColor: !input.trim() || !connected ? '#ccc' : COLORS.primary,
-              borderRadius: 20, paddingHorizontal: 16, justifyContent: 'center'
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '600' }}>Enviar</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+      <InputPanelAdmin input={input} setInput={setInput} onSend={handleSend} connected={connected} />
     </View>
   );
 };
@@ -703,6 +904,7 @@ const HomeAdministradorScreen = () => {
   const [loadingDashboard, setLoadingDashboard]   = useState(true);
   const [refreshing, setRefreshing]               = useState(false);
   const [isChatOpen, setIsChatOpen]               = useState(false);
+  const [salaActiva, setSalaActiva]               = useState(null);
   const [lastUpdated, setLastUpdated]             = useState(null);
   const [ultimoEvento, setUltimoEvento]           = useState(null);
 
@@ -720,6 +922,15 @@ const HomeAdministradorScreen = () => {
   const [telegramUsername, setTelegramUsername] = useState('');
   const [prediccionesIA, setPrediccionesIA] = useState([]);
   const [loadingPredictions, setLoadingPredictions] = useState(true);
+
+  const [adminProfile, setAdminProfile] = useState({ id: null, nombre: nombreUsuario });
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -757,6 +968,10 @@ const HomeAdministradorScreen = () => {
       console.log('✅ Tiene Telegram vinculado:', hasTelegram);
       setIsTelegramLinked(hasTelegram);
       setTelegramUsername(response.data.telegram_username || '');
+      setAdminProfile({
+        id: response.data.id || response.data.idusuario || null,
+        nombre: response.data.nombre || nombreUsuario,
+      });
     } catch (error) {
       console.error('Error al verificar estado de Telegram:', error);
     }
@@ -766,7 +981,8 @@ const HomeAdministradorScreen = () => {
   try {
     const token = await getTokenAsync();
     if (!token) {
-      Alert.alert('Error', 'No hay sesión activa');
+      setToast({ type: 'error', title: 'No hay sesión activa' });
+      router.replace('/');
       return;
     }
 
@@ -784,18 +1000,11 @@ const HomeAdministradorScreen = () => {
     setIsTelegramLinked(false);
     setTelegramUsername('');
     
-    if (Platform.OS === 'web') {
-      window.alert('✓ Telegram desvinculado correctamente');
-    } else {
-      Alert.alert('✓ Éxito', 'Telegram desvinculado correctamente');
-    }
+    setToast({ type: 'success', title: '✓ Telegram desvinculado correctamente' });
 
   } catch (error) {
     console.error('❌ Error:', error.response?.data || error.message);
-    Alert.alert(
-      'Error', 
-      error.response?.data?.message || 'No se pudo desvincular Telegram'
-    );
+    setToast({ type: 'error', title: 'Error', message: 'No se pudo desvincular Telegram' });
   }
 }, []);
 
@@ -980,11 +1189,13 @@ const HomeAdministradorScreen = () => {
     { id: '4', title: 'Reportes Avanzados',   iconName: 'document-text-outline',    route: '/admin/reportes',          color: COLORS.secondary, description: 'Generación de reportes detallados', badge: 'Nuevo' },
     { id: '5', title: 'Eventos Rechazados',   iconName: 'close-circle-outline',    route: '/admin/EventosRechazados', color: COLORS.accent,    description: 'Revisión de eventos rechazados', badge: `${rejectedEventsCount} rechazados` },
     { id: '7', title: 'Eventos Vencidos',   iconName: 'close-circle-outline',    route: '/admin/EventosVencidos', color: COLORS.accent,    description: 'Revisión de eventos vencidos', badge: `${expiredEventsCount} vencidos` },
+    { id: '8', title: 'Eventos Completados',  iconName: 'trophy-outline',          route: '/admin/EventosCompletados', color: COLORS.primary,   description: 'Eventos Fase 3 finalizados',       badge: '' },
   ];
 
   const handleActionPress = (route) => {
+    setIsBannerExpanded(false);
     if (route) router.push(route);
-    else Alert.alert('En Desarrollo', 'Esta característica estará disponible próximamente.', [{ text: 'Entendido' }]);
+    else setToast({ type: 'info', title: 'En Desarrollo', message: 'Esta característica estará disponible próximamente.' });
   };
 
   const handleLogout = async () => {
@@ -1053,16 +1264,17 @@ const HomeAdministradorScreen = () => {
           </View>
         )}
 
-        {/* ── STATS CARDS ── */}
-        <Section title="Resumen de Actividad" subtitle="Métricas clave del sistema">
+        {/* ── HERRAMIENTAS DE GESTIÓN ── */}
+        <Section title="Herramientas de Gestión" subtitle="Acceda a las funcionalidades principales">
           {loadingDashboard ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingText}>Cargando estadísticas…</Text>
-            </View>
+            <View style={styles.loadingBox}><ActivityIndicator size="large" color={COLORS.primary} /></View>
           ) : (
-            <View style={styles.statsGrid}>
-              {dashboardStats.map((stat, i) => <DashboardCard key={i} {...stat} />)}
+            <View style={styles.toolsGrid}>
+              {adminActions.map((tool, i) => (
+                <ManagementToolCard key={i} title={tool.title} description={tool.description}
+                  icon={tool.iconName} color={tool.color} badge={tool.badge}
+                  onPress={() => handleActionPress(tool.route)} cardWidth={actionsCardWidth} />
+              ))}
             </View>
           )}
         </Section>
@@ -1117,17 +1329,16 @@ const HomeAdministradorScreen = () => {
           </View>
         </Section>
 
-        
-        <Section title="Herramientas de Gestión" subtitle="Acceda a las funcionalidades principales">
+        {/* ── RESumen DE ACTIVIDAD ── */}
+        <Section title="Resumen de Actividad" subtitle="Métricas clave del sistema">
           {loadingDashboard ? (
-            <View style={styles.loadingBox}><ActivityIndicator size="large" color={COLORS.primary} /></View>
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Cargando estadísticas…</Text>
+            </View>
           ) : (
-            <View style={styles.toolsGrid}>
-              {adminActions.map((tool, i) => (
-                <ManagementToolCard key={i} title={tool.title} description={tool.description}
-                  icon={tool.iconName} color={tool.color} badge={tool.badge}
-                  onPress={() => handleActionPress(tool.route)} cardWidth={actionsCardWidth} />
-              ))}
+            <View style={styles.statsGrid}>
+              {dashboardStats.map((stat, i) => <DashboardCard key={i} {...stat} />)}
             </View>
           )}
         </Section>
@@ -1195,6 +1406,7 @@ const HomeAdministradorScreen = () => {
           transparent={true}
           animationType="slide"
           onRequestClose={() => setShowTelegramModal(false)}
+          accessibilityViewIsModal={true}
         >
           <View style={styles.telegramModalOverlay}>
             <View style={styles.telegramModalContent}>
@@ -1208,6 +1420,8 @@ const HomeAdministradorScreen = () => {
                 <TouchableOpacity 
                   onPress={() => setShowTelegramModal(false)} 
                   style={styles.telegramCloseButton}
+                  accessibilityLabel="Cerrar"
+                  accessibilityRole="button"
                 >
                   <Ionicons name="close-circle" size={28} color={COLORS.textSecondary} />
                 </TouchableOpacity>
@@ -1360,10 +1574,7 @@ const HomeAdministradorScreen = () => {
                       style={styles.telegramRefreshButton}
                       onPress={() => {
                         checkTelegramStatus();
-                        Alert.alert(
-                          'Verificando...',
-                          'Si ya vinculaste en Telegram, presiona nuevamente para actualizar'
-                        );
+                        setToast({ type: 'info', title: 'Verificando...', message: 'Si ya vinculaste en Telegram, presiona nuevamente para actualizar' });
                       }}
                     >
                       <Ionicons name="refresh-outline" size={20} color={COLORS.white} />
@@ -1380,6 +1591,14 @@ const HomeAdministradorScreen = () => {
       )}
 
       {/* ── DOCK ── */}
+      {isBannerExpanded && (
+        <Pressable
+          style={styles.dockOverlay}
+          onPress={() => setIsBannerExpanded(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar menú"
+        />
+      )}
       <MinimalBottomDock
         onLogout={handleLogout}
         onActionPress={handleActionPress}
@@ -1397,17 +1616,66 @@ const HomeAdministradorScreen = () => {
       {/* ── CHAT MODAL ── */}
       {isChatOpen && (
         <View style={styles.chatOverlay}>
-          <View style={styles.chatModal}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.chatTitle}>Chat General</Text>
-              <TouchableOpacity onPress={() => setIsChatOpen(false)}>
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+          <View style={{
+            width: '90%', maxWidth: 420, height: '100%',
+            backgroundColor: COLORS.background,
+            borderTopLeftRadius: 24, borderBottomLeftRadius: 24,
+            marginLeft: 'auto', elevation: 12,
+            shadowColor: '#000', shadowOffset: { width: -6, height: 0 },
+            shadowOpacity: 0.2, shadowRadius: 14,
+            overflow: 'hidden',
+          }}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
+              paddingHorizontal: 12, paddingTop: 6, paddingBottom: 2,
+              backgroundColor: COLORS.white,
+            }}>
+              <TouchableOpacity
+                onPress={() => setIsChatOpen(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{
+                  width: 32, height: 32, borderRadius: 16,
+                  backgroundColor: COLORS.border + '88',
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="close" size={18} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
-            <ChatEmbed userId={nombreUsuario} userRole="admin" />
+            <View style={{ flex: 1 }}>
+              <ChatEmbed
+                userId={String(adminProfile.id || nombreUsuario)}
+                userRole="admin"
+                userName={adminProfile.nombre || nombreUsuario}
+                onRoomChange={setSalaActiva}
+              />
+            </View>
           </View>
         </View>
       )}
+
+      {/* ── TOAST ── */}
+      {toast && (
+        <View style={[styles.toast, toast.type === 'success' ? styles.toastSuccess : toast.type === 'info' ? styles.toastInfo : styles.toastError]} accessibilityRole="alert">
+          <Ionicons
+            name={toast.type === 'success' ? 'checkmark-circle' : toast.type === 'info' ? 'information-circle' : 'alert-circle'}
+            size={20} color="#fff"
+          />
+          <View style={styles.toastContent}>
+            <Text style={styles.toastTitle}>{toast.title}</Text>
+            {toast.message && <Text style={styles.toastMessage}>{toast.message}</Text>}
+          </View>
+        </View>
+      )}
+
+      <ChatAlertas
+        userId={String(adminProfile.id || nombreUsuario)}
+        userRole="admin"
+        userName={adminProfile.nombre || nombreUsuario}
+        activeRoom={isChatOpen ? salaActiva : null}
+        chatAbierto={isChatOpen}
+        onAbrir={() => setIsChatOpen(true)}
+      />
     </View>
   );
 };
@@ -1416,44 +1684,59 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollView: { flex: 1 },
 
-  header: {
+  hero: {
     width: '100%', paddingHorizontal: 20,
-    paddingTop: (StatusBar.currentHeight || 40) + 16, paddingBottom: 16,
-    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderColor: COLORS.border,
-    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4,
+    paddingTop: (StatusBar.currentHeight || 40) + 18, paddingBottom: 22,
+    backgroundColor: COLORS.primary,
+    borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
+    elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 10,
   },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerIconBtn: { padding: 6, borderRadius: 20, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerGreeting: { fontSize: 15, color: COLORS.textSecondary, fontWeight: '400' },
-  headerName: { fontSize: 22, color: COLORS.textPrimary, fontWeight: '700' },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary },
-  lastUpdatedText: { fontSize: 11, color: COLORS.textTertiary, marginTop: 4 },
-  notifBtn: { position: 'relative', padding: 6 },
+  heroHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  logoBadge: {
+    width: 56, height: 40, borderRadius: 8, backgroundColor: '#fff',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    marginRight: 12,
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 4,
+  },
+  logo: { width: 52, height: 36, resizeMode: 'contain' },
+  heroLeft: { flex: 1 },
+  heroGreeting: { fontSize: 15, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+  heroName: { fontSize: 22, color: '#fff', fontWeight: '800', marginTop: 2 },
+  heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.25)', marginBottom: 12 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerIconBtn: { padding: 0, borderRadius: 10, width: 48, height: 48, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.14)' },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  headerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 3, fontWeight: '500' },
+  lastUpdatedText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 6 },
+  notifBtn: { position: 'relative', width: 48, height: 48, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 10 },
   notifBadge: {
-    position: 'absolute', top: 0, right: 0, backgroundColor: COLORS.accent,
+    position: 'absolute', top: 2, right: 2, backgroundColor: COLORS.white,
     borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1.5, borderColor: COLORS.white,
+    borderWidth: 2, borderColor: COLORS.primary,
   },
-  notifBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: '700' },
+  notifBadgeText: { color: COLORS.primary, fontSize: 10, fontWeight: '800' },
 
   // Telegram
   telegramBell: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.14)',
     position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   telegramLinkedDot: {
     position: 'absolute',
-    top: 6,
+    top: 4,
     right: 6,
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.success,
     borderWidth: 1,
-    borderColor: COLORS.white,
+    borderColor: COLORS.primary,
   },
   telegramModalOverlay: {
     flex: 1,
@@ -1739,20 +2022,24 @@ const styles = StyleSheet.create({
   },
  
   section: { width: '100%', paddingHorizontal: 20, marginTop: 28 },
-  sectionHeader: { marginBottom: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  sectionHeader: { marginBottom: 16, flexDirection: 'row', alignItems: 'center' },
+  sectionAccent: { width: 4, height: 24, backgroundColor: COLORS.primary, borderRadius: 2, marginRight: 10 },
+  sectionHeaderText: { flex: 1 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 2 },
   sectionSubtitle: { fontSize: 13, color: COLORS.textSecondary },
 
   // Stats grid
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN, justifyContent: 'space-between' },
   dashboardCardMinimal: {
-    backgroundColor: COLORS.surface, borderRadius: 12, padding: 16,
-    shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3,
-    width: '48%', minHeight: 130, justifyContent: 'space-between',
+    backgroundColor: COLORS.surface, borderRadius: 16, padding: 16,
+    shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
+    width: '48%', minHeight: 140, justifyContent: 'space-between',
+    borderWidth: 1, borderColor: COLORS.border,
   },
-  dashboardCardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  dashboardCardValueMinimal: { fontSize: 24, fontWeight: '800', color: COLORS.textPrimary },
-  dashboardCardTitleMinimal: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 4 },
+  dashboardCardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  dashboardCardIconChip: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  dashboardCardValueMinimal: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary },
+  dashboardCardTitleMinimal: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 4 },
   dashboardCardTrendMinimal: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   dashboardCardTrendTextMinimal: { fontSize: 12, fontWeight: '600' },
   dashboardCardDescriptionMinimal: { fontSize: 11, color: COLORS.textTertiary },
@@ -1798,8 +2085,12 @@ const styles = StyleSheet.create({
   managementToolCardBadgeMinimal: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, position: 'absolute', top: 20, right: 20 },
   managementToolCardBadgeTextMinimal: { fontSize: 11, fontWeight: '700', color: COLORS.white },
 
+  dockOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.35)', zIndex: 5,
+  },
   dock: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
+    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
     backgroundColor: COLORS.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 10, overflow: 'hidden',
   },
@@ -1943,6 +2234,32 @@ const styles = StyleSheet.create({
     height: 30,
     backgroundColor: COLORS.divider,
   },
+  toast: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    zIndex: 1000,
+    maxWidth: 480,
+    alignSelf: 'center',
+  },
+  toastError: { backgroundColor: 'rgba(220, 38, 38, 0.95)' },
+  toastSuccess: { backgroundColor: 'rgba(22, 163, 74, 0.95)' },
+  toastInfo: { backgroundColor: 'rgba(15, 23, 42, 0.92)' },
+  toastContent: { flex: 1 },
+  toastTitle: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  toastMessage: { color: 'rgba(255,255,255,0.9)', fontSize: 12, marginTop: 2, lineHeight: 16 },
 });
 
 export default HomeAdministradorScreen;

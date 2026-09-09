@@ -10,12 +10,12 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // ─── CONFIGURACIÓN ───
-const API_BASE_URL = 'https://unibackend1-production.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FFEDD5', 
-  success: '#10B981', successLight: '#D1FAE5',
+  primary: '#C44B0A', primaryLight: '#FFEDD5', 
+  success: '#047857', successLight: '#D1FAE5',
   warning: '#F59E0B', warningLight: '#FEF3C7',
   danger: '#EF4444',  dangerLight: '#FEE2E2',
   info: '#3B82F6',    infoLight: '#DBEAFE',

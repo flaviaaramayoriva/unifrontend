@@ -18,12 +18,12 @@ import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   primaryDark: '#C94A0A',
   secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
   successLight: '#D1FAE5',
   warning: '#F59E0B',
   info: '#3B82F6',
@@ -38,13 +38,13 @@ const COLORS = {
   black: '#000000',
 };
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'studentAuthToken';
 
 const getTokenAsync = async () => {
   try {
     return Platform.OS === 'web'
-      ? localStorage.getItem(TOKEN_KEY)
+      ? sessionStorage.getItem(TOKEN_KEY)
       : await SecureStore.getItemAsync(TOKEN_KEY);
   } catch (e) {
     return null;
@@ -54,7 +54,7 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   try {
     if (Platform.OS === 'web') {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } else {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
     }
@@ -400,7 +400,7 @@ const getCategoryColor = (cat) => {
     conferencia: '#EF4444', 
     seminario: '#F59E0B',
     webinar: '#8B5CF6',
-    evento: '#10B981'
+    evento: '#047857'
   };
   return colors[cat?.toLowerCase()] || COLORS.primary;
 };

@@ -27,15 +27,15 @@ let determinedApiBaseUrl;
 } else if (Platform.OS === 'ios') {
   determinedApiBaseUrl = 'http://192.168.0.167:3001/api';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FF7A3D',
   accent: '#4CAF50',
   background: '#F8F9FA',
@@ -58,7 +58,7 @@ const COLORS = {
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
       return null;
     }
@@ -74,7 +74,7 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
       console.error("Error al eliminar token:", e);
     }
@@ -195,7 +195,7 @@ useEffect(() => {
   const cargar = async () => {
     try {
       const data = Platform.OS === 'web'
-        ? localStorage.getItem('usuario')
+        ? sessionStorage.getItem('usuario')
         : await AsyncStorage.getItem('usuario');
       if (data) setUsuarioActual(JSON.parse(data));
     } catch {}
@@ -378,7 +378,7 @@ useEffect(() => {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
@@ -391,6 +391,7 @@ useEffect(() => {
           style={styles.refreshButton} 
           onPress={onRefresh} 
           disabled={refreshing}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons 
             name="refresh" 

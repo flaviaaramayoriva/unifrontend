@@ -9,7 +9,7 @@ export const hexToRgb = (hex) => {
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16),
       }
-    : { r: 233, g: 90, b: 12 }; // fallback al naranja original
+    : { r: 196, g: 75, b: 10 }; // fallback al naranja con buen contraste
 };
 
 // Aclara un color hex un porcentaje (0-100)
@@ -39,7 +39,7 @@ export const isLightColor = (hex) => {
 
 // Colores predefinidos que el usuario puede elegir en Ajustes
 export const ACCENT_PRESETS = [
-  { name: 'Naranja', value: '#E95A0C' },
+  { name: 'Naranja', value: '#C44B0A' },
   { name: 'Azul', value: '#2563EB' },
   { name: 'Verde', value: '#059669' },
   { name: 'Morado', value: '#7C3AED' },
@@ -49,7 +49,7 @@ export const ACCENT_PRESETS = [
   { name: 'Ámbar', value: '#D97706' },
 ];
 
-export const DEFAULT_ACCENT_COLOR = '#E95A0C';
+export const DEFAULT_ACCENT_COLOR = '#C44B0A';
 
 // Genera la paleta completa del sistema a partir del color de acento y el modo (light/dark)
 export const buildPalette = (accentColor = DEFAULT_ACCENT_COLOR, colorScheme = 'light') => {
@@ -63,7 +63,7 @@ export const buildPalette = (accentColor = DEFAULT_ACCENT_COLOR, colorScheme = '
 
     secondary: isDark ? '#9CA3AF' : '#4B5563',
     accent: '#EF4444',
-    success: '#10B981',
+    success: '#047857',
     warning: '#F59E0B',
     info: '#3B82F6',
 

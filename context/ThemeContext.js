@@ -1,5 +1,5 @@
 // context/ThemeContext.js
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildPalette, DEFAULT_ACCENT_COLOR } from '../utils/colorUtils';
@@ -33,43 +33,44 @@ export const AppThemeProvider = ({ children }) => {
   }, []);
 
   // 2. Cambiar y cachear el modo claro/oscuro
-  const setTheme = async (newTheme) => {
+  const setTheme = useCallback(async (newTheme) => {
     setThemeState(newTheme);
     try {
       await AsyncStorage.setItem('appTheme', newTheme);
     } catch (e) {
       console.error("Error al guardar el tema:", e);
     }
-  };
+  }, []);
 
   // 3. Cambiar y cachear el color de acento
-  const setAccentColor = async (newColor) => {
+  const setAccentColor = useCallback(async (newColor) => {
     setAccentColorState(newColor);
     try {
       await AsyncStorage.setItem('appAccentColor', newColor);
     } catch (e) {
       console.error("Error al guardar el color de acento:", e);
     }
-  };
+  }, []);
 
   // 4. Esquema de color real (light o dark)
   const colorScheme = theme === 'system' ? (systemColorScheme || 'light') : theme;
 
-  // 5. Paleta completa derivada del color de acento + el modo
-  const colors = buildPalette(accentColor, colorScheme);
+  // 5. Paleta completa derivada del color de acento + el modo (memoizada)
+  const colors = useMemo(() => buildPalette(accentColor, colorScheme), [accentColor, colorScheme]);
+
+  // 6. Valor del context memoizado para evitar re-renders globales
+  const value = useMemo(() => ({
+    theme,
+    colorScheme,
+    setTheme,
+    accentColor,
+    setAccentColor,
+    colors,
+    isLoading,
+  }), [theme, colorScheme, setTheme, accentColor, setAccentColor, colors, isLoading]);
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        colorScheme,
-        setTheme,
-        accentColor,
-        setAccentColor,
-        colors,
-        isLoading,
-      }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

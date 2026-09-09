@@ -22,7 +22,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const CARRERA_A_FACULTAD = {
   '1':'1', '2':'2', '3':'2', '4':'2', '5':'2', '6':'2', '7':'2', 
   '8':'3', '9':'3', '10':'3', '11':'3', '12':'4', '13':'4', '14':'4', 
@@ -109,7 +109,7 @@ const CrearUsuarioA = () => {
     const TOKEN_KEY = 'adminAuthToken';
     try {
       if (Platform.OS === 'web') {
-        return localStorage.getItem(TOKEN_KEY);
+        return sessionStorage.getItem(TOKEN_KEY);
       } else {
         return await SecureStore.getItemAsync(TOKEN_KEY);
       }
@@ -514,6 +514,7 @@ const CrearUsuarioA = () => {
             options.icon && styles.inputWithIcon,
             errors[field] && styles.inputError
           ]}
+          accessibilityLabel={label}
           placeholder={placeholder}
           value={formData[field]}
           onChangeText={(value) => updateFormData(field, value)}
@@ -764,7 +765,7 @@ const CrearUsuarioA = () => {
         <Stack.Screen 
           options={{ 
             title: role === 'student' ? 'Nuevo Estudiante' : 'Nuevo Usuario',
-            headerStyle: { backgroundColor: '#e95a0c' },
+            headerStyle: { backgroundColor: '#C44B0A' },
             headerTintColor: '#fff',
             headerTitleStyle: { fontWeight: 'bold' },
           }} 
@@ -791,7 +792,7 @@ const CrearUsuarioA = () => {
                 onPress={prevStep}
                 disabled={isLoading}
               >
-                <Ionicons name="arrow-back" size={20} color="#e95a0c" />
+                <Ionicons name="arrow-back" size={20} color="#C44B0A" />
                 <Text style={styles.secondaryButtonText}>Anterior</Text>
               </TouchableOpacity>
             )}
@@ -843,8 +844,8 @@ const CrearUsuarioA = () => {
         router.back();
       }}
     >
-      <Ionicons name="home-outline" size={20} color="#e95a0c" />
-      <Text style={[styles.successActionText, { color: '#e95a0c' }]}>Volver al panel</Text>
+      <Ionicons name="home-outline" size={20} color="#C44B0A" />
+      <Text style={[styles.successActionText, { color: '#C44B0A' }]}>Volver al panel</Text>
     </TouchableOpacity>
   </View>
 )}
@@ -854,7 +855,7 @@ const CrearUsuarioA = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#e95a0c' },
+  safeArea: { flex: 1, backgroundColor: '#C44B0A' },
   container: { flex: 1, backgroundColor: '#f8f9fa' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 150 },
   header: { paddingVertical: 20, alignItems: 'center' },
@@ -864,11 +865,11 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center',
   },
-  progressCircleActive: { backgroundColor: '#e95a0c' },
+  progressCircleActive: { backgroundColor: '#C44B0A' },
   progressNumber: { fontSize: 16, fontWeight: 'bold', color: '#999' },
   progressNumberActive: { color: '#fff' },
   progressLine: { width: 50, height: 2, backgroundColor: '#e0e0e0', marginHorizontal: 5 },
-  progressLineActive: { backgroundColor: '#e95a0c' },
+  progressLineActive: { backgroundColor: '#C44B0A' },
   stepTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center' },
   stepContainer: { paddingVertical: 20, paddingBottom: 200 },
   conditionalContainer: { marginTop: 20 },
@@ -905,7 +906,7 @@ const styles = StyleSheet.create({
   dropdownPlaceholder: { fontSize: 16, color: '#999' },
   roleInfoContainer: {
     backgroundColor: '#f8f9fa', borderRadius: 8, padding: 12,
-    marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#e95a0c',
+    marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#C44B0A',
   },
   roleInfoText: { fontSize: 14, color: '#666' },
   roleBadgeContainer: {
@@ -937,20 +938,20 @@ const styles = StyleSheet.create({
     paddingTop: 30, paddingBottom: 20, gap: 15,
   },
   primaryButton: {
-    backgroundColor: '#e95a0c', paddingVertical: 15, paddingHorizontal: 30,
+    backgroundColor: '#C44B0A', paddingVertical: 15, paddingHorizontal: 30,
     borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'row', flex: 1, shadowColor: '#e95a0c',
+    flexDirection: 'row', flex: 1, shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 8,
   },
   secondaryButton: {
     backgroundColor: '#fff', paddingVertical: 15, paddingHorizontal: 30,
     borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'row', flex: 1, borderWidth: 2, borderColor: '#e95a0c',
+    flexDirection: 'row', flex: 1, borderWidth: 2, borderColor: '#C44B0A',
   },
   fullWidthButton: { flex: 1 },
   buttonDisabled: { backgroundColor: '#f9bda3', shadowOpacity: 0.1 },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginRight: 8 },
-  secondaryButtonText: { color: '#e95a0c', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+  secondaryButtonText: { color: '#C44B0A', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
   toastContainer: {
     position: 'absolute', bottom: 60, left: 0, right: 0,
     alignItems: 'center', zIndex: 9999, paddingHorizontal: 20,
@@ -990,7 +991,7 @@ const styles = StyleSheet.create({
 successActionSecondary: {
   backgroundColor: '#fff',
   borderWidth: 2,
-  borderColor: '#e95a0c',
+  borderColor: '#C44B0A',
 },
 successActionText: {
   color: '#fff',

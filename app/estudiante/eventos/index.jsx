@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert,
-  StatusBar, ScrollView, ActivityIndicator, Platform,Modal, TextInput
+  StatusBar, FlatList, ActivityIndicator, Platform, Modal, TextInput
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,8 +9,8 @@ import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FFEDD5', secondary: '#4B5563',
-  accent: '#EF4444', success: '#10B981', warning: '#F59E0B',
+  primary: '#C44B0A', primaryLight: '#FFEDD5', secondary: '#4B5563',
+  accent: '#EF4444', success: '#047857', warning: '#F59E0B',
   info: '#3B82F6', purple: '#8B5CF6',
   background: '#F9FAFB', surface: '#FFFFFF',
   textPrimary: '#1F2937', textSecondary: '#6B7280', textTertiary: '#9CA3AF',
@@ -18,7 +18,7 @@ const COLORS = {
 };
 
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY    = 'studentAuthToken';
 const USER_DATA_KEY = 'studentUserData';
 
@@ -26,7 +26,7 @@ const USER_DATA_KEY = 'studentUserData';
 const getToken = async () => {
   try {
     return Platform.OS === 'web'
-      ? localStorage.getItem(TOKEN_KEY)
+      ? sessionStorage.getItem(TOKEN_KEY)
       : await SecureStore.getItemAsync(TOKEN_KEY);
   } catch { return null; }
 };
@@ -34,7 +34,7 @@ const getToken = async () => {
 const getUserData = async () => {
   try {
     const raw = Platform.OS === 'web'
-      ? localStorage.getItem(USER_DATA_KEY)
+      ? sessionStorage.getItem(USER_DATA_KEY)
       : await SecureStore.getItemAsync(USER_DATA_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
@@ -43,7 +43,7 @@ const getUserData = async () => {
 const saveUserData = async (data) => {
   const str = JSON.stringify(data);
   try {
-    if (Platform.OS === 'web') localStorage.setItem(USER_DATA_KEY, str);
+    if (Platform.OS === 'web') sessionStorage.setItem(USER_DATA_KEY, str);
     else await SecureStore.setItemAsync(USER_DATA_KEY, str);
   } catch {}
 };
@@ -51,8 +51,8 @@ const saveUserData = async (data) => {
 const clearSession = async () => {
   try {
     if (Platform.OS === 'web') {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_DATA_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(USER_DATA_KEY);
     } else {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_DATA_KEY);
@@ -62,7 +62,7 @@ const clearSession = async () => {
 
 const CATEGORY_COLORS = {
   taller: '#3B82F6', conferencia: '#EF4444', seminario: '#F59E0B',
-  webinar: '#8B5CF6', capacitacion: '#EC4899', charla: '#10B981',
+  webinar: '#8B5CF6', capacitacion: '#EC4899', charla: '#047857',
 };
 
 const STATUS_MAP = {
@@ -72,7 +72,7 @@ const STATUS_MAP = {
 };
 
 const STATUS_COLORS = {
-  Confirmado: '#10B981', Próximo: '#3B82F6', 'En curso': '#F59E0B',
+  Confirmado: '#047857', Próximo: '#3B82F6', 'En curso': '#F59E0B',
   Completado: '#6B7280', Cancelado: '#EF4444', Pendiente: '#F59E0B',
 };
 
@@ -412,99 +412,108 @@ const fetchUserProfile = useCallback(async () => {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Stack.Screen options={{ headerShown: false }} />
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}>
-
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.headerGreeting}>{greeting},</Text>
-              <Text style={styles.headerName}>{nombreUsuario}</Text>
-            </View>
-            {(userData?.facultad_nombre || userData?.facultad?.nombre) && (
-              <View style={styles.facultadBadge}>
-                <Ionicons name="school-outline" size={12} color={COLORS.white} />
-                <Text style={styles.facultadBadgeText}>
-                  {userData?.facultad_nombre || userData?.facultad?.nombre}
-                </Text>
-              </View>
-            )}
-            <TouchableOpacity style={styles.headerIconBtn} onPress={() => fetchEvents(userData)}>
-              <Ionicons name="refresh-outline" size={22} color={COLORS.white} />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.headerSubtitle}>Portal del Estudiante</Text>
-
-          <View style={styles.statsRow}>
-            {[
-              { icon: 'calendar-outline',        value: stats.total,      label: 'Eventos' },
-              { icon: 'time-outline',             value: stats.proximos,   label: 'Próximos' },
-              { icon: 'checkmark-circle-outline', value: stats.completados, label: 'Completados' },
-            ].map((s, i) => (
-              <View key={i} style={styles.statItem}>
-                <View style={styles.statIconWrap}>
-                  <Ionicons name={s.icon} size={20} color={COLORS.primary} />
+      <FlatList
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        data={events}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => (
+          <EventCard
+            event={item}
+            onPress={() => router.push(`/estudiante/eventos/${item.id}`)}
+            onInscribir={handleInscribir}
+            yaInscrito={inscritos.has(item.id)}
+          />
+        )}
+        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <View style={styles.headerTop}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.headerGreeting}>{greeting},</Text>
+                  <Text style={styles.headerName}>{nombreUsuario}</Text>
                 </View>
-                <Text style={styles.statValue}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
+                {(userData?.facultad_nombre || userData?.facultad?.nombre) && (
+                  <View style={styles.facultadBadge}>
+                    <Ionicons name="school-outline" size={12} color={COLORS.white} />
+                    <Text style={styles.facultadBadgeText}>
+                      {userData?.facultad_nombre || userData?.facultad?.nombre}
+                    </Text>
+                  </View>
+                )}
+                <TouchableOpacity style={styles.headerIconBtn} onPress={() => fetchEvents(userData)} accessibilityLabel="Actualizar" accessibilityRole="button">
+                  <Ionicons name="refresh-outline" size={22} color={COLORS.white} />
+                </TouchableOpacity>
               </View>
-            ))}
+              <Text style={styles.headerSubtitle}>Portal del Estudiante</Text>
+
+              <View style={styles.statsRow}>
+                {[
+                  { icon: 'calendar-outline',        value: stats.total,      label: 'Eventos' },
+                  { icon: 'time-outline',             value: stats.proximos,   label: 'Próximos' },
+                  { icon: 'checkmark-circle-outline', value: stats.completados, label: 'Completados' },
+                ].map((s, i) => (
+                  <View key={i} style={styles.statItem}>
+                    <View style={styles.statIconWrap}>
+                      <Ionicons name={s.icon} size={20} color={COLORS.primary} />
+                    </View>
+                    <Text style={styles.statValue}>{s.value}</Text>
+                    <Text style={styles.statLabel}>{s.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <View style={styles.sectionHead}>
+                <Text style={styles.sectionTitle}>Eventos de tu Facultad</Text>
+                <TouchableOpacity onPress={() => router.push('/estudiante/eventos')}>
+                  <Text style={styles.seeAll}>Ver todos</Text>
+                </TouchableOpacity>
+              </View>
+
+              {error && !loading && (
+                <View style={styles.errorCard}>
+                  <Ionicons name="alert-circle-outline" size={36} color={COLORS.accent} />
+                  <Text style={styles.errorText}>{error}</Text>
+                  <TouchableOpacity style={styles.retryBtn} onPress={() => fetchEvents(userData)} accessibilityLabel="Reintentar" accessibilityRole="button">
+                    <Text style={styles.retryBtnText}>Reintentar</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {loading ? (
+                <View style={styles.loadingCard}>
+                  <ActivityIndicator size="large" color={COLORS.primary} />
+                  <Text style={styles.loadingText}>Cargando eventos…</Text>
+                </View>
+              ) : !error && events.length === 0 ? (
+                <View style={styles.emptyCard}>
+                  <Ionicons name="calendar-clear-outline" size={44} color={COLORS.textTertiary} />
+                  <Text style={styles.emptyTitle}>No hay eventos disponibles</Text>
+                  <Text style={styles.emptySubtitle}>No se encontraron eventos para tu facultad en este momento</Text>
+                </View>
+              ) : null}
+            </View>
+          </>
+        }
+        ListFooterComponent={
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+            <View style={{ gap: 10, marginTop: 10 }}>
+              <ActionCard title="Mis Eventos"  description="Ver eventos inscritos"  icon="calendar-outline"    color={COLORS.primary} onPress={() => router.push('/estudiante/eventos')} />
+              <ActionCard title="Inscripción"  description="Unirse a eventos"        icon="add-circle-outline"  color={COLORS.success} onPress={() => router.push('/estudiante/inscripcion')} />
+              <ActionCard title="Mi Perfil"    description="Ver y editar perfil"     icon="person-outline"      color={COLORS.info}    onPress={() => router.push('/estudiante/perfil')} />
+            </View>
           </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>Eventos de tu Facultad</Text>
-            <TouchableOpacity onPress={() => router.push('/estudiante/eventos')}>
-              <Text style={styles.seeAll}>Ver todos</Text>
-            </TouchableOpacity>
-          </View>
-
-          {error && !loading && (
-            <View style={styles.errorCard}>
-              <Ionicons name="alert-circle-outline" size={36} color={COLORS.accent} />
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={() => fetchEvents(userData)}>
-                <Text style={styles.retryBtnText}>Reintentar</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {loading ? (
-            <View style={styles.loadingCard}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingText}>Cargando eventos…</Text>
-            </View>
-          ) : !error && events.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Ionicons name="calendar-clear-outline" size={44} color={COLORS.textTertiary} />
-              <Text style={styles.emptyTitle}>No hay eventos disponibles</Text>
-              <Text style={styles.emptySubtitle}>No se encontraron eventos para tu facultad en este momento</Text>
-            </View>
-          ) : (
-            <View style={{ gap: 14 }}>
-              {events.map(ev => (
-                <EventCard
-                  key={ev.id?.toString()}
-                  event={ev}
-                  onPress={() => router.push(`/estudiante/eventos/${ev.id}`)}
-                  onInscribir={handleInscribir}
-                  yaInscrito={inscritos.has(ev.id)}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-          <View style={{ gap: 10, marginTop: 10 }}>
-            <ActionCard title="Mis Eventos"  description="Ver eventos inscritos"  icon="calendar-outline"    color={COLORS.primary} onPress={() => router.push('/estudiante/eventos')} />
-            <ActionCard title="Inscripción"  description="Unirse a eventos"        icon="add-circle-outline"  color={COLORS.success} onPress={() => router.push('/estudiante/inscripcion')} />
-            <ActionCard title="Mi Perfil"    description="Ver y editar perfil"     icon="person-outline"      color={COLORS.info}    onPress={() => router.push('/estudiante/perfil')} />
-          </View>
-        </View>
-      </ScrollView>
+        }
+      />      
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
@@ -512,7 +521,7 @@ const fetchUserProfile = useCallback(async () => {
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
-      <Modal visible={showInscripcionModal} animationType="slide" transparent onRequestClose={() => setShowInscripcionModal(false)}>
+      <Modal visible={showInscripcionModal} animationType="slide" transparent onRequestClose={() => setShowInscripcionModal(false)} accessibilityViewIsModal={true}>
   <View style={modalStyles.overlay}>
     <View style={modalStyles.card}>
       <Text style={modalStyles.title}>Completá tus datos</Text>
@@ -524,6 +533,7 @@ const fetchUserProfile = useCallback(async () => {
         value={formInscripcion.codigo_estudiante}
         onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, codigo_estudiante: v }))}
         placeholder="Ej: 2023-1234"
+        accessibilityLabel="Código de estudiante"
       />
 
       <Text style={modalStyles.label}>Semestre</Text>
@@ -532,6 +542,7 @@ const fetchUserProfile = useCallback(async () => {
         value={formInscripcion.semestre}
         onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, semestre: v }))}
         placeholder="Ej: 5to semestre"
+        accessibilityLabel="Semestre"
       />
 
       <Text style={modalStyles.label}>Teléfono</Text>
@@ -541,6 +552,7 @@ const fetchUserProfile = useCallback(async () => {
         onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, telefono: v }))}
         placeholder="Ej: 71234567"
         keyboardType="phone-pad"
+        accessibilityLabel="Teléfono"
       />
 
       <View style={modalStyles.buttonRow}>

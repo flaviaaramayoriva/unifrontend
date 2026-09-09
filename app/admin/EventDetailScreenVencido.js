@@ -19,14 +19,14 @@ import * as SecureStore from 'expo-secure-store';
 import CustomAlert from '../../components/CustomAlert';
 
 //const API_BASE_URL = 'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); }
-    catch (e) { console.error("Error localStorage:", e); return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); }
+    catch (e) { console.error("Error sessionStorage:", e); return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); }
     catch (e) { console.error("Error SecureStore:", e); return null; }
@@ -35,8 +35,8 @@ const getTokenAsync = async () => {
 
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { localStorage.removeItem(TOKEN_KEY); }
-    catch (e) { console.error("Error localStorage:", e); }
+    try { sessionStorage.removeItem(TOKEN_KEY); }
+    catch (e) { console.error("Error sessionStorage:", e); }
   } else {
     try { await SecureStore.deleteItemAsync(TOKEN_KEY); }
     catch (e) { console.error("Error SecureStore:", e); }
@@ -46,7 +46,7 @@ const deleteTokenAsync = async () => {
 const COLORS = {
   accent: '#0052A0',
   secondary: '#2980b9',
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   background: '#f8fafc',
   surface: '#ffffff',
   success: '#27ae60',
@@ -408,11 +408,11 @@ const EventDetailScreenVencido = () => {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack}>
+        <TouchableOpacity onPress={handleBack} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detalles del Evento</Text>
-        <TouchableOpacity onPress={fetchEventDetails}>
+        <TouchableOpacity onPress={fetchEventDetails} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="refresh" size={24} color={COLORS.white} />
         </TouchableOpacity>
       </View>
@@ -716,6 +716,7 @@ const EventDetailScreenVencido = () => {
           setShowRejectModal(false);
           setRazonRechazo('');
         }}
+        accessibilityViewIsModal={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
@@ -731,6 +732,7 @@ const EventDetailScreenVencido = () => {
               style={styles.modalInput}
               placeholder="Ej: Fecha de ejecución ya pasó..."
               placeholderTextColor={COLORS.grayText}
+              accessibilityLabel="Motivo del rechazo"
               value={razonRechazo}
               onChangeText={setRazonRechazo}
               multiline

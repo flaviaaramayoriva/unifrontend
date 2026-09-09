@@ -17,15 +17,15 @@ import * as SecureStore from 'expo-secure-store';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -41,9 +41,9 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al eliminar token de localStorage en web:", e);
+      console.error("Error al eliminar token de sessionStorage en web:", e);
     }
   } else {
     try {
@@ -57,7 +57,7 @@ const deleteTokenAsync = async () => {
 const COLORS = {
   accent: '#0052A0',
   secondary: '#2980b9',
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   background: '#f8fafc',
   surface: '#ffffff',
   success: '#27ae60',
@@ -400,7 +400,7 @@ const EventDetailScreen = () => {
           <style>
             @page { margin: 1cm; }
             body { font-family: Arial, sans-serif; padding: 1.5cm; line-height: 1.6; color: #333; }
-            h1 { color: #E95A0C; margin-bottom: 0.5cm; border-bottom: 2px solid #E95A0C; padding-bottom: 0.3cm; }
+            h1 { color: #C44B0A; margin-bottom: 0.5cm; border-bottom: 2px solid #C44B0A; padding-bottom: 0.3cm; }
             .section { margin-bottom: 1cm; }
             .section-title { font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 0.3cm; padding-bottom: 0.2cm; border-bottom: 1px solid #ddd; }
             .detail-row { margin-bottom: 0.2cm; }
@@ -556,11 +556,11 @@ const EventDetailScreen = () => {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detalles del Evento</Text>
-        <TouchableOpacity onPress={fetchEventDetails}>
+        <TouchableOpacity onPress={fetchEventDetails} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="refresh" size={24} color={COLORS.white} />
         </TouchableOpacity>
       </View>

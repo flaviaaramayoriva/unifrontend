@@ -33,7 +33,7 @@ export const useAutoLogout = (router, activo = true) => {
   const guardarUltimaActividad = useCallback(async () => {
     const ahora = Date.now().toString();
     if (Platform.OS === 'web') {
-      try { localStorage.setItem(LAST_ACTIVITY_KEY, ahora); } catch (e) {}
+      try { sessionStorage.setItem(LAST_ACTIVITY_KEY, ahora); } catch (e) {}
     } else {
       try { await AsyncStorage.setItem(LAST_ACTIVITY_KEY, ahora); } catch (e) {}
     }
@@ -91,7 +91,7 @@ export const useAutoLogout = (router, activo = true) => {
   const verificarTiempoTranscurrido = useCallback(async () => {
     let ultimaActividad;
     if (Platform.OS === 'web') {
-      ultimaActividad = localStorage.getItem(LAST_ACTIVITY_KEY);
+      ultimaActividad = sessionStorage.getItem(LAST_ACTIVITY_KEY);
     } else {
       ultimaActividad = await AsyncStorage.getItem(LAST_ACTIVITY_KEY);
     }

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import CustomAlert from '../../components/CustomAlert';
+import AdminHeader from '../../components/admin/AdminHeader';
 import { useFocusEffect } from '@react-navigation/native';
 
 // Configuración de API (sin cambios)
@@ -24,10 +25,10 @@ let determinedApiBaseUrl;
 } else if (Platform.OS === 'ios') {
   determinedApiBaseUrl = 'http://192.168.0.167:3001/api';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 const TOKEN_KEY = 'adminAuthToken';
 
@@ -35,9 +36,9 @@ const TOKEN_KEY = 'adminAuthToken';
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -53,9 +54,9 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al eliminar token de localStorage en web:", e);
+      console.error("Error al eliminar token de sessionStorage en web:", e);
     }
   } else {
     try {
@@ -69,7 +70,7 @@ const deleteTokenAsync = async () => {
 const COLORS = {
   accent: '#0052A0',
   secondary: '#2980b9',
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   background: '#f8fafc',
   surface: '#ffffff',
   success: '#27ae60',
@@ -395,15 +396,17 @@ console.log('objetivos_pdi del backend:', eventData.objetivos_pdi);
 
   return (
     <View style={styles.screenContainer}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detalles del Evento</Text>
-        <TouchableOpacity onPress={fetchEventDetails}>
-          <Ionicons name="refresh" size={24} color={COLORS.white} />
-        </TouchableOpacity>
-      </View>
+      <AdminHeader
+        title="Detalles del Evento"
+        subtitle={event.nombreevento || event.title}
+        eyebrow="Evaluación"
+        primaryColor={COLORS.primary}
+        rightActions={(
+          <TouchableOpacity style={styles.refreshButton} onPress={fetchEventDetails} accessibilityRole="button" accessibilityLabel="Actualizar">
+            <Ionicons name="refresh" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {event.imageUrl && <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />}
@@ -933,6 +936,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.white,
+  },
+  refreshButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sectionCard: {
     width: '90%',

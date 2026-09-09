@@ -24,9 +24,9 @@ let determinedApiBaseUrl;
 } else if (Platform.OS === 'ios') {
   determinedApiBaseUrl = 'http://192.168.0.167:3001/api';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend1-production.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 // Colores consistentes
@@ -54,9 +54,9 @@ const COLORS = {
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -327,6 +327,7 @@ const UsuariosVistaScreen = () => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
@@ -334,6 +335,7 @@ const UsuariosVistaScreen = () => {
         <TouchableOpacity
           style={styles.refreshButton}
           onPress={onRefresh}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="refresh" size={24} color={COLORS.white} />
         </TouchableOpacity>
@@ -346,6 +348,7 @@ const UsuariosVistaScreen = () => {
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar por nombre, email o rol..."
+            accessibilityLabel="Buscar"
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor={COLORS.grayText}
@@ -380,6 +383,10 @@ const UsuariosVistaScreen = () => {
         style={styles.usersList}
         contentContainerStyle={styles.usersListContent}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -618,8 +625,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     borderRadius: 18,
     backgroundColor: COLORS.background,
     justifyContent: 'center',

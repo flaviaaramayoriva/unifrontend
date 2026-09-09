@@ -7,7 +7,7 @@ import 'dayjs/locale/es';
 
 // Configuración de dayjs y constantes
 dayjs.locale('es');
-const API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3001/api' : 'http://localhost:3001/api';
+const API_BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3001/api' : (process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app');
 const getTokenAsync = async () => "token-de-prueba-para-desarrollo";
 
 const AgendaDia = () => {
@@ -39,7 +39,7 @@ const AgendaDia = () => {
         );
         
         const eventTypeColors = {
-          '1': '#e95a0c', '2': '#3498db', '3': '#2ecc71',
+          '1': '#C44B0A', '2': '#3498db', '3': '#2ecc71',
           '4': '#9b59b6', '5': '#f1c40f', '6': '#7f8c8d',
         };
 
@@ -73,7 +73,7 @@ const AgendaDia = () => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#e95a0c" />
+        <ActivityIndicator size="large" color="#C44B0A" />
         <Text style={styles.loadingText}>Cargando agenda...</Text>
       </View>
     );

@@ -8,7 +8,7 @@ const TOKEN_KEY = 'authToken'; // Asegúrate de usar el token correcto (no el de
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   } else {
     return await SecureStore.getItemAsync(TOKEN_KEY);
   }

@@ -12,9 +12,24 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
-const API_BASE_URL =  'https://unibackend-production-a0f8.up.railway.app';
+import AdminHeader from '../../components/admin/AdminHeader';
+const API_BASE_URL =  process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
+
+// La API devuelve horaevento como "10:00" o "10:00:00"; parsea ambos y tolera nulos/offsets.
+// No depende del plugin customParseFormat (no registrado en el proyecto).
+const parseHoraEvento = (h) => {
+  const s = String(h || '').split('+')[0].trim();
+  const m = /^(\d{1,2}):(\d{2})(?::\d{1,2})?/.exec(s);
+  if (!m) return null;
+  return dayjs().startOf('day').hour(Number(m[1])).minute(Number(m[2])).second(0);
+};
+
+const formatHoraEvento = (h, fallback = '--:--') => {
+  const d = parseHoraEvento(h);
+  return d ? d.format('HH:mm') : fallback;
+};
 
 const TIPOS_DE_EVENTO = [
   { id: '1', label: 'Curricular' },
@@ -150,11 +165,11 @@ const getNotificationIcon = (type) => {
 };
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   secondary: '#4B5563',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
   background: '#F9FAFB',
@@ -218,7 +233,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
           style={styles.timePickerTrigger}
           activeOpacity={0.7}
         >
-          <Ionicons name="time-outline" size={20} color="#e95a0c" />
+          <Ionicons name="time-outline" size={20} color="#C44B0A" />
           <Text style={styles.timePickerTriggerText}>{pad(h)}:{pad(m)}</Text>
           <Ionicons name="chevron-down" size={16} color="#888" />
         </TouchableOpacity>
@@ -227,12 +242,13 @@ const TimePicker = ({ value, onChange, editable = true }) => {
           transparent={true}
           animationType="slide"
           onRequestClose={() => setShowNativePicker(false)}
+          accessibilityViewIsModal={true}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.pickerModalContent}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>Seleccionar Hora de Inicio</Text>
-                <TouchableOpacity onPress={() => setShowNativePicker(false)}>
+                <TouchableOpacity onPress={() => setShowNativePicker(false)} accessibilityLabel="Cerrar" accessibilityRole="button">
                   <Ionicons name="close" size={24} color="#333" />
                 </TouchableOpacity>
               </View>
@@ -273,7 +289,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
         style={styles.timePickerTrigger}
         activeOpacity={0.7}
       >
-        <Ionicons name="time-outline" size={20} color="#e95a0c" />
+        <Ionicons name="time-outline" size={20} color="#C44B0A" />
         <Text style={styles.timePickerTriggerText}>{pad(h)}:{pad(m)}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color="#888" />
       </TouchableOpacity>
@@ -282,13 +298,14 @@ const TimePicker = ({ value, onChange, editable = true }) => {
         transparent={true}
         animationType="fade"
         onRequestClose={() => setOpen(false)}
+        accessibilityViewIsModal={true}
       >
         <View style={styles.modalOverlayCentered}>
           <View style={styles.timePickerModalCentered}>
             <View style={styles.timePickerModalHeader}>
-              <Ionicons name="alarm" size={24} color="#e95a0c" />
+              <Ionicons name="alarm" size={24} color="#C44B0A" />
               <Text style={styles.timePickerModalTitle}>Hora de Inicio</Text>
-              <TouchableOpacity onPress={() => setOpen(false)} style={styles.closeButton}>
+              <TouchableOpacity onPress={() => setOpen(false)} style={styles.closeButton} accessibilityLabel="Cerrar" accessibilityRole="button">
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
@@ -304,7 +321,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                       apply(newH, m);
                     }}
                   >
-                    <Ionicons name="chevron-up" size={24} color="#e95a0c" />
+                    <Ionicons name="chevron-up" size={24} color="#C44B0A" />
                   </TouchableOpacity>
                   <TextInput
                     style={styles.drumInput}
@@ -314,6 +331,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                     maxLength={2}
                     textAlign="center"
                     selectTextOnFocus
+                    accessibilityLabel="Hora"
                   />
                   <TouchableOpacity
                     style={styles.drumBtn}
@@ -323,7 +341,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                       apply(newH, m);
                     }}
                   >
-                    <Ionicons name="chevron-down" size={24} color="#e95a0c" />
+                    <Ionicons name="chevron-down" size={24} color="#C44B0A" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -339,7 +357,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                       apply(h, newM);
                     }}
                   >
-                    <Ionicons name="chevron-up" size={24} color="#e95a0c" />
+                    <Ionicons name="chevron-up" size={24} color="#C44B0A" />
                   </TouchableOpacity>
                   <TextInput
                     style={styles.drumInput}
@@ -349,6 +367,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                     maxLength={2}
                     textAlign="center"
                     selectTextOnFocus
+                    accessibilityLabel="Minutos"
                   />
                   <TouchableOpacity
                     style={styles.drumBtn}
@@ -358,7 +377,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                       apply(h, newM);
                     }}
                   >
-                    <Ionicons name="chevron-down" size={24} color="#e95a0c" />
+                    <Ionicons name="chevron-down" size={24} color="#C44B0A" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -412,7 +431,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
 };
 
 const NotificationBell = ({ notificationCount, onPress }) => (
-  <TouchableOpacity onPress={onPress} style={styles.notificationBell}>
+  <TouchableOpacity onPress={onPress} style={styles.notificationBell} accessibilityLabel="Notificaciones" accessibilityRole="button">
     <Ionicons name="notifications-outline" size={24} color="#333" />
     {notificationCount > 0 && (
       <View style={styles.notificationBadge}>
@@ -430,12 +449,13 @@ const NotificationsModal = ({ visible, onClose, notifications, markAsRead }) => 
     transparent={true}
     animationType="slide"
     onRequestClose={onClose}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.notificationsModalOverlay}>
       <View style={styles.notificationsModalContent}>
         <View style={styles.notificationsModalHeader}>
           <Text style={styles.notificationsModalTitle}>Notificaciones</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar" accessibilityRole="button">
             <Ionicons name="close" size={24} color="#333" />
           </TouchableOpacity>
         </View>
@@ -456,7 +476,7 @@ const NotificationsModal = ({ visible, onClose, notifications, markAsRead }) => 
                   <Ionicons
                     name={getNotificationIcon(notification.type || notification.tipo)}
                     size={20}
-                    color="#e95a0c"
+                    color="#C44B0A"
                     style={styles.notificationIcon}
                   />
                   {(!notification.read && notification.estado !== 'leido') && (
@@ -491,7 +511,7 @@ const getTokenAsync = async () => {
   try {
     let token;
     if (Platform.OS === 'web') {
-      token = localStorage.getItem(TOKEN_KEY);
+      token = sessionStorage.getItem(TOKEN_KEY);
     } else {
       token = await SecureStore.getItemAsync(TOKEN_KEY);
     }
@@ -537,6 +557,7 @@ const TablaPresupuesto = ({
             onChangeText={editable ? (text) => handlePresupuestoChange(items, setItems, index, 'descripcion', text) : undefined}
             placeholder="Descripción"
             editable={editable}
+            accessibilityLabel="Descripción"
           />
           <TextInput
             style={[styles.rowInput, { flex: 1, textAlign: 'center' }, !editable && styles.inputReadOnly]}
@@ -545,6 +566,7 @@ const TablaPresupuesto = ({
             keyboardType="numeric"
             placeholder="0"
             editable={editable}
+            accessibilityLabel="Cantidad"
           />
           <TextInput
             style={[styles.rowInput, { flex: 1, textAlign: 'center' }, !editable && styles.inputReadOnly]}
@@ -553,6 +575,7 @@ const TablaPresupuesto = ({
             keyboardType="numeric"
             placeholder="0.00"
             editable={editable}
+            accessibilityLabel="Precio"
           />
           <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
           {editable && (
@@ -624,13 +647,13 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
       )}
       <View style={styles.calendarHeader}>
         <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navButton} disabled={!editable}>
-          <Ionicons name="chevron-back" size={24} color={editable ? "#e95a0c" : "#ccc"} />
+          <Ionicons name="chevron-back" size={24} color={editable ? "#C44B0A" : "#ccc"} />
         </TouchableOpacity>
         <Text style={styles.monthYearText}>
           {dayjs(fechaHoraSeleccionada).format('MMMM YYYY').toUpperCase()}
         </Text>
         <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navButton} disabled={!editable}>
-          <Ionicons name="chevron-forward" size={24} color={editable ? "#e95a0c" : "#ccc"} />
+          <Ionicons name="chevron-forward" size={24} color={editable ? "#C44B0A" : "#ccc"} />
         </TouchableOpacity>
       </View>
       <View style={styles.weekDaysHeader}>
@@ -679,7 +702,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
                 </Text>
                 {dayEvents.length > 0 && (
                   <View style={styles.eventIndicators}>
-                    <View style={[styles.eventDot, { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#e95a0c' }]} />
+                    <View style={[styles.eventDot, { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44B0A' }]} />
                     {dayEvents.length > 1 && <Text style={styles.eventCount}>+{dayEvents.length - 1}</Text>}
                   </View>
                 )}
@@ -714,6 +737,7 @@ const ConflictModal = ({
     transparent={true}
     animationType="fade"
     onRequestClose={() => setShowConflictModal(false)}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
@@ -727,7 +751,7 @@ const ConflictModal = ({
             <View style={styles.conflictEventCard}>
               <Text style={styles.conflictEventTitle}>{conflictoDetectado.nombreevento}</Text>
               <Text style={styles.conflictEventDetails}>
-                {dayjs(conflictoDetectado.horaevento.split('+')[0], 'HH:mm:ss').format('HH:mm')} - {conflictoDetectado.lugarevento}
+                {formatHoraEvento(conflictoDetectado.horaevento)} - {conflictoDetectado.lugarevento}
               </Text>
             </View>
             <Text style={styles.modalWarning}>Se recomienda mantener al menos 2 horas de separación entre eventos.</Text>
@@ -756,7 +780,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada }) => {
   return (
     <View style={styles.eventosDelDiaContainer}>
       <View style={styles.eventosDelDiaHeader}>
-        <Ionicons name="calendar-outline" size={20} color="#e95a0c" />
+        <Ionicons name="calendar-outline" size={20} color="#C44B0A" />
         <Text style={styles.eventosDelDiaTitle}>Eventos en {dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')}</Text>
         <View style={styles.eventCountBadge}>
           <Text style={styles.eventCountText}>{eventosDelDia.length}</Text>
@@ -790,6 +814,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
     transparent={true}
     animationType="slide"
     onRequestClose={() => setShowConfirmModal(false)}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.modalOverlay}>
       <View style={styles.confirmModalContent}>
@@ -837,6 +862,8 @@ const EditEventScreen = () => {
   const scrollViewRef = useRef(null);
   const objetivosSectionRef = useRef(null);
   const [objetivosSectionY, setObjetivosSectionY] = useState(0);
+  const sectionYRef = useRef({ objetivos: 0, resultados: 0, comite: 0, recursos: 0, presupuesto: 0 });
+  const [activeStep, setActiveStep] = useState('datos');
   const [isScrollingToObjetivos, setIsScrollingToObjetivos] = useState(false);
   const [nombreevento, setNombreevento] = useState('');
   const [lugarevento, setLugarevento] = useState('');
@@ -1046,13 +1073,13 @@ const EditEventScreen = () => {
 
   const verificarConflictoHorario = (fechaHora) => {
     const fechaFormateada = dayjs(fechaHora).format('YYYY-MM-DD');
-    const horaFormateada = dayjs(fechaHora).format('HH:mm');
     const eventosEnMismaFecha = eventos.filter(evento => dayjs(evento.fechaevento).format('YYYY-MM-DD') === fechaFormateada);
     return eventosEnMismaFecha.filter(evento => {
-      const horaEventoString = (evento.horaevento || '').split('+')[0].trim();
-      const horaEvento = dayjs(horaEventoString, 'HH:mm:ss');
-      if (!horaEvento.isValid()) return false;
-      const horaSeleccionada = dayjs(horaFormateada, 'HH:mm');
+      const horaEvento = parseHoraEvento(evento.horaevento);
+      if (!horaEvento) return false;
+
+      const sel = dayjs(fechaHora).startOf('day');
+      const horaSeleccionada = sel.hour(dayjs(fechaHora).hour()).minute(dayjs(fechaHora).minute());
       return Math.abs(horaEvento.diff(horaSeleccionada, 'minutes')) < 240;
     });
   };
@@ -1439,6 +1466,44 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
     setShowConfirmModal(true);
   };
 
+  const handleFormScroll = (e) => {
+    const y = e.nativeEvent.contentOffset.y;
+    const order = ['datos', 'objetivos', 'resultados', 'comite', 'recursos', 'presupuesto'];
+    let current = 'datos';
+    for (const key of order) {
+      if (key === 'datos' || sectionYRef.current[key] > 0) {
+        if (y + 70 >= sectionYRef.current[key] - 40) current = key;
+      }
+    }
+    if (current !== activeStep) setActiveStep(current);
+  };
+
+  const formSteps = [
+    { key: 'datos', icon: 'document-text-outline', label: 'Datos', onPress: () => { setActiveStep('datos'); scrollViewRef.current?.scrollTo({ y: 0, animated: true }); } },
+    { key: 'objetivos', icon: 'bulb-outline', label: 'Objetivos', onPress: () => { setActiveStep('objetivos'); scrollToObjetivos(); } },
+    { key: 'resultados', icon: 'analytics-outline', label: 'Resultados', onPress: () => { setActiveStep('resultados'); scrollToResultados(); } },
+    { key: 'comite', icon: 'people-outline', label: 'Comité', onPress: () => { setActiveStep('comite'); scrollToComite(); } },
+    { key: 'recursos', icon: 'cube-outline', label: 'Recursos', onPress: () => { setActiveStep('recursos'); scrollToRecursos(); } },
+    { key: 'presupuesto', icon: 'cash-outline', label: 'Presupuesto', onPress: () => { setActiveStep('presupuesto'); scrollToPresupuesto(); } },
+  ];
+
+  const completedSections = {
+    objetivos: seccionObjetivosVisible,
+    resultados: seccionResultadosVisible,
+    comite: seccionComiteVisible,
+    recursos: seccionRecursosVisible,
+    presupuesto: seccionPresupuestoVisible,
+  };
+
+  const SectionHeader = ({ icon, children }) => (
+    <View style={styles.sectionHeaderBar}>
+      <View style={styles.sectionHeaderIcon}>
+        <Ionicons name={icon} size={16} color="#C44B0A" />
+      </View>
+      <Text style={styles.sectionTitle}>{children}</Text>
+    </View>
+  );
+
   const handleSubmitConfirmed = async () => {
   setShowConfirmModal(false);
   setIsLoading(true);
@@ -1551,26 +1616,43 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingContainer}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>
-            {mode === 'reprogramar' ? '🔄 Reprogramar Evento' : '✏️ Editar Evento'}
-          </Text>
-          {estadoEvento && (
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>
-                {estadoEvento === 'pendiente' ? '⏳ Pendiente' :
-                  estadoEvento === 'aprobado' ? '✓ Aprobado' : '✗ Rechazado'}
-              </Text>
-            </View>
-          )}
-        </View>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Ionicons name="close-outline" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+      <AdminHeader
+        title={mode === 'reprogramar' ? 'Reprogramar Evento' : 'Editar Evento'}
+        subtitle={`Estado: ${estadoEvento || '—'}`}
+        eyebrow="Editor"
+        primaryColor={COLORS.primary}
+        rightActions={(
+          <TouchableOpacity style={styles.headerCloseButton} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Cerrar">
+            <Ionicons name="close" size={26} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      />
+      <View style={styles.stepNavContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepNavContent}>
+          {formSteps.map((step) => {
+            const isActiveStep = activeStep === step.key;
+            const isDone = !!completedSections[step.key];
+            return (
+              <TouchableOpacity
+                key={step.key}
+                style={[styles.stepChip, isActiveStep && styles.stepChipActive, isDone && !isActiveStep && styles.stepChipDone]}
+                onPress={step.onPress}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.stepChipIcon, isActiveStep && styles.stepChipIconActive, isDone && !isActiveStep && styles.stepChipIconDone]}>
+                  <Ionicons
+                    name={isDone && !isActiveStep ? 'checkmark' : step.icon}
+                    size={13}
+                    color={isActiveStep ? '#ffffff' : isDone ? '#C44B0A' : '#94A3B8'}
+                  />
+                </View>
+                <Text style={[styles.stepChipText, isActiveStep && styles.stepChipTextActive, isDone && !isActiveStep && styles.stepChipTextDone]}>
+                  {step.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
       {mode === 'reprogramar' && (
         <View style={styles.reprogramBanner}>
@@ -1582,7 +1664,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
       )}
       <View style={styles.timePickerSection}>
         <View style={styles.timePickerHeader}>
-          <Ionicons name="alarm" size={24} color="#e95a0c" />
+          <Ionicons name="alarm" size={24} color="#C44B0A" />
           <Text style={styles.timePickerSectionTitle}>Hora de Inicio del Evento</Text>
         </View>
         <TimePicker
@@ -1615,9 +1697,11 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
           contentContainerStyle={styles.scrollContentContainer}
           keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
+          onScroll={handleFormScroll}
+          scrollEventThrottle={24}
         >
           <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>I. DATOS GENERALES</Text>
+            <SectionHeader icon="document-text-outline">I. DATOS GENERALES</SectionHeader>
             <Text style={styles.label}>Nombre del Evento</Text>
             <View style={[styles.inputGroup, errors.nombreevento && styles.inputError]}>
               <Ionicons name="text-outline" size={20} style={styles.inputIcon} />
@@ -1627,6 +1711,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                 onChangeText={isReadOnly ? undefined : (text) => handleInputChange('nombreevento', text)}
                 placeholder="Nombre del evento"
                 editable={!isReadOnly}
+                accessibilityLabel="Nombre del evento"
               />
             </View>
             {errors.nombreevento && <Text style={styles.errorText}>{errors.nombreevento}</Text>}
@@ -1696,13 +1781,13 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
             <Text style={styles.label}>Tipo de Evento (puede seleccionar más de un tipo)</Text>
             {TIPOS_DE_EVENTO.map((item) => (
               <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)} disabled={isReadOnly}>
-                <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#e95a0c" : "#888"} />
+                <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
                 <Text style={styles.checkboxLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
             {tiposSeleccionados['5'] && (
               <View style={styles.otroInputContainer}>
-                <TextInput style={[styles.input, isReadOnly && styles.inputReadOnly]} value={textoOtroTipo} onChangeText={isReadOnly ? undefined : setTextoOtroTipo} placeholder="¿Cuál?" editable={!isReadOnly} />
+                <TextInput style={[styles.input, isReadOnly && styles.inputReadOnly]} value={textoOtroTipo} onChangeText={isReadOnly ? undefined : setTextoOtroTipo} placeholder="¿Cuál?" accessibilityLabel="Tipo de evento" editable={!isReadOnly} />
               </View>
             )}
             <TouchableOpacity style={styles.gotoButton} onPress={scrollToObjetivos}>
@@ -1714,9 +1799,9 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
             <View
               style={[styles.formSection, isScrollingToObjetivos && styles.formSectionHighlighted]}
               ref={objetivosSectionRef}
-              onLayout={(event) => { const { y } = event.nativeEvent.layout; setObjetivosSectionY(y); }}
+              onLayout={(event) => { const { y } = event.nativeEvent.layout; setObjetivosSectionY(y); sectionYRef.current.objetivos = y; }}
             >
-              <Text style={styles.sectionTitle}>II. OBJETIVOS</Text>
+              <SectionHeader icon="bulb-outline">II. OBJETIVOS</SectionHeader>
               <Text style={styles.label}>Objetivos de Evento (puede seleccionar más de un objetivo):</Text>
               <View style={styles.checkboxContainer}>
                 <View style={styles.checkboxColumn}>
@@ -1726,7 +1811,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                     { key: 'internacionalizacion', label: 'Internacionalización' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)} disabled={isReadOnly}>
-                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#e95a0c" : "#888"} />
+                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1738,7 +1823,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                     { key: 'otro', label: 'Otro' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)} disabled={isReadOnly}>
-                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#e95a0c" : "#888"} />
+                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1746,7 +1831,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
               </View>
               {objetivos.otro && (
                 <View style={styles.otroInputContainer}>
-                  <TextInput style={[styles.input, isReadOnly && styles.inputReadOnly]} value={objetivos.otroTexto} onChangeText={isReadOnly ? undefined : (text) => handleOtroTextChange(setObjetivos, text)} placeholder="¿Cuál?" editable={!isReadOnly} />
+                  <TextInput style={[styles.input, isReadOnly && styles.inputReadOnly]} value={objetivos.otroTexto} onChangeText={isReadOnly ? undefined : (text) => handleOtroTextChange(setObjetivos, text)} placeholder="¿Cuál?" accessibilityLabel="Otro objetivo" editable={!isReadOnly} />
                   {objetivos.otroTexto.trim() && <Text style={styles.selectedText}>Selección: {objetivos.otroTexto}</Text>}
                 </View>
               )}
@@ -1762,6 +1847,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                       placeholder={`Objetivo ${index + 1}`}
                       multiline
                       editable={!isReadOnly}
+                      accessibilityLabel="Objetivo del PDI"
                     />
                   </View>
                 ))}
@@ -1774,7 +1860,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                     { key: 'docentes', label: 'Docentes' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setSegmentoObjetivo, item.key)} disabled={isReadOnly}>
-                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#e95a0c" : "#888"} />
+                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44B0A" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1786,7 +1872,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                     { key: 'otro', label: 'Otro' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setSegmentoObjetivo, item.key)} disabled={isReadOnly}>
-                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#e95a0c" : "#888"} />
+                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44B0A" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1794,7 +1880,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
               </View>
               {segmentoObjetivo.otro && (
                 <View style={styles.otroInputContainer}>
-                  <TextInput style={[styles.input, isReadOnly && styles.inputReadOnly]} value={segmentoObjetivo.otroTexto} onChangeText={isReadOnly ? undefined : (text) => handleOtroTextChange(setSegmentoObjetivo, text)} placeholder="¿Cuál?" editable={!isReadOnly} />
+                  <TextInput style={[styles.input, isReadOnly && styles.inputReadOnly]} value={segmentoObjetivo.otroTexto} onChangeText={isReadOnly ? undefined : (text) => handleOtroTextChange(setSegmentoObjetivo, text)} placeholder="¿Cuál?" accessibilityLabel="Otro segmento" editable={!isReadOnly} />
                   {segmentoObjetivo.otroTexto.trim() && <Text style={styles.selectedText}>Selección: {segmentoObjetivo.otroTexto}</Text>}
                 </View>
               )}
@@ -1806,6 +1892,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                   multiline
                   numberOfLines={4}
                   placeholder="Breve descripción sustentada de la congruencia del evento con los objetivos especificados"
+                  accessibilityLabel="Argumentación"
                   value={argumentacion}
                   onChangeText={isReadOnly ? undefined : setArgumentacion}
                   editable={!isReadOnly}
@@ -1819,30 +1906,30 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
           )}
           {seccionResultadosVisible && (
             <>
-              <View style={[styles.formSection, isScrollingToResultados && styles.formSectionHighlighted]} ref={resultadosSectionRef}>
-                <Text style={styles.sectionTitle}>III. RESULTADOS ESPERADOS</Text>
+              <View style={[styles.formSection, isScrollingToResultados && styles.formSectionHighlighted]} ref={resultadosSectionRef} onLayout={(event) => { const { y } = event.nativeEvent.layout; sectionYRef.current.resultados = y; }}>
+                <SectionHeader icon="analytics-outline">III. RESULTADOS ESPERADOS</SectionHeader>
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Participación Efectiva</Text>
-                  <TextInput style={[styles.resultadoInput, isReadOnly && styles.inputReadOnly]} placeholder="Ej: 150" value={resultadosEsperados.participacion} onChangeText={isReadOnly ? undefined : (text) => handleResultadoChange('participacion', text)} keyboardType="numeric" editable={!isReadOnly} />
+                  <TextInput style={[styles.resultadoInput, isReadOnly && styles.inputReadOnly]} placeholder="Ej: 150" value={resultadosEsperados.participacion} onChangeText={isReadOnly ? undefined : (text) => handleResultadoChange('participacion', text)} keyboardType="numeric" accessibilityLabel="Participación Efectiva" editable={!isReadOnly} />
                 </View>
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Índice de Satisfacción</Text>
-                  <TextInput style={[styles.resultadoInput, isReadOnly && styles.inputReadOnly]} placeholder="Ej: 90% de satisfacción" value={resultadosEsperados.satisfaccion} onChangeText={isReadOnly ? undefined : (text) => handleResultadoChange('satisfaccion', text)} editable={!isReadOnly} />
+                  <TextInput style={[styles.resultadoInput, isReadOnly && styles.inputReadOnly]} placeholder="Ej: 90% de satisfacción" value={resultadosEsperados.satisfaccion} onChangeText={isReadOnly ? undefined : (text) => handleResultadoChange('satisfaccion', text)} accessibilityLabel="Índice de Satisfacción" editable={!isReadOnly} />
                 </View>
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Otro</Text>
-                  <TextInput style={[styles.resultadoInput, isReadOnly && styles.inputReadOnly]} placeholder="Otro resultado medible" value={resultadosEsperados.otro} onChangeText={isReadOnly ? undefined : (text) => handleResultadoChange('otro', text)} editable={!isReadOnly} />
+                  <TextInput style={[styles.resultadoInput, isReadOnly && styles.inputReadOnly]} placeholder="Otro resultado medible" value={resultadosEsperados.otro} onChangeText={isReadOnly ? undefined : (text) => handleResultadoChange('otro', text)} accessibilityLabel="Otro resultado" editable={!isReadOnly} />
                 </View>
               </View>
-              <View style={styles.formSection}>
-                <Text style={styles.sectionTitle}>IV. COMITÉ DEL EVENTO</Text>
+              <View style={[styles.formSection, isScrollingToComite && styles.formSectionHighlighted]} ref={comiteSectionRef} onLayout={(event) => { const { y } = event.nativeEvent.layout; sectionYRef.current.comite = y; }}>
+                <SectionHeader icon="people-outline">IV. COMITÉ DEL EVENTO</SectionHeader>
                 <Text style={styles.comiteDescription}>Selecciona a los miembros del comité del evento:</Text>
                 {comiteLoading ? (
-                  <ActivityIndicator size="small" color="#e95a0c" style={{ marginTop: 10 }} />
+                  <ActivityIndicator size="small" color="#C44B0A" style={{ marginTop: 10 }} />
                 ) : comiteError ? (
                   <View style={{ alignItems: 'center', marginTop: 10 }}>
                     <Text style={{ color: 'red', marginBottom: 10 }}>No se pudieron cargar los usuarios.</Text>
-                    <TouchableOpacity onPress={fetchUsuariosComite} style={{ backgroundColor: '#e95a0c', padding: 10, borderRadius: 5 }}>
+                    <TouchableOpacity onPress={fetchUsuariosComite} style={{ backgroundColor: '#C44B0A', padding: 10, borderRadius: 5 }}>
                       <Text style={{ color: '#fff', fontWeight: 'bold' }}>Reintentar</Text>
                     </TouchableOpacity>
                   </View>
@@ -1862,7 +1949,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                         }}
                         disabled={isReadOnly}
                       >
-                        <Ionicons name={comiteSeleccionado.includes(usuario.id) ? "checkbox" : "square-outline"} size={24} color={comiteSeleccionado.includes(usuario.id) ? "#e95a0c" : "#888"} />
+                        <Ionicons name={comiteSeleccionado.includes(usuario.id) ? "checkbox" : "square-outline"} size={24} color={comiteSeleccionado.includes(usuario.id) ? "#C44B0A" : "#888"} />
                         <View style={styles.comiteUserText}>
                           <Text style={styles.checkboxLabel}>{usuario.nombreCompleto}</Text>
                           <Text style={[styles.comiteUserRole, { fontSize: 12, color: '#666', fontStyle: 'italic' }]}>
@@ -1885,8 +1972,8 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
             </>
           )}
           {seccionRecursosVisible && (
-            <View style={[styles.formSection, isScrollingToRecursos && styles.formSectionHighlighted]} ref={recursosSectionRef}>
-              <Text style={styles.sectionTitle}>V. RECURSOS NECESARIOS</Text>
+            <View style={[styles.formSection, isScrollingToRecursos && styles.formSectionHighlighted]} ref={recursosSectionRef} onLayout={(event) => { const { y } = event.nativeEvent.layout; sectionYRef.current.recursos = y; }}>
+              <SectionHeader icon="cube-outline">V. RECURSOS NECESARIOS</SectionHeader>
               <View style={styles.subsection}>
                 <Text style={styles.subsectionTitle}>Recursos Disponibles</Text>
                 <Text style={styles.subsectionDescription}>Selecciona los recursos existentes que necesitarás para tu evento:</Text>
@@ -1902,7 +1989,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                           disabled={isReadOnly}
                         >
                           <View style={styles.recursoCheckboxContainer}>
-                            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={24} color={isSelected ? "#e95a0c" : "#888"} />
+                            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={24} color={isSelected ? "#C44B0A" : "#888"} />
                           </View>
                           <View style={styles.recursoInfo}>
                             <Text style={styles.recursoNombre}>{recurso.nombre_recurso}</Text>
@@ -1926,8 +2013,8 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
             </View>
           )}
           {seccionPresupuestoVisible && (
-            <View style={[styles.formSection, isScrollingToPresupuesto && styles.formSectionHighlighted]} ref={presupuestoSectionRef}>
-              <Text style={styles.sectionTitle}>VI. PRESUPUESTO</Text>
+            <View style={[styles.formSection, isScrollingToPresupuesto && styles.formSectionHighlighted]} ref={presupuestoSectionRef} onLayout={(event) => { const { y } = event.nativeEvent.layout; sectionYRef.current.presupuesto = y; }}>
+              <SectionHeader icon="cash-outline">VI. PRESUPUESTO</SectionHeader>
               <TablaPresupuesto titulo="EGRESOS" items={egresos} setItems={setEgresos} totalGeneral={totalEgresos} handlePresupuestoChange={handlePresupuestoChange} eliminarFilaPresupuesto={eliminarFilaPresupuesto} agregarFilaPresupuesto={agregarFilaPresupuesto} editable={!isReadOnly} />
               <TablaPresupuesto titulo="INGRESOS" items={ingresos} setItems={setIngresos} totalGeneral={totalIngresos} handlePresupuestoChange={handlePresupuestoChange} eliminarFilaPresupuesto={eliminarFilaPresupuesto} agregarFilaPresupuesto={agregarFilaPresupuesto} editable={!isReadOnly} />
               <View style={styles.balanceContainer}>
@@ -1936,7 +2023,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
               </View>
             </View>
           )}
-          <Modal visible={showClasificacionModal} transparent animationType="fade" onRequestClose={() => setShowClasificacionModal(false)}>
+          <Modal visible={showClasificacionModal} transparent animationType="fade" onRequestClose={() => setShowClasificacionModal(false)} accessibilityViewIsModal={true}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Selecciona Clasificación</Text>
@@ -1953,7 +2040,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
               </View>
             </View>
           </Modal>
-          <Modal visible={showSubcategoriaModal} transparent animationType="fade" onRequestClose={() => setShowSubcategoriaModal(false)}>
+          <Modal visible={showSubcategoriaModal} transparent animationType="fade" onRequestClose={() => setShowSubcategoriaModal(false)} accessibilityViewIsModal={true}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Selecciona Subcategoría</Text>
@@ -1970,7 +2057,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
               </View>
             </View>
           </Modal>
-          <Modal visible={showLugarModal} transparent animationType="fade" onRequestClose={() => setShowLugarModal(false)}>
+          <Modal visible={showLugarModal} transparent animationType="fade" onRequestClose={() => setShowLugarModal(false)} accessibilityViewIsModal={true}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>
@@ -2118,12 +2205,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff5f0',
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     borderRadius: 25,
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -2139,12 +2226,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff5f0',
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
     gap: 12,
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -2153,7 +2240,7 @@ const styles = StyleSheet.create({
   timePickerDisplay: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     letterSpacing: 1,
   },
   timePickerDropdown: {
@@ -2164,7 +2251,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     padding: 20,
     zIndex: 1000,
     shadowColor: '#000',
@@ -2205,8 +2292,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   quickHourButtonActive: {
-    backgroundColor: '#e95a0c',
-    borderColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
+    borderColor: '#C44B0A',
   },
   quickHourText: {
     fontSize: 14,
@@ -2260,11 +2347,11 @@ const styles = StyleSheet.create({
   detailedSeparator: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     marginHorizontal: 12,
   },
   confirmButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2280,7 +2367,7 @@ const styles = StyleSheet.create({
   timePickerTriggerText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     letterSpacing: 1,
     marginHorizontal: 4,
   },
@@ -2291,7 +2378,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     padding: 16,
     zIndex: 9999,
     shadowColor: '#000',
@@ -2339,7 +2426,7 @@ const styles = StyleSheet.create({
   drumInput: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     paddingVertical: 8,
     textAlign: 'center',
     width: '100%',
@@ -2367,14 +2454,14 @@ const styles = StyleSheet.create({
   drumVal: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     paddingVertical: 8,
     textAlign: 'center',
   },
   drumColon: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#e95a0c',
+    color: '#C44B0A',
     marginTop: 28,
   },
   quickTimesContainer: {
@@ -2403,8 +2490,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   quickTimeBtnActive: {
-    backgroundColor: '#e95a0c',
-    borderColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
+    borderColor: '#C44B0A',
   },
   quickTimeBtnText: {
     fontSize: 14,
@@ -2416,14 +2503,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   timePickerApply: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -2502,7 +2589,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   timePickerApply: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
@@ -2514,7 +2601,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   gotoButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2557,27 +2644,19 @@ const styles = StyleSheet.create({
     marginBottom: width <= 768 ? 20 : 0,
   },
   formColumn: {
-    marginTop: 10,
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: 'transparent',
     minHeight: 0,
   },
-  scrollContentContainer: { paddingBottom: 60 },
+  scrollContentContainer: { padding: 12, paddingBottom: 60 },
   calendarSection: { marginBottom: 20 },
   notificationMessage: { fontSize: 13, color: '#666', marginBottom: 5, lineHeight: 18 },
   checkboxContainer: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
   formSectionHighlighted: {
     backgroundColor: '#fff5f0',
-    borderColor: '#e95a0c',
+    borderColor: '#C44B0A',
     borderWidth: 2,
-    shadowColor: '#e95a0c',
+    shadowColor: '#C44B0A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -2601,7 +2680,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  recursoDisponibleCardSelected: { backgroundColor: '#fff5f0', borderColor: '#e95a0c', borderWidth: 2 },
+  recursoDisponibleCardSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2 },
   recursoCheckboxContainer: { marginRight: 10 },
   recursoInfo: { flex: 1 },
   recursoNombre: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4 },
@@ -2627,6 +2706,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   headerButton: { padding: 8 },
+  headerCloseButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
   notificationBell: { position: 'relative', padding: 8, borderRadius: 20, backgroundColor: '#f8f9fa' },
   notificationBadge: {
@@ -2638,7 +2718,7 @@ const styles = StyleSheet.create({
   },
   notificationBadgeText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
   calendarTitleContainer: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
-  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#e95a0c', textAlign: 'left' },
+  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#C44B0A', textAlign: 'left' },
   notificationsModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   notificationsModalContent: {
     backgroundColor: 'white', borderRadius: 16, padding: 20,
@@ -2660,8 +2740,8 @@ const styles = StyleSheet.create({
     borderRadius: 8, marginBottom: 5, backgroundColor: '#ffffff',
   },
   notificationItemUnread: {
-    backgroundColor: '#f8f9ff', borderLeftWidth: 4, borderLeftColor: '#e95a0c',
-    shadowColor: '#e95a0c', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+    backgroundColor: '#f8f9ff', borderLeftWidth: 4, borderLeftColor: '#C44B0A',
+    shadowColor: '#C44B0A', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
   },
   objetivoPDIRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   objetivoPDINumber: { fontSize: 16, color: '#333', marginRight: 10, marginTop: 12, fontWeight: '500' },
@@ -2691,22 +2771,88 @@ const styles = StyleSheet.create({
   confirmModalButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   confirmModalButton: { flex: 1, paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   confirmModalButtonCancel: { backgroundColor: '#f8f9fa', borderWidth: 1, borderColor: '#e0e0e0' },
-  confirmModalButtonConfirm: { backgroundColor: '#e95a0c' },
+  confirmModalButtonConfirm: { backgroundColor: '#C44B0A' },
   confirmModalButtonTextCancel: { fontSize: 16, fontWeight: '600', color: '#4a5568' },
   confirmModalButtonTextConfirm: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
   keyboardAvoidingContainer: { flex: 1, backgroundColor: '#F4F7F9', minHeight: 0 },
+  stepNavContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingVertical: 8,
+  },
+  stepNavContent: { gap: 8, paddingHorizontal: 16 },
+  stepChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  stepChipActive: {
+    backgroundColor: '#C44B0A',
+    borderColor: '#C44B0A',
+  },
+  stepChipDone: {
+    backgroundColor: '#FFEDD5',
+    borderColor: '#FFD6B0',
+  },
+  stepChipIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepChipIconActive: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  stepChipIconDone: {
+    backgroundColor: '#FFFFFF',
+  },
+  stepChipText: { fontSize: 13, fontWeight: '600', color: '#64748B' },
+  stepChipTextActive: { color: '#FFFFFF', fontWeight: '700' },
+  stepChipTextDone: { color: '#C2410C', fontWeight: '600' },
   formSection: {
     backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, marginBottom: 20,
     shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 5,
     paddingHorizontal: isMobile ? 15 : 20,
     paddingTop: isMobile ? 15 : 20,
   },
+  sectionHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFEDD5',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    marginHorizontal: -20,
+    marginTop: -12,
+    paddingTop: 12,
+    paddingBottom: 8,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFD6B0',
+  },
+  sectionHeaderIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
   sectionTitle: {
-    fontSize: 18, fontWeight: '700', color: '#e95a0c',
-    marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#eee',
-    paddingBottom: 8, textAlign: 'left', backgroundColor: '#f8f9fa',
-    marginHorizontal: -20, marginTop: -12, paddingTop: 12, paddingHorizontal: 20,
-    borderTopLeftRadius: 12, borderTopRightRadius: 12,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#C2410C',
+    flex: 1,
   },
   label: { fontSize: 14, color: '#555', marginBottom: 8, fontWeight: '500' },
   inputGroup: {
@@ -2744,7 +2890,7 @@ const styles = StyleSheet.create({
   balanceAmount: { fontWeight: 'bold', fontSize: 16 },
   floatingActionButton: {
     position: 'absolute', right: 20, bottom: 20,
-    backgroundColor: '#e95a0c', width: 60, height: 60, borderRadius: 30,
+    backgroundColor: '#C44B0A', width: 60, height: 60, borderRadius: 30,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 8,
   },
@@ -2756,7 +2902,7 @@ const styles = StyleSheet.create({
   borderTopColor: '#e0e0e0',
 },
 submitButton: {
-  backgroundColor: '#e95a0c',
+  backgroundColor: '#C44B0A',
   paddingVertical: 16,
   borderRadius: 12,
   alignItems: 'center',
@@ -2783,30 +2929,30 @@ submitButton: {
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: '#ffffff' },
   dayCell: { width: '14.28%', minHeight: 80, borderRightWidth: 0.5, borderBottomWidth: 0.5, borderColor: '#e8e8e8', paddingTop: 8, paddingHorizontal: 4 },
   dayCellInactive: { backgroundColor: '#f8f9fa' },
-  dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#e95a0c', borderWidth: 2, borderRadius: 6, margin: -1 },
+  dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2, borderRadius: 6, margin: -1 },
   dayCellToday: { backgroundColor: '#e8f4fd' },
   dayCellContent: { flex: 1, alignItems: 'center' },
   dayNumber: { fontSize: 16, fontWeight: '500', color: '#333', marginBottom: 4 },
   dayNumberInactive: { color: '#999' },
-  dayNumberSelected: { color: '#e95a0c', fontWeight: 'bold', fontSize: 18 },
+  dayNumberSelected: { color: '#C44B0A', fontWeight: 'bold', fontSize: 18 },
   dayNumberToday: { backgroundColor: '#2196f3', color: 'white', borderRadius: 12, paddingHorizontal: 6, paddingVertical: 2, overflow: 'hidden' },
   eventIndicators: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   eventDot: { width: 6, height: 6, borderRadius: 3, marginRight: 2 },
   eventCount: { fontSize: 10, color: '#666', fontWeight: '500' },
   eventPreview: { marginTop: 4, width: '100%' },
   eventPreviewText: { fontSize: 8, color: '#333', marginBottom: 1, textAlign: 'center' },
-  eventPreviewMore: { fontSize: 8, color: '#e95a0c', fontWeight: 'bold', textAlign: 'center' },
+  eventPreviewMore: { fontSize: 8, color: '#C44B0A', fontWeight: 'bold', textAlign: 'center' },
   eventosDelDiaContainer: { backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, overflow: 'hidden' },
   eventosDelDiaHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   eventosDelDiaTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginLeft: 8, flex: 1 },
-  eventCountBadge: { backgroundColor: '#e95a0c', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  eventCountBadge: { backgroundColor: '#C44B0A', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   eventCountText: { fontSize: 12, color: '#ffffff', fontWeight: 'bold' },
   eventsList: { maxHeight: 200, paddingHorizontal: 16 },
   eventoCard: { backgroundColor: '#ffffff', borderRadius: 8, padding: 12, marginVertical: 8, borderWidth: 1, borderColor: '#e0e0e0', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   eventoCardConflict: { borderColor: '#ff6b6b', backgroundColor: '#fff5f5' },
   eventoCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   eventoTimeContainer: { flexDirection: 'row', alignItems: 'center' },
-  eventoTime: { fontSize: 14, fontWeight: '600', color: '#e95a0c', marginLeft: 4 },
+  eventoTime: { fontSize: 14, fontWeight: '600', color: '#C44B0A', marginLeft: 4 },
   eventoTimeConflict: { color: '#ff6b6b' },
   conflictBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ff6b6b', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   conflictBadgeText: { fontSize: 10, color: '#ffffff', marginLeft: 4, fontWeight: '600' },
@@ -2831,9 +2977,9 @@ submitButton: {
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
   modalButtonSecondary: { backgroundColor: '#f0f0f0', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, marginRight: 8, alignItems: 'center' },
   modalButtonSecondaryText: { fontSize: 14, color: '#333', fontWeight: '600' },
-  modalButtonPrimary: { backgroundColor: '#e95a0c', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
+  modalButtonPrimary: { backgroundColor: '#C44B0A', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
   modalButtonPrimaryText: { fontSize: 14, color: '#ffffff', fontWeight: '600' },
-  selectedText: { fontSize: 14, color: '#e95a0c', marginTop: 5, marginLeft: 10 },
+  selectedText: { fontSize: 14, color: '#C44B0A', marginTop: 5, marginLeft: 10 },
   mobileTimePickerContainer: {
     position: 'relative',
     zIndex: 100,
@@ -2869,7 +3015,7 @@ submitButton: {
     height: Platform.OS === 'ios' ? 180 : 'auto',
   },
   doneButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',

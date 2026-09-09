@@ -19,11 +19,11 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 //const API_BASE_URL = 'https://evento.cidtec-uc.com'; // ✅ Sin espacios
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
   accent: '#EF4444',
   background: '#F9FAFB',
@@ -32,14 +32,14 @@ const COLORS = {
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF',
   border: '#E5E7EB',
-  success: '#10B981',
+  success: '#047857',
   warning: '#F59E0B',
   white: '#FFFFFF',
 };
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -289,6 +289,7 @@ const EventosCancelados = () => {
             style={styles.searchInput}
             placeholder="Buscar por nombre, facultad, académico..."
             placeholderTextColor={COLORS.textTertiary}
+            accessibilityLabel="Buscar"
             value={searchQuery}
             onChangeText={setSearchQuery}
             clearButtonMode="while-editing"
@@ -332,6 +333,10 @@ const EventosCancelados = () => {
         renderItem={({ item }) => <CanceledEventCard event={item} onPress={handleEventPress} />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

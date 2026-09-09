@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app/api';
 
 const ESTADOS_PROYECTO = {
   PENDIENTE: 'pendiente',
@@ -44,6 +44,21 @@ const OBJETIVOS_EVENTO_MAP = {
   fidelizacion: 5,
   otro: 6
 };
+
+// La API devuelve horaevento como "10:00" o "10:00:00"; parsea ambos y tolera nulos/offsets.
+// No depende del plugin customParseFormat (no registrado en el proyecto).
+const parseHoraEvento = (h) => {
+  const s = String(h || '').split('+')[0].trim();
+  const m = /^(\d{1,2}):(\d{2})(?::\d{1,2})?/.exec(s);
+  if (!m) return null;
+  return dayjs().startOf('day').hour(Number(m[1])).minute(Number(m[2])).second(0);
+};
+
+const formatHoraEvento = (h, fallback = '--:--') => {
+  const d = parseHoraEvento(h);
+  return d ? d.format('HH:mm') : fallback;
+};
+
 const ProyectoDetalleModal = ({ visible, proyecto, onClose, onAprobar, onRechazar, isLoading }) => {
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [showRechazoInput, setShowRechazoInput] = useState(false);
@@ -66,12 +81,13 @@ const ProyectoDetalleModal = ({ visible, proyecto, onClose, onAprobar, onRechaza
       transparent={true}
       animationType="slide"
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.detalleModalContent}>
           <View style={styles.detalleModalHeader}>
             <Text style={styles.detalleModalTitle}>Detalle del Proyecto</Text>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar" accessibilityRole="button">
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
@@ -87,7 +103,7 @@ const ProyectoDetalleModal = ({ visible, proyecto, onClose, onAprobar, onRechaza
               <View style={styles.detalleRow}>
                 <Text style={styles.detalleLabel}>Fecha:</Text>
                 <Text style={styles.detalleValue}>
-                  {dayjs(proyecto.fechaevento).format('DD/MM/YYYY')} a las {dayjs(proyecto.horaevento, 'HH:mm:ss').format('HH:mm')}
+                  {dayjs(proyecto.fechaevento).format('DD/MM/YYYY')} a las {formatHoraEvento(proyecto.horaevento)}
                 </Text>
               </View>
               <View style={styles.detalleRow}>
@@ -172,6 +188,8 @@ const ProyectoDetalleModal = ({ visible, proyecto, onClose, onAprobar, onRechaza
                   multiline
                   numberOfLines={3}
                   placeholder="Explica por qué se rechaza este proyecto..."
+                  placeholderTextColor="#999"
+                  accessibilityLabel="Motivo del rechazo"
                   value={motivoRechazo}
                   onChangeText={setMotivoRechazo}
                 />
@@ -206,7 +224,7 @@ const ProyectoDetalleModal = ({ visible, proyecto, onClose, onAprobar, onRechaza
   );
 };
 const NotificationBell = ({ notificationCount, onPress }) => (
-  <TouchableOpacity onPress={onPress} style={styles.notificationBell}>
+  <TouchableOpacity onPress={onPress} style={styles.notificationBell} accessibilityLabel="Notificaciones" accessibilityRole="button">
     <Ionicons name="notifications-outline" size={24} color="#333" />
     {notificationCount > 0 && (
       <View style={styles.notificationBadge}>
@@ -223,12 +241,13 @@ const NotificationsModal = ({ visible, onClose, notifications }) => (
     transparent={true}
     animationType="slide"
     onRequestClose={onClose}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.notificationsModalTitle}>
       <View style={styles.notificationContent}>
         <View style={styles.notificationsModalHeader}>
           <Text style={styles.notificationsModalTitle}>Notificaciones</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar" accessibilityRole="button">
             <Ionicons name="close" size={24} color="#333" />
           </TouchableOpacity>
         </View>
@@ -238,7 +257,7 @@ const NotificationsModal = ({ visible, onClose, notifications }) => (
           ) : (
             notifications.map((notification, index) => (
               <View key={index} style={styles.notificationItem}>
-                <Ionicons name="calendar" size={20} color="#e95a0c" style={styles.notificationIcon} />
+                <Ionicons name="calendar" size={20} color="#C44B0A" style={styles.notificationIcon} />
                 <View style={styles.notificationContent}>
                   <Text style={styles.notificationText}>{notification.message}</Text>
                   <Text style={styles.notificationTime}>
@@ -409,6 +428,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
               maxLength={2}
               selectTextOnFocus
               autoFocus
+              accessibilityLabel="Hora"
             />
             <Text style={[styles.digitalTime, { color: '#ffffff' }]}>:</Text>
             <TextInput
@@ -418,10 +438,14 @@ const InteractiveClockPicker = ({ value, onChange }) => {
               keyboardType="numeric"
               maxLength={2}
               selectTextOnFocus
+              accessibilityLabel="Minutos"
             />
             <TouchableOpacity
               onPress={updateTimeFromText}
               style={styles.confirmButton}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Confirmar hora"
+              accessibilityRole="button"
             >
               <Ionicons name="checkmark" size={20} color="#ffffff" />
             </TouchableOpacity>
@@ -475,7 +499,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
             cy={centerY}
             r={radius}
             fill="white"
-            stroke="#e95a0c"
+            stroke="#C44B0A"
             strokeWidth={2}
           />
           {Array.from({ length: 12 }, (_, i) => {
@@ -492,7 +516,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
               <Line
                 key={`hour-mark-${i}`}
                 x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke={isMainHour ? "#e95a0c" : "#cbd5e0"}
+                stroke={isMainHour ? "#C44B0A" : "#cbd5e0"}
                 strokeWidth={isMainHour ? 3 : 2}
                 strokeLinecap="round"
               />
@@ -513,7 +537,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
                 alignmentBaseline="central"
                 fontSize={isCurrentHour ? 18 : 16}
                 fontWeight={isCurrentHour ? "700" : "600"}
-                fill={isCurrentHour ? "#e95a0c" : "#2d3748"}
+                fill={isCurrentHour ? "#C44B0A" : "#2d3748"}
               >
                 {hour}
               </SvgText>
@@ -522,7 +546,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
           <Line
             x1={centerX} y1={centerY}
             x2={minuteHandX} y2={minuteHandY}
-            stroke="#e95a0c"
+            stroke="#C44B0A"
             strokeWidth={dragType === 'minute' ? 4 : 3}
             strokeLinecap="round"
           />
@@ -537,7 +561,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
             cx={centerX}
             cy={centerY}
             r={8}
-            fill="#e95a0c"
+            fill="#C44B0A"
             stroke="#ffffff"
             strokeWidth={3}
           />
@@ -546,7 +570,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
 
       <View style={styles.instructionsContainer}>
         <View style={styles.instructionRow}>
-          <Ionicons name="time-outline" size={16} color="#e95a0c" />
+          <Ionicons name="time-outline" size={16} color="#C44B0A" />
           <Text style={styles.instructionText}>
             Toca la hora naranja para escribir directamente
           </Text>
@@ -565,7 +589,7 @@ const getTokenAsync = async () => {
   const TOKEN_KEY = 'adminAuthToken';
   try {
     if (Platform.OS === 'web') {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY);
     }
     return await SecureStore.getItemAsync(TOKEN_KEY);
   } catch (e) {
@@ -605,6 +629,7 @@ const TablaPresupuesto = ({
             value={item.descripcion}
             onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'descripcion', text)}
             placeholder="Descripción"
+            accessibilityLabel="Descripción"
           />
           <TextInput
             style={[styles.rowInput, { flex: 1, textAlign: 'center' }]}
@@ -612,6 +637,7 @@ const TablaPresupuesto = ({
             onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'cantidad', text.replace(/[^0-9.]/g, ''))}
             keyboardType="numeric"
             placeholder="0"
+            accessibilityLabel="Cantidad"
           />
           <TextInput
             style={[styles.rowInput, { flex: 1, textAlign: 'center' }]}
@@ -619,9 +645,10 @@ const TablaPresupuesto = ({
             onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'precio', text.replace(/[^0-9.]/g, ''))}
             keyboardType="numeric"
             placeholder="0.00"
+            accessibilityLabel="Precio"
           />
           <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
-          <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={[styles.deleteButtonSmall, { flex: 0.5 }]}>
+          <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={[styles.deleteButtonSmall, { flex: 0.5 }]} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Eliminar fila" accessibilityRole="button">
             <Ionicons name="close-circle" size={20} color="#e74c3c" />
           </TouchableOpacity>
         </View>
@@ -692,8 +719,11 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
         <TouchableOpacity 
           onPress={() => navigateMonth(-1)}
           style={styles.navButton}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Mes anterior"
+          accessibilityRole="button"
         >
-          <Ionicons name="chevron-back" size={24} color="#e95a0c" />
+          <Ionicons name="chevron-back" size={24} color="#C44B0A" />
         </TouchableOpacity>
         <Text style={styles.monthYearText}>
           {dayjs(fechaHoraSeleccionada).format('MMMM YYYY').toUpperCase()}
@@ -701,8 +731,11 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
         <TouchableOpacity 
           onPress={() => navigateMonth(1)}
           style={styles.navButton}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Mes siguiente"
+          accessibilityRole="button"
         >
-          <Ionicons name="chevron-forward" size={24} color="#e95a0c" />
+          <Ionicons name="chevron-forward" size={24} color="#C44B0A" />
         </TouchableOpacity>
       </View>
       <View style={styles.weekDaysHeader}>
@@ -749,7 +782,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
                   <View style={styles.eventIndicators}>
                     <View style={[
                       styles.eventDot,
-                      { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#e95a0c' }
+                      { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44B0A' }
                     ]} />
                     {dayEvents.length > 1 && (
                       <Text style={styles.eventCount}>+{dayEvents.length - 1}</Text>
@@ -760,7 +793,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
                   <View style={styles.eventPreview}>
                     {dayEvents.slice(0, 2).map((evento, idx) => (
                       <Text key={idx} style={styles.eventPreviewText}>
-                        {dayjs(evento.horaevento, 'HH:mm:ss').format('HH:mm')} {evento.nombreevento}
+                        {formatHoraEvento(evento.horaevento)} {evento.nombreevento}
                       </Text>
                     ))}
                     {dayEvents.length > 2 && (
@@ -785,6 +818,7 @@ const ConflictModal = ({ showConflictModal, setShowConflictModal, conflictoDetec
     transparent={true}
     animationType="fade"
     onRequestClose={() => setShowConflictModal(false)}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
@@ -802,7 +836,7 @@ const ConflictModal = ({ showConflictModal, setShowConflictModal, conflictoDetec
                 {conflictoDetectado.nombreevento}
               </Text>
               <Text style={styles.conflictEventDetails}>
-                {dayjs(conflictoDetectado.horaevento, 'HH:mm:ss').format('HH:mm')} - {conflictoDetectado.lugarevento}
+                {formatHoraEvento(conflictoDetectado.horaevento)} - {conflictoDetectado.lugarevento}
               </Text>
               <Text style={styles.conflictEventResponsible}>
                 Responsable: {conflictoDetectado.responsable_evento}
@@ -845,7 +879,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
   return (
     <View style={styles.eventosDelDiaContainer}>
       <View style={styles.eventosDelDiaHeader}>
-        <Ionicons name="calendar-outline" size={20} color="#e95a0c" />
+        <Ionicons name="calendar-outline" size={20} color="#C44B0A" />
         <Text style={styles.eventosDelDiaTitle}>
           Eventos en {dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')}
         </Text>
@@ -858,7 +892,6 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
         showsVerticalScrollIndicator={false}
       >
         {eventosDelDia.map((evento, index) => {
-          const horaEvento = dayjs(evento.horaevento, 'HH:mm:ss');
           const isConflict = verificarConflictoHorario(
             dayjs(fechaHoraSeleccionada).format('YYYY-MM-DD') + 'T' + 
             dayjs(fechaHoraSeleccionada).format('HH:mm:ss')
@@ -874,13 +907,13 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
                   <Ionicons 
                     name="time-outline" 
                     size={16} 
-                    color={isConflict ? "#ff6b6b" : "#e95a0c"} 
+                    color={isConflict ? "#ff6b6b" : "#C44B0A"} 
                   />
                   <Text style={[
                     styles.eventoTime,
                     isConflict && styles.eventoTimeConflict
                   ]}>
-                    {horaEvento.format('HH:mm')}
+                    {formatHoraEvento(evento.horaevento)}
                   </Text>
                 </View>
                 {isConflict && (
@@ -1033,15 +1066,16 @@ const fetchNotifications = async () => {
 
   const verificarConflictoHorario = (fechaHora) => {
     const fechaFormateada = dayjs(fechaHora).format('YYYY-MM-DD');
-    const horaFormateada = dayjs(fechaHora).format('HH:mm');
     
     const eventosEnMismaFecha = eventos.filter(evento => 
       dayjs(evento.fechaevento).format('YYYY-MM-DD') === fechaFormateada
     );
     
     const conflictos = eventosEnMismaFecha.filter(evento => {
-      const horaEvento = dayjs(evento.horaevento, 'HH:mm:ss');
-      const horaSeleccionada = dayjs(horaFormateada, 'HH:mm');
+      const horaEvento = parseHoraEvento(evento.horaevento);
+      if (!horaEvento) return false;
+      const sel = dayjs(fechaHora).startOf('day');
+      const horaSeleccionada = sel.hour(dayjs(fechaHora).hour()).minute(dayjs(fechaHora).minute());
       const diferencia = Math.abs(horaEvento.diff(horaSeleccionada, 'minutes'));
       return diferencia < 120;
     });
@@ -1340,6 +1374,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
     transparent={true}
     animationType="slide"
     onRequestClose={() => setShowConfirmModal(false)}
+    accessibilityViewIsModal={true}
   >
     <View style={styles.modalOverlay}>
       <View style={styles.confirmModalContent}>
@@ -1434,6 +1469,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
               value={nombreevento}
               onChangeText={(text) => handleInputChange('nombreevento', text)}
               placeholder="Nombre del evento"
+              accessibilityLabel="Nombre del evento"
             />
           </View>
           {errors.nombreevento && <Text style={styles.errorText}>{errors.nombreevento}</Text>}
@@ -1446,6 +1482,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
               value={lugarevento}
               onChangeText={(text) => handleInputChange('lugarevento', text)}
               placeholder="Lugar del evento"
+              accessibilityLabel="Lugar del evento"
             />
           </View>
           {errors.lugarevento && <Text style={styles.errorText}>{errors.lugarevento}</Text>}
@@ -1458,6 +1495,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
               value={nombreResponsable}
               onChangeText={(text) => handleInputChange('nombreResponsable', text)}
               placeholder="Nombre del responsable"
+              accessibilityLabel="Nombre del responsable"
             />
           </View>
           {errors.nombreResponsable && <Text style={styles.errorText}>{errors.nombreResponsable}</Text>}
@@ -1503,14 +1541,14 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
           <Text style={styles.label}>Tipo de Evento (puede seleccionar más de un tipo)</Text>
           {TIPOS_DE_EVENTO.map((item) => (
             <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)}>
-              <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#e95a0c" : "#888"} />
+              <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
               <Text style={styles.checkboxLabel}>{item.label}</Text>
             </TouchableOpacity>
           ))}
           {errors.tipos && <Text style={styles.errorText}>{errors.tipos}</Text>}
           {tiposSeleccionados['5'] && (
             <View style={styles.otroInputContainer}>
-              <TextInput style={styles.input} value={textoOtroTipo} onChangeText={setTextoOtroTipo} placeholder="¿Cuál?" />
+              <TextInput style={styles.input} value={textoOtroTipo} onChangeText={setTextoOtroTipo} placeholder="¿Cuál?" accessibilityLabel="Tipo de evento" />
             </View>
           )}
         </View>
@@ -1526,12 +1564,12 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
             { key: 'fidelizacion', label: 'Fidelización' }
           ].map((item) => (
             <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}>
-              <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#e95a0c" : "#888"} />
+              <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
               <Text style={styles.checkboxLabel}>{item.label}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, 'otro')}>
-            <Ionicons name={objetivos.otro ? "checkbox" : "square-outline"} size={24} color={objetivos.otro ? "#e95a0c" : "#888"} />
+            <Ionicons name={objetivos.otro ? "checkbox" : "square-outline"} size={24} color={objetivos.otro ? "#C44B0A" : "#888"} />
             <Text style={styles.checkboxLabel}>Otro</Text>
           </TouchableOpacity>
           {errors.objetivos && <Text style={styles.errorText}>{errors.objetivos}</Text>}
@@ -1542,6 +1580,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
                 value={objetivos.otroTexto}
                 onChangeText={(text) => handleOtroTextChange(setObjetivos, text)}
                 placeholder="¿Cuál?"
+                accessibilityLabel="Otro objetivo"
               />
               {objetivos.otroTexto.trim() && (
                 <Text style={styles.selectedText}>Selección: {objetivos.otroTexto}</Text>
@@ -1559,6 +1598,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
                 onChangeText={(text) => handleObjetivoPDIChange(index, text)}
                 placeholder={`Objetivo ${index + 1}`}
                 multiline
+                accessibilityLabel="Objetivo del PDI"
               />
             </View>
           ))}
@@ -1568,7 +1608,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
             const stateKey = item.label.charAt(0).toLowerCase() + item.label.slice(1).replace(' ', '');
             return (
               <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setSegmentoObjetivo, stateKey)}>
-                <Ionicons name={segmentoObjetivo[stateKey] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[stateKey] ? "#e95a0c" : "#888"} />
+                <Ionicons name={segmentoObjetivo[stateKey] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[stateKey] ? "#C44B0A" : "#888"} />
                 <Text style={styles.checkboxLabel}>{item.label}</Text>
               </TouchableOpacity>
             );
@@ -1580,6 +1620,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
                 value={segmentoObjetivo.otroTexto}
                 onChangeText={(text) => handleOtroTextChange(setSegmentoObjetivo, text)}
                 placeholder="¿Cuál?"
+                accessibilityLabel="Otro segmento"
               />
               {segmentoObjetivo.otroTexto.trim() && (
                 <Text style={styles.selectedText}>Selección: {segmentoObjetivo.otroTexto}</Text>
@@ -1595,6 +1636,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
               multiline
               numberOfLines={4}
               placeholder="Breve descripción sustentada de la congruencia del evento con los objetivos especificados"
+              accessibilityLabel="Argumentación"
               value={argumentacion}
               onChangeText={setArgumentacion}
             />
@@ -1612,6 +1654,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
               value={resultadosEsperados.participacion}
               onChangeText={(text) => handleResultadoChange('participacion', text)}
               keyboardType="numeric"
+              accessibilityLabel="Participación Efectiva"
             />
           </View>
           <View style={styles.resultadoRow}>
@@ -1621,6 +1664,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
               placeholder="Ej: 90% de satisfacción"
               value={resultadosEsperados.satisfaccion}
               onChangeText={(text) => handleResultadoChange('satisfaccion', text)}
+              accessibilityLabel="Índice de Satisfacción"
             />
           </View>
           <View style={styles.resultadoRow}>
@@ -1630,6 +1674,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
               placeholder="Otro resultado medible"
               value={resultadosEsperados.otro}
               onChangeText={(text) => handleResultadoChange('otro', text)}
+              accessibilityLabel="Otro resultado"
             />
           </View>
         </View>
@@ -1655,11 +1700,12 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
                   style={styles.resourceInput}
                   placeholder={`Recurso ${index + 1}`}
                   placeholderTextColor="#999"
+                  accessibilityLabel="Recurso"
                   value={resource}
                   onChangeText={(text) => updateResource(text, index)}
                 />
                 {recursos.length > 1 && (
-                  <TouchableOpacity onPress={() => removeResource(index)} style={styles.removeButton}>
+                  <TouchableOpacity onPress={() => removeResource(index)} style={styles.removeButton} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Quitar recurso" accessibilityRole="button">
                     <Ionicons name="remove-circle-outline" size={24} color="red" />
                   </TouchableOpacity>
                 )}
@@ -1795,7 +1841,7 @@ confirmModalContent: {
     borderColor: '#e0e0e0',
   },
   confirmModalButtonConfirm: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
   },
   confirmModalButtonTextCancel: {
     fontSize: 16,
@@ -2059,7 +2105,7 @@ confirmModalContent: {
     fontSize: 16
   },
   submitButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     padding: 15,
     borderRadius: 12,
     alignItems: 'center',
@@ -2079,7 +2125,7 @@ confirmModalContent: {
     paddingVertical: 10,
   },
   digitalDisplay: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 10,
@@ -2158,7 +2204,7 @@ confirmModalContent: {
     paddingVertical: 6,
   },
   periodButtonActive: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
   },
   periodText: {
     fontSize: 14,
@@ -2311,7 +2357,7 @@ confirmModalContent: {
     color: '#999'
   },
   dayNumberSelected: {
-    color: '#e95a0c',
+    color: '#C44B0A',
     fontWeight: 'bold'
   },
   dayNumberToday: {
@@ -2350,7 +2396,7 @@ confirmModalContent: {
   },
   eventPreviewMore: {
     fontSize: 8,
-    color: '#e95a0c',
+    color: '#C44B0A',
     fontWeight: 'bold',
     textAlign: 'center'
   },
@@ -2381,7 +2427,7 @@ confirmModalContent: {
     flex: 1
   },
   eventCountBadge: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4
@@ -2425,7 +2471,7 @@ confirmModalContent: {
   eventoTime: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#e95a0c',
+    color: '#C44B0A',
     marginLeft: 4,
   },
   eventoTimeConflict: {
@@ -2560,7 +2606,7 @@ confirmModalContent: {
     fontWeight: '600',
   },
   modalButtonPrimary: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -2574,7 +2620,7 @@ confirmModalContent: {
   },
   selectedText: {
     fontSize: 14,
-    color: '#e95a0c',
+    color: '#C44B0A',
     marginTop: 5,
     marginLeft: 10,
   },

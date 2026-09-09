@@ -6,16 +6,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   surface: '#FFFFFF',
   background: '#F9FAFB',
   border: '#E5E7EB',
   textPrimary: '#1F2937',
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF',
-  success: '#10B981',
+  success: '#047857',
 };
 
 export default function AsistenteIAScreen() {
@@ -157,6 +157,10 @@ export default function AsistenteIAScreen() {
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 16 }}
         renderItem={renderMessage}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
@@ -171,6 +175,7 @@ export default function AsistenteIAScreen() {
             onChangeText={setInput}
             placeholder="Escribe tu pregunta..."
             placeholderTextColor={COLORS.textTertiary}
+            accessibilityLabel="Escribe un mensaje"
             multiline
             style={{
               flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 24,
@@ -186,6 +191,8 @@ export default function AsistenteIAScreen() {
               borderRadius: 24, width: 44, height: 44,
               justifyContent: 'center', alignItems: 'center',
             }}
+            accessibilityLabel="Enviar mensaje"
+            accessibilityRole="button"
           >
             {loading ? (
               <Ionicons name="ellipsis-horizontal" size={18} color="#FFFFFF" />

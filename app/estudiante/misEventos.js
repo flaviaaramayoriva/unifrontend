@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, ActivityIndicator,
+  View, Text, StyleSheet, FlatList, ActivityIndicator,
   StatusBar, Platform, TouchableOpacity
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
@@ -9,17 +9,17 @@ import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FFEDD5', textPrimary: '#1F2937',
+  primary: '#C44B0A', primaryLight: '#FFEDD5', textPrimary: '#1F2937',
   textSecondary: '#6B7280', border: '#E5E7EB', surface: '#FFFFFF',
-  background: '#F9FAFB', white: '#FFFFFF', accent: '#EF4444', success: '#10B981',
+  background: '#F9FAFB', white: '#FFFFFF', accent: '#EF4444', success: '#047857',
 };
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
 const getToken = async () => {
   try {
     return Platform.OS === 'web'
-      ? localStorage.getItem(TOKEN_KEY)
+      ? sessionStorage.getItem(TOKEN_KEY)
       : await SecureStore.getItemAsync(TOKEN_KEY);
   } catch { return null; }
 };
@@ -101,37 +101,42 @@ export default function MisEventosScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Stack.Screen options={{ title: 'Mis Eventos', headerShown: true }} />
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
-        {loading ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Cargando tus eventos...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.centerBox}>
-            <Ionicons name="alert-circle-outline" size={36} color={COLORS.accent} />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={fetchMisEventos}>
-              <Text style={styles.retryBtnText}>Reintentar</Text>
-            </TouchableOpacity>
-          </View>
-        ) : eventos.length === 0 ? (
-          <View style={styles.centerBox}>
-            <Ionicons name="calendar-clear-outline" size={44} color={COLORS.textSecondary} />
-            <Text style={styles.emptyTitle}>Aún no estás inscrito en ningún evento</Text>
-            <Text style={styles.emptySubtitle}>Explora los eventos de tu facultad e inscríbete</Text>
-            <TouchableOpacity style={styles.exploreBtn} onPress={() => router.replace('/estudiante')}>
-              <Text style={styles.exploreBtnText}>Explorar Eventos</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={{ gap: 12 }}>
-            {eventos.map(ev => (
-              <EventoCard key={ev.id} evento={ev} />
-            ))}
-          </View>
-        )}
-      </ScrollView>
+      <FlatList
+        contentContainerStyle={{ padding: 20, paddingBottom: 60, flexGrow: 1 }}
+        data={eventos}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => <EventoCard evento={item} />}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.centerBox}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Cargando tus eventos...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.centerBox}>
+              <Ionicons name="alert-circle-outline" size={36} color={COLORS.accent} />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={fetchMisEventos}>
+                <Text style={styles.retryBtnText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.centerBox}>
+              <Ionicons name="calendar-clear-outline" size={44} color={COLORS.textSecondary} />
+              <Text style={styles.emptyTitle}>Aún no estás inscrito en ningún evento</Text>
+              <Text style={styles.emptySubtitle}>Explora los eventos de tu facultad e inscríbete</Text>
+              <TouchableOpacity style={styles.exploreBtn} onPress={() => router.replace('/estudiante')}>
+                <Text style={styles.exploreBtnText}>Explorar Eventos</Text>
+              </TouchableOpacity>
+            </View>
+          )
+        }
+      />
     </View>
   );
 }

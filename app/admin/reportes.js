@@ -11,25 +11,26 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { PieChart, LineChart, BarChart } from 'react-native-chart-kit';
+import AdminHeader from '../../components/admin/AdminHeader';
 import Svg, { Rect, Text as SvgText, G, Line } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system';
 
 const COLORS = {
-  primary: '#E95A0C',
+  primary: '#C44B0A',
   primaryLight: '#FFEDD5',
-  secondary: '#4B5563',
+  secondary: '#0F172A',
   accent: '#EF4444',
-  success: '#10B981',
+  success: '#16A34A',
   warning: '#F59E0B',
   info: '#3B82F6',
   purple: '#8B5CF6',
-  background: '#F9FAFB',
+  background: '#F6F7F9',
   surface: '#FFFFFF',
-  textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
-  divider: '#F3F4F6',
+  textPrimary: '#0F172A',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
+  divider: '#F1F5F9',
   white: '#FFFFFF',
   error: '#DC2626',
   // Dark mode colors
@@ -40,12 +41,12 @@ const COLORS = {
   darkBorder: '#374151',
 };
 
-const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
   } else {
     try { return await SecureStore.getItemAsync(TOKEN_KEY); } catch { return null; }
   }
@@ -62,7 +63,7 @@ const HorizontalBarChart = ({ data, width, height = 300 }) => {
   const barHeight = 36;
   const spacing = 14;
   const totalHeight = Math.min(data.length * (barHeight + spacing) + 40, height);
-  const CHART_COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F59E0B', '#10B981'];
+  const CHART_COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F59E0B', '#047857'];
   const labelWidth = 120;
 
   return (
@@ -745,7 +746,7 @@ const ReportesAvanzadosScreen = () => {
         .info-label{font-weight:bold;background:#f0f0f0;padding:5px 10px;display:inline-block;margin-bottom:5px;}
         .info-value{padding:5px 10px;min-height:30px;}
         .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
-        .stat-card{background:#f9fafb;border-radius:12px;padding:16px;text-align:center;border-left:4px solid #E95A0C;}
+        .stat-card{background:#f9fafb;border-radius:12px;padding:16px;text-align:center;border-left:4px solid #C44B0A;}
         .stat-label{font-size:12px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
         .stat-value{font-size:28px;font-weight:800;color:#1f2937;}
         .main-table{width:100%;border-collapse:collapse;margin-top:20px;}
@@ -847,18 +848,21 @@ const ReportesAvanzadosScreen = () => {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* 🔥 NUEVO: Header con tabs y dark mode toggle */}
       <View style={[styles.topHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={[styles.topTitle, { color: theme.textPrimary }]}>Reportes Avanzados</Text>
-            <Text style={[styles.topSub, { color: theme.textSecondary }]}>Análisis completo del sistema</Text>
-          </View>
-          <TouchableOpacity 
-            style={[styles.darkModeToggle, { backgroundColor: theme.divider }]}
-            onPress={() => setDarkMode(!darkMode)}
-          >
-            <Ionicons name={darkMode ? 'sunny' : 'moon'} size={20} color={darkMode ? COLORS.warning : COLORS.secondary} />
-          </TouchableOpacity>
-        </View>
+        <AdminHeader
+          title="Reportes Avanzados"
+          subtitle="Análisis completo del sistema"
+          eyebrow="Reportes"
+          rightActions={(
+            <TouchableOpacity
+              style={styles.darkModeToggle}
+              onPress={() => setDarkMode(!darkMode)}
+              accessibilityRole="button"
+              accessibilityLabel="Cambiar tema"
+            >
+              <Ionicons name={darkMode ? 'sunny' : 'moon'} size={20} color={darkMode ? COLORS.warning : COLORS.white} />
+            </TouchableOpacity>
+          )}
+        />
         
         {/* Tabs */}
         <View style={styles.tabsContainer}>
@@ -1341,6 +1345,7 @@ const ReportesAvanzadosScreen = () => {
               style={[styles.pickerBtn, { color: theme.textPrimary, borderColor: theme.border, backgroundColor: theme.divider }]}
               placeholder="2024-01-01"
               placeholderTextColor={COLORS.textTertiary}
+              accessibilityLabel="Fecha Inicio"
               value={fechaInicio}
               onChangeText={setFechaInicio}
             />
@@ -1349,6 +1354,7 @@ const ReportesAvanzadosScreen = () => {
               style={[styles.pickerBtn, { color: theme.textPrimary, borderColor: theme.border, backgroundColor: theme.divider }]}
               placeholder="2024-12-31"
               placeholderTextColor={COLORS.textTertiary}
+              accessibilityLabel="Fecha Fin"
               value={fechaFin}
               onChangeText={setFechaFin}
             />
@@ -1405,14 +1411,14 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 14 },
 
   // Header mejorado
-  topHeader: { paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16, borderBottomWidth: 1 },
+  topHeader: { borderBottomWidth: 1 },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   topTitle: { fontSize: 28, fontWeight: '800' },
   topSub: { fontSize: 14, marginTop: 2 },
-  darkModeToggle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  darkModeToggle: { width: 48, height: 48, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.14)', justifyContent: 'center', alignItems: 'center' },
   
   // Tabs
-  tabsContainer: { flexDirection: 'row', gap: 8 },
+  tabsContainer: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 },
   tab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
   tabActive: { backgroundColor: COLORS.primaryLight },
   tabText: { fontSize: 14, fontWeight: '600' },

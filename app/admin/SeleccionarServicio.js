@@ -13,12 +13,12 @@ let determinedApiBaseUrl;
 /*if (Platform.OS === 'android') {
   determinedApiBaseUrl = 'http://10.0.2.2:3001/api';
 } else if (Platform.OS === 'ios') {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 } else {
-  determinedApiBaseUrl = 'http://localhost:3001/api';
+  determinedApiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 }*/
 //const API_BASE_URL =  'https://evento.cidtec-uc.com';
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend1-production.up.railway.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 //const API_BASE_URL =  'https://unifrontend.onrender.com';
 
 const getTokenAsync = async () => {
@@ -150,7 +150,7 @@ const SeleccionarServicioScreen = () => {
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemContainer} onPress={() => handleSelectServicio(item)}>
       <Text style={styles.itemText}>{item.nombreservicio}</Text>
-      <Ionicons name="chevron-forward-outline" size={20} color="#e95a0c" />
+      <Ionicons name="chevron-forward-outline" size={20} color="#C44B0A" />
     </TouchableOpacity>
   );
 
@@ -160,7 +160,7 @@ const SeleccionarServicioScreen = () => {
       <ScrollView style={styles.formViewContainer} contentContainerStyle={styles.formContentContainer} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: 'Crear Nuevo Servicio' }} />
         <TouchableOpacity onPress={() => setShowCreateForm(false)} style={styles.cancelButton}>
-          <Ionicons name="arrow-back-outline" size={24} color="#e95a0c" />
+          <Ionicons name="arrow-back-outline" size={24} color="#C44B0A" />
           <Text style={styles.cancelButtonText}>Volver a la Lista</Text>
         </TouchableOpacity>
 
@@ -173,6 +173,7 @@ const SeleccionarServicioScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Ej: Catering Básico"
+          accessibilityLabel="Nombre del Servicio"
           value={nuevoNombreServicio}
           onChangeText={setNuevoNombreServicio}
           placeholderTextColor="#aaa"
@@ -182,6 +183,7 @@ const SeleccionarServicioScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Ej: Incluye bebidas y bocadillos"
+          accessibilityLabel="Característica Principal"
           value={caracteristica}
           onChangeText={setCaracteristica}
           multiline
@@ -190,7 +192,7 @@ const SeleccionarServicioScreen = () => {
 
         <Text style={styles.label}>Fecha de Entrega/Realización</Text>
         <TouchableOpacity onPress={() => setShowDatePickerEntrega(true)} style={styles.datePickerButton}>
-          <Ionicons name="calendar-outline" size={20} color="#e95a0c" style={styles.inputIcon} />
+          <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
           <Text style={styles.datePickerText}>
             {fechaEntrega instanceof Date && !isNaN(fechaEntrega.valueOf()) ? fechaEntrega.toLocaleDateString() : 'Seleccionar fecha'}
           </Text>
@@ -208,6 +210,7 @@ const SeleccionarServicioScreen = () => {
         <TextInput
           style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
           placeholder="Notas adicionales (opcional)"
+          accessibilityLabel="Observaciones"
           value={observaciones}
           onChangeText={setObservaciones}
           multiline
@@ -221,7 +224,7 @@ const SeleccionarServicioScreen = () => {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="#e95a0c" size="small" />
+            <ActivityIndicator color="#C44B0A" size="small" />
           ) : (
             <Text style={styles.createButtonText}>Guardar Servicio</Text>
           )}
@@ -237,6 +240,7 @@ const SeleccionarServicioScreen = () => {
       <TextInput
         style={styles.searchInput}
         placeholder="Buscar servicio..."
+        accessibilityLabel="Buscar"
         value={searchTerm}
         onChangeText={setSearchTerm}
         placeholderTextColor="#aaa"
@@ -248,6 +252,10 @@ const SeleccionarServicioScreen = () => {
           data={filteredServicios}
           renderItem={renderItem}
           keyExtractor={(item) => item.idservicio.toString()}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={<Text style={styles.emptyText}>No se encontraron servicios. Presiona '+' para agregar.</Text>}
           refreshing={isLoading}
           onRefresh={() => authToken && fetchServicios(authToken)}
@@ -323,7 +331,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 25,
     bottom: 25,
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     width: 56, // Tamaño estándar de FAB
     height: 56,
     borderRadius: 28,
@@ -380,7 +388,7 @@ const styles = StyleSheet.create({
     // marginRight: 8, // Espacio entre icono y texto si es necesario
   },
   createButton: {
-    backgroundColor: '#e95a0c',
+    backgroundColor: '#C44B0A',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -406,7 +414,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     marginLeft: 6,
-    color: '#e95a0c',
+    color: '#C44B0A',
     fontSize: 16,
     fontWeight: '500',
   }

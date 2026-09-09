@@ -8,8 +8,8 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { io } from 'socket.io-client';
 
-const BACKEND_URL = 'https://unibackend-production-a0f8.up.railway.app';
-//const API_BASE_URL = 'https://unibackend-production-a0f8.up.railway.app';
+const BACKEND_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
+//const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const ROL_CONFIG = {
   admin:     { color: '#FF6B35', label: 'Admin',     icono: 'A' },
   creador:   { color: '#007AFF', label: 'Creador',   icono: 'C' },
@@ -147,7 +147,7 @@ export default function EventoChatScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -164,6 +164,7 @@ export default function EventoChatScreen() {
         <TouchableOpacity 
           style={styles.usersBtn}
           onPress={() => setShowUsersModal(true)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Text style={styles.usersBtnIcon}>👥</Text>
           {connectedUsers.length > 0 && (
@@ -191,6 +192,10 @@ export default function EventoChatScreen() {
           keyExtractor={item => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.listContent}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Text style={styles.emptyText}>Aún no hay mensajes.{'\n'}¡Sé el primero en escribir!</Text>
@@ -204,6 +209,7 @@ export default function EventoChatScreen() {
             onChangeText={setInput}
             placeholder={connected ? 'Escribe un mensaje...' : 'Sin conexión...'}
             placeholderTextColor="#999"
+            accessibilityLabel="Escribe un mensaje"
             style={styles.input}
             multiline
             editable={connected}
@@ -224,6 +230,7 @@ export default function EventoChatScreen() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowUsersModal(false)}
+        accessibilityViewIsModal={true}
       >
         <TouchableOpacity 
           style={styles.modalOverlay}
@@ -239,7 +246,7 @@ export default function EventoChatScreen() {
               <Text style={styles.modalTitle}>
                 Usuarios Conectados ({connectedUsers.length})
               </Text>
-              <TouchableOpacity onPress={() => setShowUsersModal(false)}>
+              <TouchableOpacity onPress={() => setShowUsersModal(false)} accessibilityLabel="Cerrar" accessibilityRole="button" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                 <Text style={styles.modalCloseBtn}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -247,6 +254,10 @@ export default function EventoChatScreen() {
             <FlatList
               data={connectedUsers}
               keyExtractor={(item) => String(item.userId)}
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+              removeClippedSubviews={Platform.OS === 'android'}
               renderItem={({ item }) => {
                 const rolCfg = ROL_CONFIG[item.role] || { color: '#888', label: item.role, icono: '?' };
                 const isMe = String(item.userId) === String(userId);
@@ -300,7 +311,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderBottomWidth: 1, borderBottomColor: '#E8E8E8', gap: 8
   },
-  backBtn:      { padding: 4 },
+  backBtn:      { padding: 10 },
   backText:     { fontSize: 22, color: '#007AFF' },
   headerCenter: { flex: 1 },
   headerTitle:  { fontSize: 15, fontWeight: '600', color: '#1A1A1A' },
@@ -311,7 +322,7 @@ const styles = StyleSheet.create({
   // ✅ NUEVOS ESTILOS: Botón de usuarios
   usersBtn: {
     position: 'relative',
-    padding: 8,
+    padding: 14,
     marginRight: 4,
   },
   usersBtnIcon: { fontSize: 20 },
