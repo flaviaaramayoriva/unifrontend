@@ -430,8 +430,7 @@ const EventosAprobadosPorFacultad = () => {
           </View>
         )}
 
-        {userRole === 'academico' && (
-          <View style={styles.vistaTabs}>
+        <View style={styles.vistaTabs}>
             {[
               { id: 'todos',    label: 'Todos',         count: events.length },
               { id: 'creados',  label: 'Creados por mí', count: creadosCount },
@@ -454,7 +453,6 @@ const EventosAprobadosPorFacultad = () => {
               </TouchableOpacity>
             ))}
           </View>
-        )}
 
         {vista !== 'comite' && (
           <View style={styles.phaseTabs}>
