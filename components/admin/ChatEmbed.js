@@ -821,7 +821,8 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
     );
   }
 
-  contenido = (
+  if (!eventoActual && !chatPrivado && vista !== 'chat') {
+    contenido = (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <View style={{
         flexDirection: 'row', backgroundColor: COLORS.white,
@@ -1081,6 +1082,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
       )}
     </View>
   );
+  }
 
   return (
     <View style={{ flex: 1 }}>
