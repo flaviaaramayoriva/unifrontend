@@ -128,7 +128,7 @@ const EventosAprobadosPorFacultad = () => {
   const [comiteEvents, setComiteEvents] = useState([]);
   const [myId, setMyId] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [vista, setVista] = useState('todos'); // 'todos' | 'creados' | 'comite'
+  const [vista, setVista] = useState('creados'); // 'creados' | 'comite'
 
   const normalizeComite = useCallback((ev) => ({
     ...ev,
@@ -235,10 +235,11 @@ const EventosAprobadosPorFacultad = () => {
   };
 
   const curEvents = useMemo(() => {
+    if (userRole !== 'academico') return events;
     if (vista === 'creados') return events.filter(e => String(e.idacademico || e.organizerId) === String(myId));
     if (vista === 'comite') return comiteEvents;
     return events;
-  }, [vista, events, comiteEvents, myId]);
+  }, [vista, events, comiteEvents, myId, userRole]);
 
   const creadosCount = useMemo(() => events.filter(e => String(e.idacademico || e.organizerId) === String(myId)).length, [events, myId]);
 
@@ -434,7 +435,7 @@ const EventosAprobadosPorFacultad = () => {
   };
 
   const renderListHeader = () => {
-    const phase2Count = vista === 'todos' ? events.filter(e => e.idfase === 2 && !isEventPast(e)).length : 0;
+    const phase2Count = (vista === 'todos' || userRole !== 'academico') ? events.filter(e => e.idfase === 2 && !isEventPast(e)).length : 0;
 
     return (
       <View>
@@ -452,9 +453,9 @@ const EventosAprobadosPorFacultad = () => {
           </View>
         )}
 
-        <View style={styles.vistaTabs}>
+        {userRole === 'academico' && (
+          <View style={styles.vistaTabs}>
             {[
-              { id: 'todos',    label: 'Todos',         count: events.length },
               { id: 'creados',  label: 'Creados por mí', count: creadosCount },
               { id: 'comite',   label: 'Como comité',    count: comiteEvents.length },
             ].map(t => (
@@ -475,6 +476,7 @@ const EventosAprobadosPorFacultad = () => {
               </TouchableOpacity>
             ))}
           </View>
+        )}
 
         {vista !== 'comite' && (
           <View style={styles.phaseTabs}>
@@ -584,7 +586,7 @@ const EventosAprobadosPorFacultad = () => {
           {filteredEvents.length} {filteredEvents.length === 1 ? 'evento' : 'eventos'}
           {searchTerm || facultadFiltro !== 'todas'
             ? ' encontrados'
-            : vista === 'creados' ? ' creados por ti' : vista === 'comite' ? ' como comité' : ` en Fase ${faseFiltro}`}
+            : vista === 'creados' && userRole === 'academico' ? ' creados por ti' : vista === 'comite' ? ' como comité' : ` en Fase ${faseFiltro}`}
         </Text>
       </View>
     );
