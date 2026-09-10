@@ -52,6 +52,8 @@ const hoyStr = () => {
   return `${d.getFullYear()}-${mm}-${dd}`;
 };
 
+const roomPrivadaId = (a, b) => 'private_' + [String(a), String(b)].map(Number).sort((x, y) => x - y).join('_');
+
 const formatearFecha = (f) => {
   const s = (f || '').toString().split('T')[0];
   if (s.length !== 10) return 'Fecha por definir';
@@ -599,7 +601,7 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver, onRoomChang
   );
 };
 
-const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
+const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {} }) => {
   const [tabMain, setTabMain]           = useState('grupo'); // 'grupo' | 'personal'
   const [vista, setVista]               = useState('eventos'); // 'chat' (general) | 'eventos'
   const [eventos, setEventos]           = useState([]);
@@ -608,6 +610,11 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
   const [eventoActual, setEventoActual] = useState(null);
   const [chatPrivado, setChatPrivado]   = useState(null);
   const [abriendoEvento, setAbriendoEvento] = useState(false);
+
+  const tabUnreads = {
+    grupo: Object.keys(noLeidos).reduce((acc, k) => acc + (k.startsWith('private_') ? 0 : (noLeidos[k] || 0)), 0),
+    personal: Object.keys(noLeidos).reduce((acc, k) => acc + (k.startsWith('private_') ? (noLeidos[k] || 0) : 0), 0),
+  };
 
   const onRoomChangeRef = useRef(onRoomChange);
   useEffect(() => { onRoomChangeRef.current = onRoomChange; }, [onRoomChange]);
@@ -704,11 +711,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
   };
 
   const abrirPrivado = (contacto) => {
-    const roomId = 'private_' + [userId, contacto.idusuario]
-      .map(String)
-      .map(Number)
-      .sort((a, b) => a - b)
-      .join('_');
+    const roomId = roomPrivadaId(userId, contacto.idusuario);
     setChatPrivado({ ...contacto, roomId });
   };
 
@@ -775,6 +778,17 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
             <Text style={{ fontSize: 13, fontWeight: '700', color: tabMain === t.id ? COLORS.primary : COLORS.textTertiary }}>
               {t.label}
             </Text>
+            {(tabUnreads[t.id] || 0) > 0 && (
+              <View style={{
+                minWidth: 18, height: 18, borderRadius: 9,
+                backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center',
+                paddingHorizontal: 4,
+              }}>
+                <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>
+                  {tabUnreads[t.id] > 99 ? '99+' : tabUnreads[t.id]}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         ))}
       </View>
@@ -805,6 +819,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
               const apellido = c.apellidopat || '';
               const rol = c.rol_comite || 'miembro';
               const colorRol = ROL_COLORS[rol] || COLORS.secondary;
+              const pendPriv = noLeidos[roomPrivadaId(userId, c.idusuario)] || 0;
               return (
                 <TouchableOpacity
                   key={c.idusuario}
@@ -836,6 +851,17 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
                     <Ionicons name="chatbubble-outline" size={14} color={COLORS.primary} />
                     <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.primary }}>Mensaje</Text>
                   </View>
+                  {pendPriv > 0 && (
+                    <View style={{
+                      minWidth: 20, height: 20, borderRadius: 10,
+                      backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center',
+                      paddingHorizontal: 5,
+                    }}>
+                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>
+                        {pendPriv > 99 ? '99+' : pendPriv}
+                      </Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -857,6 +883,17 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
             >
               <Ionicons name="chatbubbles" size={18} color={COLORS.primary} />
               <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.primary }}>Ir al Chat General</Text>
+              {(noLeidos['general'] || 0) > 0 && (
+                <View style={{
+                  minWidth: 20, height: 20, borderRadius: 10,
+                  backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center',
+                  paddingHorizontal: 5,
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>
+                    {noLeidos['general'] > 99 ? '99+' : noLeidos['general']}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -893,6 +930,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
                 const comite = evento.Comite || evento.comite || [];
                 const nMiembros = comite.length;
                 const esHoy = fechaStr(evento) === hoyStr();
+                const pendEvento = noLeidos[String(evento.idevento)] || 0;
 
                 return (
                   <TouchableOpacity
@@ -934,6 +972,17 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
                       ) : null}
                     </View>
                     <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                      {pendEvento > 0 && (
+                        <View style={{
+                          minWidth: 20, height: 20, borderRadius: 10,
+                          backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center',
+                          paddingHorizontal: 5,
+                        }}>
+                          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>
+                            {pendEvento > 99 ? '99+' : pendEvento}
+                          </Text>
+                        </View>
+                      )}
                       {nMiembros > 0 && (
                         <View style={{
                           flexDirection: 'row', alignItems: 'center', gap: 4,

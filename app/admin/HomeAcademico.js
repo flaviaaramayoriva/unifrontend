@@ -358,6 +358,24 @@ const HomeAcademicoScreen = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [salaActiva, setSalaActiva] = useState(null);
   const [chatUserId, setChatUserId] = useState(null);
+  const [noLeidos, setNoLeidos] = useState({});
+  const totalNoLeidos = Object.values(noLeidos).reduce((acc, n) => acc + (n || 0), 0);
+
+  const marcarnoLeido = (n) => {
+    if (!n || !n.roomId) return;
+    const k = String(n.roomId);
+    setNoLeidos(prev => ({ ...prev, [k]: (prev[k] || 0) + 1 }));
+  };
+  const limpiarNoLeidos = (roomId) => {
+    if (!roomId) return;
+    const k = String(roomId);
+    setNoLeidos(prev => {
+      if (!(k in prev)) return prev;
+      const clon = { ...prev };
+      delete clon[k];
+      return clon;
+    });
+  };
 
   const pedirPermisoNotifs = () => {
     if (Platform.OS === 'web' && typeof Notification !== 'undefined' && Notification.permission === 'default') {
@@ -837,6 +855,11 @@ const adminActions = [
       {!isDockExpanded && (
         <TouchableOpacity style={styles.fab} onPress={abrirChat} activeOpacity={0.85}>
           <Ionicons name="chatbubble-ellipses" size={24} color={COLORS.white} />
+          {totalNoLeidos > 0 && (
+            <View style={styles.fabBadge}>
+              <Text style={styles.fabBadgeText}>{totalNoLeidos > 99 ? '99+' : totalNoLeidos}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       )}
 
@@ -873,7 +896,8 @@ const adminActions = [
                 userId={String(chatUserId || nombreUsuario)}
                 userRole="academico"
                 userName={nombreUsuario || chatUserId}
-                onRoomChange={setSalaActiva}
+                noLeidos={noLeidos}
+                onRoomChange={(r) => { setSalaActiva(r); limpiarNoLeidos(r); }}
               />
             </View>
           </View>
@@ -887,6 +911,7 @@ const adminActions = [
         activeRoom={isChatOpen ? salaActiva : null}
         chatAbierto={isChatOpen}
         onAbrir={abrirChat}
+        onUnread={marcarnoLeido}
       />
     </View>
   );
@@ -1064,6 +1089,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
     elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 6,
     zIndex: 15,
+  },
+  fabBadge: {
+    position: 'absolute', top: -6, right: -6,
+    minWidth: 22, height: 22, borderRadius: 11,
+    backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 5, borderWidth: 2, borderColor: COLORS.white,
+  },
+  fabBadgeText: {
+    color: '#fff', fontSize: 11, fontWeight: '800',
   },
   chatOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,

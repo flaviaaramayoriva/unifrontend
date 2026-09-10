@@ -62,13 +62,18 @@ const notificacionNavegador = (titulo, cuerpo) => {
   } catch (e) {}
 };
 
-export default function ChatAlertas({ userId, userRole, userName, activeRoom = null, chatAbierto = false, onAbrir }) {
+export default function ChatAlertas({ userId, userRole, userName, activeRoom = null, chatAbierto = false, onAbrir, onUnread = null }) {
   const [alertas, setAlertas] = useState([]);
   const stateRef = useRef({ activeRoom, chatAbierto });
+  const onUnreadRef = useRef(onUnread);
 
   useEffect(() => {
     stateRef.current = { activeRoom, chatAbierto };
   }, [activeRoom, chatAbierto]);
+
+  useEffect(() => {
+    onUnreadRef.current = onUnread;
+  }, [onUnread]);
 
   const quitar = (id) => setAlertas(prev => prev.filter(a => a.localId !== id));
 
@@ -99,6 +104,11 @@ export default function ChatAlertas({ userId, userRole, userName, activeRoom = n
           if (!activo) return;
           const st = stateRef.current;
           if (st.chatAbierto && st.activeRoom && String(n.roomId) === String(st.activeRoom)) return;
+          if (String(n.userId) === String(userId)) return;
+
+          if (onUnreadRef.current) {
+            try { onUnreadRef.current(n); } catch (e) {}
+          }
 
           const localId = `a_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
           setAlertas(prev => [...prev, { ...n, localId }].slice(-3));
