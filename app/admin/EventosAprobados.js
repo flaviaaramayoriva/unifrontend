@@ -168,7 +168,8 @@ const EventosAprobadosPorFacultad = () => {
         },
       });
 
-      setEvents(response.data || []);
+      const mainList = response.data || [];
+      setEvents(mainList);
 
       try {
         const [resComite, resProfile] = await Promise.all([
@@ -180,10 +181,19 @@ const EventosAprobadosPorFacultad = () => {
           })
         ]);
 
-        const dataComite = resComite.data?.events || [];
-        setComiteEvents(dataComite.map(normalizeComite));
-        setMyId(resProfile.data?.id ?? resProfile.data?.idusuario ?? null);
+        const dataComite = Array.isArray(resComite.data) ? resComite.data : (resComite.data?.events || []);
+        const miId = resProfile.data?.id ?? resProfile.data?.idusuario ?? null;
+        setMyId(miId);
         setUserRole(resProfile.data?.role || null);
+
+        const mapaComite = new Map();
+        dataComite.forEach(ev => { if (ev && ev.idevento) mapaComite.set(String(ev.idevento), ev); });
+        mainList.forEach(ev => {
+          if (ev && ev.idevento && (ev.Comite || []).some(m => String(m.idusuario) === String(miId))) {
+            mapaComite.set(String(ev.idevento), ev);
+          }
+        });
+        setComiteEvents([...mapaComite.values()].map(normalizeComite));
       } catch (e) {
         console.warn('⚠️ No se pudo cargar comité/perfil:', e.message);
       }
