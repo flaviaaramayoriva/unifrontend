@@ -221,24 +221,6 @@ const ProyectarEventoCTA = ({ onPress }) => (
   </Pressable>
 );
 
-const ToolsTabs = ({ active, onChange }) => (
-  <View style={styles.toolsTabs}>
-    {[
-      { id: 'gestion', label: 'Gestión', icon: 'construct-outline' },
-      { id: 'comite', label: 'Comité y Reportes', icon: 'bar-chart-outline' },
-    ].map((t) => (
-      <TouchableOpacity
-        key={t.id}
-        style={[styles.toolsTab, active === t.id && styles.toolsTabActive]}
-        onPress={() => onChange(t.id)}
-      >
-        <Ionicons name={t.icon} size={16} color={active === t.id ? COLORS.white : COLORS.textSecondary} />
-        <Text style={[styles.toolsTabText, active === t.id && styles.toolsTabTextActive]}>{t.label}</Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-);
-
 const MainTabs = ({ active, onChange }) => (
   <View style={styles.mainTabs}>
     {[
@@ -370,7 +352,6 @@ const HomeAcademicoScreen = () => {
   const [isTelegramLinked, setIsTelegramLinked] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState('');
   const [toast, setToast] = useState(null);
-  const [activeToolsTab, setActiveToolsTab] = useState('gestion');
   const [activeMainTab, setActiveMainTab] = useState('panel');
 
   useEffect(() => {
@@ -560,9 +541,8 @@ const adminActions = [
     { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
     { id: '8', title: 'Reportes Avanzados', icon: 'document-text-outline', route: '/admin/reportes', color: COLORS.secondary, description: 'Generación de reportes detallados', tab: 'comite', badge: 'Nuevo' },
   ];
-  const visibleTools = activeToolsTab === 'comite'
-    ? adminActions.filter((t) => t.tab === 'comite')
-    : adminActions.filter((t) => t.tab === 'gestion');
+  const gestionTools = adminActions.filter((t) => t.tab === 'gestion');
+  const comiteTools = adminActions.filter((t) => t.tab === 'comite');
   const chartWidth = windowWidth - 60;
 
   return (
@@ -630,10 +610,26 @@ const adminActions = [
         ) : (
           <>
             <Section title="Herramientas de Gestión" subtitle="Accede a las funcionalidades principales">
-              <ToolsTabs active={activeToolsTab} onChange={setActiveToolsTab} />
               {ultimoMensaje ? <Text style={styles.emptyMsg}>{ultimoMensaje}</Text> : null}
               <View style={styles.toolsGrid}>
-                {visibleTools.map((tool, i) => (
+                {gestionTools.map((tool, i) => (
+                  <ManagementToolCard
+                    key={i}
+                    title={tool.title}
+                    description={tool.description}
+                    icon={tool.icon}
+                    color={tool.color}
+                    badge={tool.badge}
+                    onPress={() => handleActionPress(tool.route)}
+                    cardWidth={actionsCardWidth}
+                  />
+                ))}
+              </View>
+            </Section>
+
+            <Section title="Herramientas de Comité y Reportes" subtitle="Comité y generación de reportes detallados">
+              <View style={styles.toolsGrid}>
+                {comiteTools.map((tool, i) => (
                   <ManagementToolCard
                     key={i}
                     title={tool.title}
@@ -898,17 +894,6 @@ const styles = StyleSheet.create({
   sectionSubtitle: { fontSize: 13, color: COLORS.textSecondary },
 
   toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN, justifyContent: 'space-between' },
-  toolsTabs: {
-    flexDirection: 'row', backgroundColor: COLORS.border, borderRadius: 12,
-    padding: 4, gap: 4, marginBottom: 14,
-  },
-  toolsTab: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 10, borderRadius: 9,
-  },
-  toolsTabActive: { backgroundColor: COLORS.primary },
-  toolsTabText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-  toolsTabTextActive: { color: COLORS.white },
   mainTabs: {
     flexDirection: 'row', backgroundColor: COLORS.white, borderRadius: 14,
     padding: 5, gap: 5, borderWidth: 1, borderColor: COLORS.border,
