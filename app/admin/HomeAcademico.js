@@ -11,6 +11,8 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import dayjs from 'dayjs';
 import { CustomLineChart, CustomBarChart } from '../../components/admin/ChartsVisuales';
+import ChatEmbed from '../../components/admin/ChatEmbed';
+import ChatAlertas from '../../components/ChatAlertas';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
@@ -353,6 +355,9 @@ const HomeAcademicoScreen = () => {
   const [telegramUsername, setTelegramUsername] = useState('');
   const [toast, setToast] = useState(null);
   const [activeMainTab, setActiveMainTab] = useState('panel');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [salaActiva, setSalaActiva] = useState(null);
+  const [chatUserId, setChatUserId] = useState(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -400,6 +405,7 @@ const HomeAcademicoScreen = () => {
         const u = prof.value.data;
         setNombreUsuario(u.nombre || params.nombre || 'Académico');
         setTelegramUsername(u.telegram_username || '');
+        setChatUserId(u.id || u.idusuario || u.user_id || u.iduser || null);
         const chatId = u.telegram_chat_id;
         setIsTelegramLinked(chatId !== null && chatId !== undefined && chatId !== '' && chatId !== 'null' && chatId !== 'undefined');
       }
@@ -817,6 +823,61 @@ const adminActions = [
           </View>
         </View>
       ) : null}
+
+      {!isDockExpanded && (
+        <TouchableOpacity style={styles.fab} onPress={() => setIsChatOpen(true)} activeOpacity={0.85}>
+          <Ionicons name="chatbubble-ellipses" size={24} color={COLORS.white} />
+        </TouchableOpacity>
+      )}
+
+      {isChatOpen ? (
+        <View style={styles.chatOverlay}>
+          <View style={{
+            width: '90%', maxWidth: 420, height: '100%',
+            backgroundColor: COLORS.background,
+            borderTopLeftRadius: 24, borderBottomLeftRadius: 24,
+            marginLeft: 'auto', elevation: 12,
+            shadowColor: '#000', shadowOffset: { width: -6, height: 0 },
+            shadowOpacity: 0.2, shadowRadius: 14,
+            overflow: 'hidden',
+          }}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
+              paddingHorizontal: 12, paddingTop: 6, paddingBottom: 2,
+              backgroundColor: COLORS.white,
+            }}>
+              <TouchableOpacity
+                onPress={() => setIsChatOpen(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{
+                  width: 32, height: 32, borderRadius: 16,
+                  backgroundColor: COLORS.border + '88',
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="close" size={18} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ flex: 1 }}>
+              <ChatEmbed
+                userId={String(chatUserId || nombreUsuario)}
+                userRole="academico"
+                userName={nombreUsuario || chatUserId}
+                onRoomChange={setSalaActiva}
+              />
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      <ChatAlertas
+        userId={String(chatUserId || nombreUsuario)}
+        userRole="academico"
+        userName={nombreUsuario || chatUserId}
+        activeRoom={isChatOpen ? salaActiva : null}
+        chatAbierto={isChatOpen}
+        onAbrir={() => setIsChatOpen(true)}
+      />
     </View>
   );
 };
@@ -987,6 +1048,18 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', borderRadius: 10,
   },
   dockLogoutText: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginLeft: 8 },
+
+  fab: {
+    position: 'absolute', bottom: 84, left: 20, width: 56, height: 56, borderRadius: 28,
+    backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
+    elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 6,
+    zIndex: 15,
+  },
+  chatOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-start',
+    paddingTop: StatusBar.currentHeight || 0, zIndex: 2000,
+  },
 
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
