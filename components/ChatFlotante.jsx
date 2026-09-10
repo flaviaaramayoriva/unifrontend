@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  FlatList, KeyboardAvoidingView, Platform, StatusBar,
+  FlatList, KeyboardAvoidingView, Platform, StatusBar, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,13 +16,22 @@ const COLORS = {
   white: '#FFFFFF',
 };
 
+const QUICK_ACTIONS = [
+  { label: 'Resumen del día', icon: '📋', action: 'Resumen del día' },
+  { label: 'Pendientes', icon: '⏳', action: 'Qué tengo pendiente' },
+  { label: 'Eventos cercanos', icon: '📅', action: 'Eventos cercanos' },
+  { label: 'Sugerencias', icon: '💡', action: 'Sugerencias' },
+  { label: 'Reporte', icon: '📊', action: 'Reporte del evento' },
+  { label: 'Ayuda', icon: '❓', action: 'ayuda' },
+];
+
 export default function ChatFlotante({ eventId, visible, onClose, userId, userName, userRole }) {
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
       userId: 0,
       userName: '🤖 Asistente IA',
-      message: '¡Hola! Soy tu asistente virtual. Pregúntame sobre:\n\n• Horarios y fechas\n• Ubicación\n• Certificados\n• Costos\n• Inscripciones\n• Comité organizador\n• Objetivos del evento',
+      message: '¡Hola! Soy tu asistente virtual. Puedo ayudarte con:\n\n📋 Quick Actions:\n  • Resumen del día\n  • Qué tengo pendiente\n  • Eventos cercanos\n  • Sugerencias\n\n📊 Reports:\n  • Reporte del evento\n  • Eventos cerrados\n\n📱 Telegram:\n  • Enviar resumen por Telegram\n  • Enviar reporte por Telegram\n\nEscribe "ayuda" para ver todo.',
       esBot: true,
     }
   ]);
@@ -35,21 +44,9 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
     console.log('🔍 ChatFlotante - userId:', userId);
   }, [eventId, userId]);
 
-  const handleSend = async () => {
-    const texto = input.trim();
+  const handleSend = async (textoOverride) => {
+    const texto = (textoOverride || input).trim();
     if (!texto) return;
-
-    if (!eventId || eventId === 'undefined' || eventId === 'null') {
-      const errorMessage = {
-        id: `error_${Date.now()}`,
-        userId: 0,
-        userName: '  Sistema',
-        message: 'No hay un evento seleccionado. Por favor, selecciona un evento primero.',
-        esBot: true,
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      return;
-    }
 
     const userMessage = {
       id: `user_${Date.now()}`,
@@ -64,7 +61,9 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chat/event/${eventId}/bot`, {
+      const effectiveEventId = (eventId && eventId !== 'null' && eventId !== 'undefined') ? eventId : 'general';
+
+      const response = await fetch(`${API_BASE_URL}/chat/event/${effectiveEventId}/bot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,40 +71,63 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
           userId: userId || 1,
           userName: userName || 'Usuario',
           userRole: userRole || 'academico',
-          eventId: eventId,
+          eventId: effectiveEventId,
         }),
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
-      console.log('✅ Respuesta del backend:', data);
 
       const botMessage = {
         id: `bot_${Date.now()}`,
         userId: 0,
         userName: '🤖 Asistente IA',
-        message: data.respuesta || data.reply || 'Lo siento, no entendí. Prueba con "ayuda"',
+        message: data.respuesta || 'Lo siento, no entendí. Prueba con "ayuda"',
         esBot: true,
+        categoria: data.categoria,
       };
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('❌ Error en ChatFlotante:', error);
-      const errorMessage = {
+      setMessages(prev => [...prev, {
         id: `error_${Date.now()}`,
         userId: 0,
         userName: '  Error',
         message: 'Error de conexión. Verifica tu internet e intenta de nuevo.',
         esBot: true,
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     } finally {
       setLoading(false);
     }
 
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
+
+  const renderQuickActions = () => (
+    <View style={{ paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 }}>
+      <Text style={{ fontSize: 11, color: COLORS.textTertiary, fontWeight: '600', marginBottom: 6, marginLeft: 4 }}>
+        ACCIONES RÁPIDAS
+      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: 6 }}>
+        {QUICK_ACTIONS.map((qa) => (
+          <TouchableOpacity
+            key={qa.label}
+            onPress={() => handleSend(qa.action)}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 4,
+              backgroundColor: '#F3E5F5', paddingHorizontal: 10, paddingVertical: 6,
+              borderRadius: 14, borderWidth: 1, borderColor: '#9B59B622',
+            }}
+          >
+            <Text style={{ fontSize: 12 }}>{qa.icon}</Text>
+            <Text style={{ fontSize: 11, color: '#7B1FA2', fontWeight: '600' }}>{qa.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
 
   const renderMessage = ({ item }) => {
     const isBot = item.esBot || item.userId === 0;
@@ -148,6 +170,20 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
               {item.message}
             </Text>
           </View>
+          {isBot && item.categoria && (
+            <TouchableOpacity
+              onPress={() => handleSend('Enviar por Telegram')}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 4,
+                marginTop: 4, marginLeft: 2,
+              }}
+            >
+              <Ionicons name="send-outline" size={12} color="#9B59B6" />
+              <Text style={{ fontSize: 10, color: '#9B59B6', fontWeight: '600' }}>
+                Enviar por Telegram
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -203,6 +239,9 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
           </TouchableOpacity>
         </View>
 
+        {/* Quick Actions */}
+        {renderQuickActions()}
+
         {/* Messages */}
         <FlatList
           ref={flatListRef}
@@ -239,7 +278,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
               onChangeText={setInput}
               placeholder="Pregúntale a la IA..."
               placeholderTextColor={COLORS.textTertiary}
-              onSubmitEditing={handleSend}
+              onSubmitEditing={() => handleSend()}
               returnKeyType="send"
               style={{
                 flex: 1, backgroundColor: COLORS.background,
@@ -249,7 +288,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
               }}
             />
             <TouchableOpacity
-              onPress={handleSend}
+              onPress={() => handleSend()}
               disabled={!input.trim() || loading}
               style={{
                 backgroundColor: input.trim() ? '#9B59B6' : '#D1D5DB',

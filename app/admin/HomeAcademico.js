@@ -923,7 +923,7 @@ const adminActions = [
       />
 
       <ChatFlotante
-        eventId={proximoEvento?.idevento ? String(proximoEvento.idevento) : null}
+        eventId={salaActiva && salaActiva !== 'general' ? salaActiva : (proximoEvento?.idevento ? String(proximoEvento.idevento) : null)}
         visible={isAIChatOpen}
         onClose={() => setIsAIChatOpen(false)}
         userId={String(chatUserId || nombreUsuario)}
