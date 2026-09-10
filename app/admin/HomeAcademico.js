@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import { CustomLineChart, CustomBarChart } from '../../components/admin/ChartsVisuales';
 import ChatEmbed from '../../components/admin/ChatEmbed';
 import ChatAlertas from '../../components/ChatAlertas';
+import ChatFlotante from '../../components/ChatFlotante';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
@@ -356,6 +357,7 @@ const HomeAcademicoScreen = () => {
   const [toast, setToast] = useState(null);
   const [activeMainTab, setActiveMainTab] = useState('panel');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [salaActiva, setSalaActiva] = useState(null);
   const [chatUserId, setChatUserId] = useState(null);
   const [noLeidos, setNoLeidos] = useState({});
@@ -853,14 +855,19 @@ const adminActions = [
       ) : null}
 
       {!isDockExpanded && (
-        <TouchableOpacity style={styles.fab} onPress={abrirChat} activeOpacity={0.85}>
-          <Ionicons name="chatbubble-ellipses" size={24} color={COLORS.white} />
-          {totalNoLeidos > 0 && (
-            <View style={styles.fabBadge}>
-              <Text style={styles.fabBadgeText}>{totalNoLeidos > 99 ? '99+' : totalNoLeidos}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity style={styles.fabAI} onPress={() => setIsAIChatOpen(true)} activeOpacity={0.85}>
+            <Ionicons name="hardware-chip-outline" size={22} color={COLORS.white} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.fab} onPress={abrirChat} activeOpacity={0.85}>
+            <Ionicons name="chatbubble-ellipses" size={24} color={COLORS.white} />
+            {totalNoLeidos > 0 && (
+              <View style={styles.fabBadge}>
+                <Text style={styles.fabBadgeText}>{totalNoLeidos > 99 ? '99+' : totalNoLeidos}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </>
       )}
 
       {isChatOpen ? (
@@ -913,6 +920,15 @@ const adminActions = [
         chatAbierto={isChatOpen}
         onAbrir={abrirChat}
         onUnread={marcarnoLeido}
+      />
+
+      <ChatFlotante
+        eventId={proximoEvento?.idevento ? String(proximoEvento.idevento) : null}
+        visible={isAIChatOpen}
+        onClose={() => setIsAIChatOpen(false)}
+        userId={String(chatUserId || nombreUsuario)}
+        userName={nombreUsuario}
+        userRole="academico"
       />
     </View>
   );
@@ -1089,6 +1105,12 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: 84, right: 20, width: 56, height: 56, borderRadius: 28,
     backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
     elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 6,
+    zIndex: 15,
+  },
+  fabAI: {
+    position: 'absolute', bottom: 84, left: 20, width: 52, height: 52, borderRadius: 26,
+    backgroundColor: '#9B59B6', justifyContent: 'center', alignItems: 'center',
+    elevation: 8, shadowColor: '#9B59B6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6,
     zIndex: 15,
   },
   fabBadge: {
