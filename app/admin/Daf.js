@@ -8,7 +8,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import QRCode from 'react-qr-code';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useTheme} from '../../context/ThemeContext'
 
@@ -792,11 +791,10 @@ const saveThemeColor = useCallback(async (color) => {
                   Escanea para vincular
                 </Text>
                 <View style={styles.telegramQRCode}>
-                  <QRCode
-                    value={`https://t.me/${BOT_USERNAME}`}
-                    size={160}
-                    color="#000"
-                    backgroundColor="#fff"
+                  <Image
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=320x320&qzone=2&data=${encodeURIComponent(`https://t.me/${BOT_USERNAME}`)}` }}
+                    style={{ width: 160, height: 160 }}
+                    resizeMode="contain"
                   />
                 </View>
                 <Text style={styles.telegramQRSubtitle}>

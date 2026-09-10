@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert,
-  StatusBar, FlatList, ActivityIndicator, Platform, Modal, TextInput
+  StatusBar, FlatList, ActivityIndicator, Platform, Modal, TextInput, Image
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
-import QRCode from 'react-qr-code';
 
 const COLORS = {
   primary: '#C44B0A', primaryLight: '#FFEDD5', secondary: '#4B5563',
@@ -712,7 +711,11 @@ const HomeEstudianteScreen = () => {
                     <View style={telegramStyles.qrContainer}>
                       <Text style={telegramStyles.qrTitle}>Escanea para vincular</Text>
                       <View style={telegramStyles.qrCode}>
-                        <QRCode value={`https://t.me/${BOT_USERNAME}`} size={160} color="#000" backgroundColor="#fff" />
+                        <Image
+                          source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=320x320&qzone=2&data=${encodeURIComponent(`https://t.me/${BOT_USERNAME}`)}` }}
+                          style={{ width: 160, height: 160 }}
+                          resizeMode="contain"
+                        />
                       </View>
                       <Text style={telegramStyles.qrSubtitle}>O toca el botón para abrir</Text>
                     </View>
