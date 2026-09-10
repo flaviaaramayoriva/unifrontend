@@ -19,7 +19,7 @@ const getDaysUntil = (dateStr) => {
   return Math.round(eventDate.diff(dayjs().startOf('day'), 'day', true));
 };
 
-const UpcomingEvents = ({ events, onSelectEvent, colors }) => {
+const UpcomingEvents = ({ events = [], onSelectEvent, colors }) => {
   const upcoming = useMemo(() => {
     return events
       .map(e => ({ ...e, daysUntil: getDaysUntil(e.fechaevento) }))

@@ -61,7 +61,7 @@ const useResponsiveColumns = (width, minCardWidth, maxColumns) => {
   return Math.max(numColumns, 1);
 };
 
-const DashboardStats = ({ stats, loading, historicalData, colors }) => {
+const DashboardStats = ({ stats = [], loading = false, historicalData = [], colors }) => {
   const { width: windowWidth } = useWindowDimensions();
   const columns = useResponsiveColumns(windowWidth, MIN_CARD_WIDTH_DASHBOARD, MAX_COLUMNS_DASHBOARD);
   const totalMargin = CARD_MARGIN * (columns - 1);

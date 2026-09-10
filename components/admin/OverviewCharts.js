@@ -27,7 +27,7 @@ const SectionHeader = ({ kicker, title, subtitle, colors }) => (
   </View>
 );
 
-const OverviewCharts = ({ estadoCounts, historicalData, colors }) => {
+const OverviewCharts = ({ estadoCounts = {}, historicalData = [], colors }) => {
   const { width: windowWidth } = useWindowDimensions();
 
   const gridState = useMemo(() => {
