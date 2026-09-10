@@ -4,11 +4,13 @@ import {
   StatusBar, Alert, ActivityIndicator, Pressable, Animated,
   useWindowDimensions, Platform, Modal, Image,
 } from 'react-native';
+import { PieChart } from 'react-native-chart-kit';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import dayjs from 'dayjs';
+import { CustomLineChart, CustomBarChart } from '../../components/admin/ChartsVisuales';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
@@ -151,6 +153,21 @@ const Section = ({ title, subtitle, children }) => (
   </View>
 );
 
+const ChartCard = ({ title, subtitle, children, empty, emptyIcon }) => (
+  <View style={styles.chartCard}>
+    <View style={styles.chartCardHeader}>
+      <Text style={styles.chartCardTitle}>{title}</Text>
+      {subtitle ? <Text style={styles.chartCardSubtitle}>{subtitle}</Text> : null}
+    </View>
+    {empty ? (
+      <View style={styles.chartEmpty}>
+        <Ionicons name={emptyIcon || 'bar-chart-outline'} size={44} color={COLORS.textTertiary} />
+        <Text style={styles.chartEmptyText}>Sin datos disponibles</Text>
+      </View>
+    ) : children}
+  </View>
+);
+
 const ProximoEventoCard = ({ evento, onPress }) => {
   if (!evento) return null;
   const estadoColor = STATE_COLORS[String(evento.estado || '').toLowerCase()] || COLORS.textSecondary;
@@ -217,6 +234,25 @@ const ToolsTabs = ({ active, onChange }) => (
       >
         <Ionicons name={t.icon} size={16} color={active === t.id ? COLORS.white : COLORS.textSecondary} />
         <Text style={[styles.toolsTabText, active === t.id && styles.toolsTabTextActive]}>{t.label}</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+);
+
+const MainTabs = ({ active, onChange }) => (
+  <View style={styles.mainTabs}>
+    {[
+      { id: 'panel', label: 'Panel', icon: 'home-outline' },
+      { id: 'analisis', label: 'Análisis', icon: 'bar-chart-outline' },
+    ].map((t) => (
+      <TouchableOpacity
+        key={t.id}
+        style={[styles.mainTab, active === t.id && styles.mainTabActive]}
+        onPress={() => onChange(t.id)}
+        accessibilityRole="tab"
+      >
+        <Ionicons name={t.icon} size={18} color={active === t.id ? COLORS.white : COLORS.textSecondary} />
+        <Text style={[styles.mainTabText, active === t.id && styles.mainTabTextActive]}>{t.label}</Text>
       </TouchableOpacity>
     ))}
   </View>
@@ -325,6 +361,9 @@ const HomeAcademicoScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [proximoEvento, setProximoEvento] = useState(null);
+  const [eventosPorEstado, setEventosPorEstado] = useState(null);
+  const [tendenciaMensual, setTendenciaMensual] = useState(null);
+  const [estadosBarra, setEstadosBarra] = useState(null);
   const [dashboardStats, setDashboardStats] = useState([]);
   const [ultimoMensaje, setUltimoMensaje] = useState('');
   const [showTelegramModal, setShowTelegramModal] = useState(false);
@@ -332,6 +371,7 @@ const HomeAcademicoScreen = () => {
   const [telegramUsername, setTelegramUsername] = useState('');
   const [toast, setToast] = useState(null);
   const [activeToolsTab, setActiveToolsTab] = useState('gestion');
+  const [activeMainTab, setActiveMainTab] = useState('panel');
 
   useEffect(() => {
     if (!toast) return;
@@ -363,9 +403,10 @@ const HomeAcademicoScreen = () => {
     const headers = { Authorization: `Bearer ${token}` };
 
     try {
-      const [prof, statsRes, comiteRes, notifRes] = await Promise.allSettled([
+      const [prof, statsRes, histRes, comiteRes, notifRes] = await Promise.allSettled([
         axios.get(`${API_BASE_URL}/profile`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-stats`, { headers, timeout: 8000 }),
+        axios.get(`${API_BASE_URL}/dashboard/my-historical`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-committee-events`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/notificaciones`, { headers, timeout: 8000 }),
       ]);
@@ -395,6 +436,19 @@ const HomeAcademicoScreen = () => {
         }
       }
 
+      if (histRes.status === 'fulfilled' && histRes.value && histRes.value.data) {
+        const raw = Array.isArray(histRes.value.data) ? histRes.value.data : histRes.value.data.data;
+        const arr = safeArray(raw);
+        if (arr.length > 0) {
+          setTendenciaMensual({
+            labels: arr.map((d) => String(d.name || '').slice(0, 3)),
+            datasets: [{ data: arr.map((d) => Number(d.eventos ?? d.total ?? 0)) }],
+          });
+        } else {
+          setTendenciaMensual(null);
+        }
+      }
+
       if (comiteRes.status === 'fulfilled' && comiteRes.value && comiteRes.value.data) {
         const d = comiteRes.value.data;
         events = safeArray(Array.isArray(d) ? d : d.events);
@@ -409,6 +463,22 @@ const HomeAcademicoScreen = () => {
       if (notifRes.status === 'fulfilled' && notifRes.value && Array.isArray(notifRes.value.data)) {
         setNotifications(notifRes.value.data);
       }
+
+      const pie = Object.entries(counts)
+        .filter(([, v]) => v > 0)
+        .map(([k, v]) => ({
+          name: k.charAt(0).toUpperCase() + k.slice(1),
+          population: v,
+          color: STATE_COLORS[k] || COLORS.info,
+          legendFontColor: COLORS.textPrimary,
+          legendFontSize: 12,
+        }));
+      setEventosPorEstado(pie.length ? pie : null);
+
+      const barArr = Object.entries(counts)
+        .filter(([, v]) => v > 0)
+        .slice(0, 6);
+      setEstadosBarra(barArr.length ? { labels: barArr.map(([k]) => k.charAt(0).toUpperCase() + k.slice(1)), datasets: [{ data: barArr.map(([, v]) => v) }] } : null);
 
       if (statsCards.length >= 4) {
         setDashboardStats(statsCards);
@@ -489,11 +559,11 @@ const adminActions = [
     { id: '6', title: 'Completados', icon: 'trophy-outline', route: '/admin/EventosCompletados', color: COLORS.info, description: 'Fase 3 finalizada', tab: 'gestion' },
     { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
     { id: '8', title: 'Reportes Avanzados', icon: 'document-text-outline', route: '/admin/reportes', color: COLORS.secondary, description: 'Generación de reportes detallados', tab: 'comite', badge: 'Nuevo' },
-    { id: '9', title: 'Análisis Visual', icon: 'bar-chart-outline', route: '/admin/AnalisisVisual', color: COLORS.primary, description: 'Gráficos y tendencias de tus eventos', tab: 'comite' },
   ];
   const visibleTools = activeToolsTab === 'comite'
     ? adminActions.filter((t) => t.tab === 'comite')
     : adminActions.filter((t) => t.tab === 'gestion');
+  const chartWidth = windowWidth - 60;
 
   return (
     <View style={styles.container}>
@@ -524,11 +594,39 @@ const adminActions = [
           </View>
         ) : null}
 
+        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+          <MainTabs active={activeMainTab} onChange={setActiveMainTab} />
+        </View>
+
         {loadingDashboard ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>Cargando tu panel…</Text>
           </View>
+        ) : activeMainTab === 'analisis' ? (
+          <>
+            <Section title="Análisis Visual" subtitle="Distribución y tendencias de tus eventos">
+              <ChartCard title="Distribución por Estado" subtitle="Aprobados · Pendientes · Rechazados" empty={!eventosPorEstado} emptyIcon="pie-chart-outline">
+                <PieChart
+                  data={eventosPorEstado || []}
+                  width={chartWidth + 20}
+                  height={200}
+                  accessor="population"
+                  backgroundColor="transparent"
+                  paddingLeft="10"
+                  chartConfig={{ color: (o = 1) => `rgba(0,0,0,${o})` }}
+                />
+              </ChartCard>
+
+              <ChartCard title="Tendencia Mensual" subtitle="Últimos meses" empty={!tendenciaMensual} emptyIcon="trending-up-outline">
+                <CustomLineChart data={tendenciaMensual || { labels: [], datasets: [{ data: [] }] }} width={chartWidth} height={200} color={COLORS.primary} />
+              </ChartCard>
+
+              <ChartCard title="Eventos por Estado" subtitle="Conteo actual" empty={!estadosBarra} emptyIcon="bar-chart-outline">
+                <CustomBarChart data={estadosBarra || { labels: [], datasets: [{ data: [] }] }} width={chartWidth} height={230} color={COLORS.success} />
+              </ChartCard>
+            </Section>
+          </>
         ) : (
           <>
             <Section title="Herramientas de Gestión" subtitle="Accede a las funcionalidades principales">
@@ -811,6 +909,18 @@ const styles = StyleSheet.create({
   toolsTabActive: { backgroundColor: COLORS.primary },
   toolsTabText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
   toolsTabTextActive: { color: COLORS.white },
+  mainTabs: {
+    flexDirection: 'row', backgroundColor: COLORS.white, borderRadius: 14,
+    padding: 5, gap: 5, borderWidth: 1, borderColor: COLORS.border,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
+  },
+  mainTab: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+    paddingVertical: 11, borderRadius: 10,
+  },
+  mainTabActive: { backgroundColor: COLORS.primary },
+  mainTabText: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary },
+  mainTabTextActive: { color: COLORS.white },
   toolCard: {
     backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, minHeight: 130,
     borderWidth: 1, maxWidth: '100%',
@@ -821,6 +931,16 @@ const styles = StyleSheet.create({
   toolDescription: { fontSize: 11, color: COLORS.textSecondary, lineHeight: 16 },
   toolBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, position: 'absolute', top: 20, right: 20 },
   toolBadgeText: { fontSize: 11, fontWeight: '700', color: COLORS.white },
+
+  chartCard: {
+    backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, marginBottom: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  },
+  chartCardHeader: { marginBottom: 12 },
+  chartCardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
+  chartCardSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  chartEmpty: { alignItems: 'center', paddingVertical: 32 },
+  chartEmptyText: { marginTop: 10, fontSize: 14, color: COLORS.textTertiary },
 
   alertsContainer: { gap: 10 },
   alertCard: {
