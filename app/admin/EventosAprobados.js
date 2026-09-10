@@ -246,9 +246,10 @@ const EventosAprobadosPorFacultad = () => {
   const filteredEvents = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return curEvents.filter(event => {
-      if (isEventPast(event)) return false;
-      if (faseFiltro !== 'todas' && String(event.idfase || 1) !== faseFiltro) return false;
-      if (facultadFiltro !== 'todas' && getEventFaculty(event) !== facultadFiltro) return false;
+      const esComite = vista === 'comite';
+      if (!esComite && isEventPast(event)) return false;
+      if (!esComite && faseFiltro !== 'todas' && String(event.idfase || 1) !== faseFiltro) return false;
+      if (!esComite && facultadFiltro !== 'todas' && getEventFaculty(event) !== facultadFiltro) return false;
       if (term) {
         const haystack = [
           event.title, event.nombreevento,
@@ -259,7 +260,7 @@ const EventosAprobadosPorFacultad = () => {
       }
       return true;
     });
-  }, [curEvents, searchTerm, facultadFiltro, faseFiltro]);
+  }, [curEvents, searchTerm, facultadFiltro, faseFiltro, vista]);
 
   const phaseStats = useMemo(() => {
     const upcoming = curEvents.filter(e => !isEventPast(e));
@@ -289,6 +290,10 @@ const EventosAprobadosPorFacultad = () => {
     const eventId = item.id || item.idevento;
     const facultyName = getEventFaculty(item);
     const facultyColor = getFacultyColor(facultyName);
+
+    const miRolComite = vista === 'comite'
+      ? (item.Comite || item.comite || []).find(m => String(m.idusuario || m.user_id) === String(myId))?.rol_comite || null
+      : null;
 
     const dateStr = item.fechaevento || item.date;
     const displayDate = dateStr
@@ -383,6 +388,13 @@ const EventosAprobadosPorFacultad = () => {
               <View style={styles.fase1Badge}>
                 <Ionicons name="create-outline" size={12} color={COLORS.primary} />
                 <Text style={styles.fase1Text}>Fase 1</Text>
+              </View>
+            )}
+
+            {miRolComite && (
+              <View style={styles.comiteBadge}>
+                <Ionicons name="people-outline" size={12} color={COLORS.info} />
+                <Text style={styles.comiteBadgeText} numberOfLines={1}>Comité · {miRolComite}</Text>
               </View>
             )}
 
@@ -1098,6 +1110,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: COLORS.primary,
+  },
+  comiteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.infoLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    flexShrink: 1,
+  },
+  comiteBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.info,
   },
 
   emptyContainer: {
