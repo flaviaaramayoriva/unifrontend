@@ -48,9 +48,11 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
     const texto = (textoOverride || input).trim();
     if (!texto) return;
 
+    const validUserId = userId && String(userId).trim() && !isNaN(Number(userId)) ? String(userId) : null;
+
     const userMessage = {
       id: `user_${Date.now()}`,
-      userId: userId || 1,
+      userId: validUserId || 1,
       userName: userName || 'Tú',
       message: texto,
       esBot: false,
@@ -68,7 +70,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: texto,
-          userId: userId || 1,
+          userId: validUserId,
           userName: userName || 'Usuario',
           userRole: userRole || 'academico',
           eventId: effectiveEventId,

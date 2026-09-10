@@ -926,7 +926,7 @@ const adminActions = [
         eventId={salaActiva && salaActiva !== 'general' ? salaActiva : (proximoEvento?.idevento ? String(proximoEvento.idevento) : null)}
         visible={isAIChatOpen}
         onClose={() => setIsAIChatOpen(false)}
-        userId={String(chatUserId || nombreUsuario)}
+        userId={chatUserId ? String(chatUserId) : null}
         userName={nombreUsuario}
         userRole="academico"
       />
