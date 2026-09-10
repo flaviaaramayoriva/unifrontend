@@ -4,8 +4,6 @@ import {
   StatusBar, Alert, ActivityIndicator, Pressable, Animated,
   useWindowDimensions, Platform, Modal, Image,
 } from 'react-native';
-import { PieChart } from 'react-native-chart-kit';
-import Svg, { Line, Circle, Text as SvgText, Path, Rect } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -97,96 +95,6 @@ const formatTime = (dateStr) => {
   return date.format('HH:mm');
 };
 
-const CustomLineChart = ({ data, width, height, color = COLORS.primary }) => {
-  if (!data?.labels?.length) return null;
-  const labels = data.labels;
-  const values = data.datasets[0].data;
-  const padding = { top: 24, right: 20, bottom: 36, left: 44 };
-  const cw = width - padding.left - padding.right;
-  const ch = height - padding.top - padding.bottom;
-  const maxV = Math.max(...values, 1);
-  const minV = Math.min(...values, 0);
-  const range = maxV - minV || 1;
-  const pts = values.map((v, i) => ({
-    x: padding.left + (i / Math.max(values.length - 1, 1)) * cw,
-    y: padding.top + ch - ((v - minV) / range) * ch,
-    v, label: labels[i],
-  }));
-  let line = '';
-  pts.forEach((p, i) => {
-    if (i === 0) { line = `M ${p.x} ${p.y}`; return; }
-    const prev = pts[i - 1];
-    const cpx = (prev.x + p.x) / 2;
-    line += ` C ${cpx} ${prev.y}, ${cpx} ${p.y}, ${p.x} ${p.y}`;
-  });
-  const area = `${line} L ${pts[pts.length - 1].x} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
-  return (
-    <Svg width={width} height={height}>
-      {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-        const y = padding.top + ch * (1 - pct);
-        return (
-          <SvgView key={i}>
-            <Line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke={COLORS.border} strokeWidth="1" strokeDasharray="4,4" />
-            <SvgText x={padding.left - 6} y={y + 4} fontSize="10" fill={COLORS.textSecondary} textAnchor="end">{Math.round(minV + range * pct)}</SvgText>
-          </SvgView>
-        );
-      })}
-      <Path d={area} fill={color} fillOpacity={0.1} />
-      <Path d={line} stroke={color} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      {pts.map((p, i) => (
-        <SvgView key={i}>
-          <Circle cx={p.x} cy={p.y} r={5} fill={COLORS.surface} stroke={color} strokeWidth={2} />
-          <Circle cx={p.x} cy={p.y} r={3} fill={color} />
-          <SvgText x={p.x} y={height - padding.bottom + 22} fontSize="11" fill={COLORS.textSecondary} textAnchor="middle" fontWeight="500">{p.label}</SvgText>
-        </SvgView>
-      ))}
-    </Svg>
-  );
-};
-
-const SvgView = ({ children }) => <View>{children}</View>;
-
-const CustomBarChart = ({ data, width, height, color = COLORS.success }) => {
-  if (!data?.labels?.length) return null;
-  const labels = data.labels;
-  const values = data.datasets[0].data;
-  const padding = { top: 24, right: 16, bottom: 50, left: 44 };
-  const cw = width - padding.left - padding.right;
-  const ch = height - padding.top - padding.bottom;
-  const maxV = Math.max(...values, 1);
-  const barW = Math.max((cw / labels.length) * 0.55, 8);
-  const gap = cw / labels.length;
-  return (
-    <Svg width={width} height={height}>
-      {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-        const y = padding.top + ch * (1 - pct);
-        return (
-          <SvgView key={i}>
-            <Line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke={COLORS.border} strokeWidth="1" strokeDasharray="4,4" />
-            <SvgText x={padding.left - 6} y={y + 4} fontSize="10" fill={COLORS.textSecondary} textAnchor="end">{Math.round(maxV * pct)}</SvgText>
-          </SvgView>
-        );
-      })}
-      {values.map((v, i) => {
-        const barH = (v / maxV) * ch;
-        const x = padding.left + gap * i + (gap - barW) / 2;
-        const y = padding.top + ch - barH;
-        const labelX = x + barW / 2;
-        const labelY = padding.top + ch + 12;
-        return (
-          <SvgView key={i}>
-            <Rect x={x} y={y} width={barW} height={barH} fill={color} rx={4} fillOpacity={0.85} />
-            {v > 0 && (
-              <SvgText x={labelX} y={y - 5} fontSize="10" fill={color} textAnchor="middle" fontWeight="700">{v}</SvgText>
-            )}
-            <SvgText x={labelX} y={labelY} fontSize="10" fill={COLORS.textSecondary} textAnchor="middle" fontWeight="500">{labels[i]}</SvgText>
-          </SvgView>
-        );
-      })}
-    </Svg>
-  );
-};
-
 const DashboardCard = ({ title, value, icon, color, trend, description }) => {
   const safeColor = color || COLORS.primary;
   const trendColor = trend > 0 ? COLORS.success : COLORS.warning;
@@ -240,21 +148,6 @@ const Section = ({ title, subtitle, children }) => (
       </View>
     </View>
     {children}
-  </View>
-);
-
-const ChartCard = ({ title, subtitle, children, empty, emptyIcon }) => (
-  <View style={styles.chartCard}>
-    <View style={styles.chartCardHeader}>
-      <Text style={styles.chartCardTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.chartCardSubtitle}>{subtitle}</Text> : null}
-    </View>
-    {empty ? (
-      <View style={styles.chartEmpty}>
-        <Ionicons name={emptyIcon || 'bar-chart-outline'} size={44} color={COLORS.textTertiary} />
-        <Text style={styles.chartEmptyText}>Sin datos disponibles</Text>
-      </View>
-    ) : children}
   </View>
 );
 
@@ -432,9 +325,6 @@ const HomeAcademicoScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [proximoEvento, setProximoEvento] = useState(null);
-  const [eventosPorEstado, setEventosPorEstado] = useState(null);
-  const [tendenciaMensual, setTendenciaMensual] = useState(null);
-  const [estadosBarra, setEstadosBarra] = useState(null);
   const [dashboardStats, setDashboardStats] = useState([]);
   const [ultimoMensaje, setUltimoMensaje] = useState('');
   const [showTelegramModal, setShowTelegramModal] = useState(false);
@@ -473,10 +363,9 @@ const HomeAcademicoScreen = () => {
     const headers = { Authorization: `Bearer ${token}` };
 
     try {
-      const [prof, statsRes, histRes, comiteRes, notifRes] = await Promise.allSettled([
+      const [prof, statsRes, comiteRes, notifRes] = await Promise.allSettled([
         axios.get(`${API_BASE_URL}/profile`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-stats`, { headers, timeout: 8000 }),
-        axios.get(`${API_BASE_URL}/dashboard/my-historical`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-committee-events`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/notificaciones`, { headers, timeout: 8000 }),
       ]);
@@ -506,17 +395,6 @@ const HomeAcademicoScreen = () => {
         }
       }
 
-      if (histRes.status === 'fulfilled' && histRes.value && histRes.value.data) {
-        const raw = Array.isArray(histRes.value.data) ? histRes.value.data : histRes.value.data.data;
-        const arr = safeArray(raw);
-        if (arr.length > 0) {
-          setTendenciaMensual({
-            labels: arr.map((d) => String(d.name || '').slice(0, 3)),
-            datasets: [{ data: arr.map((d) => Number(d.eventos ?? d.total ?? 0)) }],
-          });
-        }
-      }
-
       if (comiteRes.status === 'fulfilled' && comiteRes.value && comiteRes.value.data) {
         const d = comiteRes.value.data;
         events = safeArray(Array.isArray(d) ? d : d.events);
@@ -531,22 +409,6 @@ const HomeAcademicoScreen = () => {
       if (notifRes.status === 'fulfilled' && notifRes.value && Array.isArray(notifRes.value.data)) {
         setNotifications(notifRes.value.data);
       }
-
-      const pie = Object.entries(counts)
-        .filter(([, v]) => v > 0)
-        .map(([k, v]) => ({
-          name: k.charAt(0).toUpperCase() + k.slice(1),
-          population: v,
-          color: STATE_COLORS[k] || COLORS.info,
-          legendFontColor: COLORS.textPrimary,
-          legendFontSize: 12,
-        }));
-      setEventosPorEstado(pie.length ? pie : null);
-
-      const barArr = Object.entries(counts)
-        .filter(([, v]) => v > 0)
-        .slice(0, 6);
-      setEstadosBarra(barArr.length ? { labels: barArr.map(([k]) => k.charAt(0).toUpperCase() + k.slice(1)), datasets: [{ data: barArr.map(([, v]) => v) }] } : null);
 
       if (statsCards.length >= 4) {
         setDashboardStats(statsCards);
@@ -627,12 +489,11 @@ const adminActions = [
     { id: '6', title: 'Completados', icon: 'trophy-outline', route: '/admin/EventosCompletados', color: COLORS.info, description: 'Fase 3 finalizada', tab: 'gestion' },
     { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
     { id: '8', title: 'Reportes Avanzados', icon: 'document-text-outline', route: '/admin/reportes', color: COLORS.secondary, description: 'Generación de reportes detallados', tab: 'comite', badge: 'Nuevo' },
+    { id: '9', title: 'Análisis Visual', icon: 'bar-chart-outline', route: '/admin/AnalisisVisual', color: COLORS.primary, description: 'Gráficos y tendencias de tus eventos', tab: 'comite' },
   ];
   const visibleTools = activeToolsTab === 'comite'
     ? adminActions.filter((t) => t.tab === 'comite')
     : adminActions.filter((t) => t.tab === 'gestion');
-
-  const chartWidth = windowWidth - 60;
 
   return (
     <View style={styles.container}>
@@ -687,28 +548,6 @@ const adminActions = [
                   />
                 ))}
               </View>
-            </Section>
-
-            <Section title="Análisis Visual" subtitle="Distribución y tendencias">
-              <ChartCard title="Distribución por Estado" subtitle="Aprobados · Pendientes · Rechazados" empty={!eventosPorEstado} emptyIcon="pie-chart-outline">
-                <PieChart
-                  data={eventosPorEstado || []}
-                  width={chartWidth + 20}
-                  height={200}
-                  accessor="population"
-                  backgroundColor="transparent"
-                  paddingLeft="10"
-                  chartConfig={{ color: (o = 1) => `rgba(0,0,0,${o})` }}
-                />
-              </ChartCard>
-
-              <ChartCard title="Tendencia Mensual" subtitle="Últimos meses" empty={!tendenciaMensual} emptyIcon="trending-up-outline">
-                <CustomLineChart data={tendenciaMensual || { labels: [], datasets: [{ data: [] }] }} width={chartWidth} height={200} color={COLORS.primary} />
-              </ChartCard>
-
-              <ChartCard title="Eventos por Estado" subtitle="Conteo actual" empty={!estadosBarra} emptyIcon="bar-chart-outline">
-                <CustomBarChart data={estadosBarra || { labels: [], datasets: [{ data: [] }] }} width={chartWidth} height={230} color={COLORS.success} />
-              </ChartCard>
             </Section>
 
             <Section title="Alertas" subtitle="Estado operativo actual">
@@ -982,16 +821,6 @@ const styles = StyleSheet.create({
   toolDescription: { fontSize: 11, color: COLORS.textSecondary, lineHeight: 16 },
   toolBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, position: 'absolute', top: 20, right: 20 },
   toolBadgeText: { fontSize: 11, fontWeight: '700', color: COLORS.white },
-
-  chartCard: {
-    backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, marginBottom: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
-  },
-  chartCardHeader: { marginBottom: 12 },
-  chartCardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
-  chartCardSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  chartEmpty: { alignItems: 'center', paddingVertical: 32 },
-  chartEmptyText: { marginTop: 10, fontSize: 14, color: COLORS.textTertiary },
 
   alertsContainer: { gap: 10 },
   alertCard: {
