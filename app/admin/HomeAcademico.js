@@ -897,6 +897,7 @@ const adminActions = [
                 userRole="academico"
                 userName={nombreUsuario || chatUserId}
                 noLeidos={noLeidos}
+                activeRoom={isChatOpen ? salaActiva : null}
                 onRoomChange={(r) => { setSalaActiva(r); limpiarNoLeidos(r); }}
               />
             </View>

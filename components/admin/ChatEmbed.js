@@ -601,7 +601,7 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver, onRoomChang
   );
 };
 
-const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {} }) => {
+const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, activeRoom = null }) => {
   const [tabMain, setTabMain]           = useState('grupo'); // 'grupo' | 'personal'
   const [vista, setVista]               = useState('eventos'); // 'chat' (general) | 'eventos'
   const [eventos, setEventos]           = useState([]);
@@ -610,6 +610,72 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {} }) 
   const [eventoActual, setEventoActual] = useState(null);
   const [chatPrivado, setChatPrivado]   = useState(null);
   const [abriendoEvento, setAbriendoEvento] = useState(false);
+  const [aviso, setAviso]               = useState(null);
+  const avisoTimer = useRef(null);
+  const activeRoomRef = useRef(activeRoom);
+
+  useEffect(() => { activeRoomRef.current = activeRoom; }, [activeRoom]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let activo = true;
+    let socket;
+    const init = async () => {
+      try {
+        const token = await getToken();
+        const mod = await import('socket.io-client');
+        const io = mod.io || mod.default;
+        socket = io(API_BASE_URL, {
+          transports: ['websocket'],
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 2000,
+          timeout: 20000,
+        });
+        socket.on('connect', () => socket.emit('register_user', { userId }));
+        socket.on('chat_notification', (n) => {
+          if (!activo) return;
+          const cur = activeRoomRef.current;
+          if (cur && String(n.roomId) === String(cur)) return;
+          if (String(n.userId) === String(userId)) return;
+          setAviso({ ...n, userId: n.userId, userName: n.userName, roomId: n.roomId, roomName: n.roomName, type: n.type, message: n.message });
+          clearTimeout(avisoTimer.current);
+          avisoTimer.current = setTimeout(() => setAviso(null), 4000);
+        });
+      } catch (e) {
+        console.warn('ChatEmbed: error escuchando notificaciones', e && e.message);
+      }
+    };
+    init();
+    return () => { activo = false; if (socket) socket.disconnect(); clearTimeout(avisoTimer.current); };
+  }, [userId]);
+
+  const irAEvento = async (id) => {
+    const ev = eventos.find(e => String(e.idevento) === String(id));
+    if (ev) { abrirEvento(ev); return; }
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/eventos/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const detalle = await res.json();
+      setEventoActual(detalle);
+    } catch (e) {
+      console.warn('ChatEmbed: no se pudo abrir evento del aviso', e && e.message);
+    }
+  };
+
+  const abrirAviso = () => {
+    if (!aviso) return;
+    const roomId = String(aviso.roomId);
+    setAviso(null);
+    if (roomId === 'general') { setVista('chat'); setEventoActual(null); setChatPrivado(null); return; }
+    if (roomId.startsWith('private_')) {
+      setChatPrivado({ idusuario: String(aviso.userId), nombre: aviso.userName || 'Usuario', roomId });
+      return;
+    }
+    irAEvento(roomId);
+  };
 
   const tabUnreads = {
     grupo: Object.keys(noLeidos).reduce((acc, k) => acc + (k.startsWith('private_') ? 0 : (noLeidos[k] || 0)), 0),
@@ -715,8 +781,9 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {} }) 
     setChatPrivado({ ...contacto, roomId });
   };
 
+  let contenido = null;
   if (eventoActual) {
-    return (
+    contenido = (
       <VistaEvento
         evento={eventoActual}
         userId={userId} userRole={userRole} userName={userName}
@@ -727,7 +794,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {} }) 
   }
 
   if (chatPrivado) {
-    return (
+    contenido = (
       <VistaChat
         eventoId={chatPrivado.idusuario}
         titulo={chatPrivado.nombre || `Usuario ${chatPrivado.idusuario}`}
@@ -741,7 +808,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {} }) 
   }
 
   if (vista === 'chat') {
-    return (
+    contenido = (
       <VistaChat
         eventoId="general"
         titulo="Chat General"
@@ -754,7 +821,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {} }) 
     );
   }
 
-  return (
+  contenido = (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <View style={{
         flexDirection: 'row', backgroundColor: COLORS.white,
@@ -1011,6 +1078,42 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {} }) 
             </ScrollView>
           )}
         </View>
+      )}
+    </View>
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+      {contenido}
+      {aviso && (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={abrirAviso}
+          style={{
+            position: 'absolute', top: 8, left: 8, right: 8, zIndex: 60,
+            flexDirection: 'row', alignItems: 'center', gap: 10,
+            padding: 12, borderRadius: 14, backgroundColor: '#1F2937',
+            borderLeftWidth: 4,
+            borderLeftColor: aviso.type === 'private' ? '#3B82F6' : aviso.type === 'general' ? '#F59E0B' : COLORS.primary,
+            shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25, shadowRadius: 8, elevation: 8,
+          }}
+        >
+          <View style={{
+            width: 36, height: 36, borderRadius: 18,
+            backgroundColor: aviso.type === 'private' ? '#3B82F6' : '#C44200',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Ionicons name={aviso.type === 'private' ? 'person' : 'megaphone'} size={17} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }} numberOfLines={1}>
+              {aviso.type === 'private' ? `Mensaje de ${aviso.userName}` : `Nuevo mensaje en ${aviso.roomName || (aviso.type === 'general' ? 'Chat General' : 'evento')}`}
+            </Text>
+            <Text style={{ color: '#cbd5e1', fontSize: 13 }} numberOfLines={1}>{aviso.message}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+        </TouchableOpacity>
       )}
     </View>
   );
