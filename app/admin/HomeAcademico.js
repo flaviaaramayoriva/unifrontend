@@ -8,6 +8,7 @@ import { PieChart } from 'react-native-chart-kit';
 import Svg, { Line, Circle, Text as SvgText, Path, Rect } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import dayjs from 'dayjs';
@@ -293,6 +294,23 @@ const ProximoEventoCard = ({ evento, onPress }) => {
     </TouchableOpacity>
   );
 };
+
+const ProyectarEventoCTA = ({ onPress }) => (
+  <Pressable onPress={onPress} style={({ pressed }) => [styles.proyectarBtnCard, pressed && styles.proyectarBtnPressed]}>
+    <LinearGradient colors={[COLORS.primary, '#8A2E00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.proyectarGradient}>
+      <View style={styles.proyectarIconWrap}>
+        <Ionicons name="add" size={30} color={COLORS.white} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.proyectarTitle}>Proyectar Evento</Text>
+        <Text style={styles.proyectarSubtitle}>Crea y gestiona un nuevo evento</Text>
+      </View>
+      <View style={styles.proyectarArrow}>
+        <Ionicons name="arrow-forward" size={22} color={COLORS.white} />
+      </View>
+    </LinearGradient>
+  </Pressable>
+);
 
 const MinimalHeader = ({ nombreUsuario, unreadCount, onNotificationPress, onRefresh, refreshing, lastUpdated, onTelegramPress, isTelegramLinked }) => {
   const hour = new Date().getHours();
@@ -583,8 +601,7 @@ const HomeAcademicoScreen = () => {
   };
 
   const adminActions = [
-    { id: '1', title: 'Proyectar Evento', icon: 'add-circle-outline', route: '/admin/ProyectoEvento', color: COLORS.primary, description: 'Crear y gestionar eventos' },
-    { id: '2', title: 'Pendientes', icon: 'timer-outline', route: '/admin/EventosPendientes', color: COLORS.warning, description: 'En espera de aprobación', badge: `${dashboardStats.find((s) => s.title === 'Pendientes')?.value ?? '0'} pendientes` },
+    { id: '1', title: 'Pendientes', icon: 'timer-outline', route: '/admin/EventosPendientes', color: COLORS.warning, description: 'En espera de aprobación', badge: `${dashboardStats.find((s) => s.title === 'Pendientes')?.value ?? '0'} pendientes` },
     { id: '3', title: 'Aprobados', icon: 'checkmark-circle-outline', route: '/admin/EventosAprobados', color: COLORS.success, description: 'Eventos aprobados' },
     { id: '4', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité' },
     { id: '5', title: 'Rechazados', icon: 'close-circle-outline', route: '/admin/EventosRechazados', color: COLORS.accent, description: 'Eventos rechazados' },
@@ -610,6 +627,10 @@ const HomeAcademicoScreen = () => {
           onTelegramPress={() => setShowTelegramModal(true)}
           isTelegramLinked={isTelegramLinked}
         />
+
+        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+          <ProyectarEventoCTA onPress={() => handleActionPress('/admin/ProyectoEvento')} />
+        </View>
 
         {proximoEvento ? (
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
@@ -881,6 +902,26 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
   headerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 3, fontWeight: '500' },
   lastUpdatedText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 6 },
+
+  proyectarBtnCard: {
+    borderRadius: 18, overflow: 'hidden', elevation: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12,
+  },
+  proyectarBtnPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
+  proyectarGradient: {
+    flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14, borderRadius: 18,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+  },
+  proyectarIconWrap: {
+    width: 52, height: 52, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
+  },
+  proyectarTitle: { fontSize: 19, fontWeight: '800', color: COLORS.white },
+  proyectarSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  proyectarArrow: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center', justifyContent: 'center',
+  },
   notifBadge: {
     position: 'absolute', top: 2, right: 2,
     backgroundColor: COLORS.white, borderRadius: 10,
