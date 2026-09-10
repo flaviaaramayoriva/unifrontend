@@ -20,15 +20,6 @@ import DashboardStats from '../../components/admin/DashboardStats';
 import OverviewCharts from '../../components/admin/OverviewCharts';
 import UpcomingEvents from '../../components/admin/UpcomingEvents';
 import { useNavigation } from '@react-navigation/native';
-import * as SecureStore from 'expo-secure-store';
-
-// ✅ statsRowStyles DEFINIDO AQUÍ - NIVEL MÓDULO (accesible en todo el archivo)
-const statsRowStyles = {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  width: '100%',
-  marginBottom: 20,
-};
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
@@ -53,17 +44,19 @@ const COLORS = {
   black: '#000000',
 };
 
+const statsRowStyles = {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  width: '100%',
+  marginBottom: 20,
+};
+
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
-    // Login.js guarda el token en sessionStorage. localStorage puede tener
-    // un token OBSOLETO de builds antiguos que provoca "invalid signature".
     try {
-      const sessionToken = sessionStorage.getItem(TOKEN_KEY);
-      if (sessionToken) return sessionToken;
-      localStorage.removeItem(TOKEN_KEY);
-      return null;
+      return localStorage.getItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al acceder a sessionStorage en web:", e);
+      console.error("Error al acceder a localStorage en web:", e);
       return null;
     }
   } else {
@@ -79,10 +72,9 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
-      sessionStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al eliminar token en web:", e);
+      console.error("Error al eliminar token de localStorage en web:", e);
     }
   } else {
     try {
@@ -99,7 +91,6 @@ const HomeAcademicoScreen = () => {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
-  // Estado local para datos seguros
   const [userProfile, setUserProfile] = useState({
     nombre: '',
     role: 'academico',
@@ -107,12 +98,6 @@ const HomeAcademicoScreen = () => {
   });
 
   const [error, setError] = useState('');
-
-  // Datos seguros con defaults vacíos (nunca undefined)
-  const [dashboardStats, setDashboardStats] = useState([]);
-  const [historicalData, setHistoricalData] = useState([]);
-  const [comiteeEvents, setComiteeEvents] = useState([]);
-  const [statusData, setStatusData] = useState({});
 
   useEffect(() => {
     const init = async () => {
@@ -168,30 +153,16 @@ const HomeAcademicoScreen = () => {
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        {/* ✅ Usando statsRowStyles definido al nivel módulo - NUNCA undefined */}
         <View style={statsRowStyles}>
-          <UpcomingEvents 
-            onSelectEvent={navigateTo} 
-            colors={colors} 
-            events={comiteeEvents} 
-          />
-          <DashboardStats 
-            stats={dashboardStats} 
-            historicalData={historicalData} 
-            loading={userProfile.loading}
-            colors={colors}
-          />
-          <OverviewCharts 
-            estadoCounts={statusData} 
-            historicalData={historicalData} 
-            colors={colors}
-          />
-        </View>
+          <UpcomingEvents nav={navigateTo} colors={colors} />
+        <DashboardStats colors={colors} />
+        <OverviewCharts colors={colors} />
 
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
+    </View>
     </View>
   );
 };
