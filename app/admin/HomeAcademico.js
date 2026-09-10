@@ -55,10 +55,15 @@ const COLORS = {
 
 const getTokenAsync = async () => {
   if (Platform.OS === 'web') {
+    // Login.js guarda el token en sessionStorage. localStorage puede tener
+    // un token OBSOLETO de builds antiguos que provoca "invalid signature".
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      const sessionToken = sessionStorage.getItem(TOKEN_KEY);
+      if (sessionToken) return sessionToken;
+      localStorage.removeItem(TOKEN_KEY);
+      return null;
     } catch (e) {
-      console.error("Error al acceder a localStorage en web:", e);
+      console.error("Error al acceder a sessionStorage en web:", e);
       return null;
     }
   } else {
@@ -74,9 +79,10 @@ const getTokenAsync = async () => {
 const deleteTokenAsync = async () => {
   if (Platform.OS === 'web') {
     try {
+      sessionStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(TOKEN_KEY);
     } catch (e) {
-      console.error("Error al eliminar token de localStorage en web:", e);
+      console.error("Error al eliminar token en web:", e);
     }
   } else {
     try {
