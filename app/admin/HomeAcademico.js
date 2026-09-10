@@ -359,6 +359,16 @@ const HomeAcademicoScreen = () => {
   const [salaActiva, setSalaActiva] = useState(null);
   const [chatUserId, setChatUserId] = useState(null);
 
+  const pedirPermisoNotifs = () => {
+    if (Platform.OS === 'web' && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  };
+  const abrirChat = () => {
+    pedirPermisoNotifs();
+    setIsChatOpen(true);
+  };
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3500);
@@ -825,7 +835,7 @@ const adminActions = [
       ) : null}
 
       {!isDockExpanded && (
-        <TouchableOpacity style={styles.fab} onPress={() => setIsChatOpen(true)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.fab} onPress={abrirChat} activeOpacity={0.85}>
           <Ionicons name="chatbubble-ellipses" size={24} color={COLORS.white} />
         </TouchableOpacity>
       )}
@@ -876,7 +886,7 @@ const adminActions = [
         userName={nombreUsuario || chatUserId}
         activeRoom={isChatOpen ? salaActiva : null}
         chatAbierto={isChatOpen}
-        onAbrir={() => setIsChatOpen(true)}
+        onAbrir={abrirChat}
       />
     </View>
   );

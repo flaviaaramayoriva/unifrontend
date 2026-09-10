@@ -13,6 +13,55 @@ const getToken = async () => {
   return await SecureStore.getItemAsync(TOKEN_KEY);
 };
 
+const audioStates = {};
+
+const sonarNotificacion = () => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined' || typeof AudioContext === 'undefined' && typeof window.webkitAudioContext === 'undefined') return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    let ctx = audioStates.ctx;
+    if (!ctx) { ctx = new Ctx(); audioStates.ctx = ctx; }
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const notas = [
+      { f: 659.25, t: 0 },
+      { f: 880, t: 0.09 },
+      { f: 1046.5, t: 0.18 },
+    ];
+    notas.forEach(({ f, t }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      const start = ctx.currentTime + t;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.18, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.35);
+    });
+  } catch (e) {}
+};
+
+const notificacionNavegador = (titulo, cuerpo) => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined' || typeof Notification === 'undefined') return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(titulo, {
+      body: cuerpo,
+      tag: 'chat_' + Date.now(),
+      silent: true,
+    });
+    n.onclick = () => {
+      window.focus();
+      if (n.close) n.close();
+    };
+    setTimeout(() => { if (n.close) n.close(); }, 8000);
+  } catch (e) {}
+};
+
 export default function ChatAlertas({ userId, userRole, userName, activeRoom = null, chatAbierto = false, onAbrir }) {
   const [alertas, setAlertas] = useState([]);
   const stateRef = useRef({ activeRoom, chatAbierto });
@@ -54,6 +103,13 @@ export default function ChatAlertas({ userId, userRole, userName, activeRoom = n
           const localId = `a_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
           setAlertas(prev => [...prev, { ...n, localId }].slice(-3));
           setTimeout(() => quitar(localId), 6000);
+          sonarNotificacion();
+          notificacionNavegador(
+            n.type === 'private'
+              ? `Mensaje de ${n.userName}`
+              : (n.roomName ? `Nuevo mensaje en ${n.roomName}` : 'Nuevo mensaje en el chat'),
+            n.message || ''
+          );
         });
       } catch (e) {
         console.warn('ChatAlertas: error conectando', e && e.message);
@@ -80,6 +136,8 @@ export default function ChatAlertas({ userId, userRole, userName, activeRoom = n
             flexDirection: 'row', alignItems: 'center', gap: 10,
             padding: 12, borderRadius: 14, marginBottom: 8,
             backgroundColor: '#1F2937',
+            borderLeftWidth: 4,
+            borderLeftColor: a.type === 'private' ? '#3B82F6' : a.type === 'general' ? '#F59E0B' : '#C44B0A',
             shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.25, shadowRadius: 8, elevation: 8,
           }}
@@ -93,7 +151,7 @@ export default function ChatAlertas({ userId, userRole, userName, activeRoom = n
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }} numberOfLines={1}>
-              {a.type === 'private' ? `Mensaje de ${a.userName}` : `Nuevo mensaje en ${a.roomName || 'evento'}`}
+              {a.type === 'private' ? `Mensaje de ${a.userName}` : `Nuevo mensaje en ${a.roomName || (a.type === 'general' ? 'Chat General' : 'evento')}`}
             </Text>
             <Text style={{ color: '#cbd5e1', fontSize: 13 }} numberOfLines={1}>{a.message}</Text>
           </View>
