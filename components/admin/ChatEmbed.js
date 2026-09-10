@@ -1006,13 +1006,24 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
                     onPress={() => abrirEvento(evento)}
                     activeOpacity={0.7}
                     style={{
-                      backgroundColor: COLORS.white, borderRadius: 14, padding: 12,
+                      backgroundColor: pendEvento > 0 ? '#FFF7ED' : COLORS.white, borderRadius: 14, padding: 12,
                       marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12,
-                      borderLeftWidth: 4, borderLeftColor: COLORS.primary,
+                      borderLeftWidth: 4, borderLeftColor: pendEvento > 0 ? '#DC2626' : COLORS.primary,
                       shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
                     }}
                   >
+                    {pendEvento > 0 && (
+                      <View style={{
+                        position: 'absolute', top: 0, right: 0,
+                        backgroundColor: '#DC2626', borderTopRightRadius: 14, borderBottomLeftRadius: 10,
+                        paddingHorizontal: 10, paddingVertical: 4,
+                      }}>
+                        <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>
+                          {pendEvento} nuevo{pendEvento !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                    )}
                     <View style={{
                       width: 46, height: 46, borderRadius: 12,
                       backgroundColor: esHoy ? '#FFF7ED' : COLORS.primaryLight,
@@ -1038,19 +1049,16 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
                           </Text>
                         </View>
                       ) : null}
-                    </View>
-                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
                       {pendEvento > 0 && (
-                        <View style={{
-                          minWidth: 20, height: 20, borderRadius: 10,
-                          backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center',
-                          paddingHorizontal: 5,
-                        }}>
-                          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>
-                            {pendEvento > 99 ? '99+' : pendEvento}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, backgroundColor: '#FEE2E2', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start' }}>
+                          <Ionicons name="chatbubble" size={12} color="#DC2626" />
+                          <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: '700' }}>
+                            {pendEvento} mensaje{pendEvento !== 1 ? 's' : ''} nuevo{pendEvento !== 1 ? 's' : ''}
                           </Text>
                         </View>
                       )}
+                    </View>
+                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
                       {nMiembros > 0 && (
                         <View style={{
                           flexDirection: 'row', alignItems: 'center', gap: 4,

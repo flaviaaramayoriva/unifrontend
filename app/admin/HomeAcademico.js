@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
   dockLogoutText: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginLeft: 8 },
 
   fab: {
-    position: 'absolute', bottom: 84, left: 20, width: 56, height: 56, borderRadius: 28,
+    position: 'absolute', bottom: 84, right: 20, width: 56, height: 56, borderRadius: 28,
     backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
     elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 6,
     zIndex: 15,
