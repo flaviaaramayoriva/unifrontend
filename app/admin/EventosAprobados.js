@@ -125,6 +125,31 @@ const EventosAprobadosPorFacultad = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [facultadFiltro, setFacultadFiltro] = useState('todas');
   const [faseFiltro, setFaseFiltro] = useState('1');
+  const [comiteEvents, setComiteEvents] = useState([]);
+  const [myId, setMyId] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [vista, setVista] = useState('todos'); // 'todos' | 'creados' | 'comite'
+
+  const normalizeComite = useCallback((ev) => ({
+    ...ev,
+    title: ev.nombreevento || 'Sin título',
+    nombreevento: ev.nombreevento,
+    id: ev.idevento,
+    idevento: ev.idevento,
+    date: ev.fechaevento,
+    fechaevento: ev.fechaevento,
+    fecha_inicio: ev.fechaevento,
+    time: ev.horaevento || 'N/A',
+    horaevento: ev.horaevento,
+    location: ev.lugarevento || 'Sin ubicación',
+    lugarevento: ev.lugarevento,
+    organizer: ev.academico?.nombre || 'Sin organizador',
+    responsable_evento: ev.academico?.nombre || 'Sin organizador',
+    idfase: ev.idfase || 1,
+    faculty: ev.facultad || 'Sin facultad',
+    facultad: ev.facultad || 'Sin facultad',
+    estado: ev.estado || 'aprobado',
+  }), []);
 
   const fetchApprovedEventsByFaculty = useCallback(async () => {
     try {
@@ -145,6 +170,24 @@ const EventosAprobadosPorFacultad = () => {
 
       setEvents(response.data || []);
 
+      try {
+        const [resComite, resProfile] = await Promise.all([
+          axios.get(`${API_BASE_URL}/dashboard/my-committee-events`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          axios.get(`${API_BASE_URL}/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
+
+        const dataComite = resComite.data?.events || [];
+        setComiteEvents(dataComite.map(normalizeComite));
+        setMyId(resProfile.data?.id ?? resProfile.data?.idusuario ?? null);
+        setUserRole(resProfile.data?.role || null);
+      } catch (e) {
+        console.warn('⚠️ No se pudo cargar comité/perfil:', e.message);
+      }
+
     } catch (error) {
       console.error('❌ Error al cargar eventos:', error);
 
@@ -161,7 +204,7 @@ const EventosAprobadosPorFacultad = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [router]);
+  }, [router, normalizeComite]);
 
   useEffect(() => {
     fetchApprovedEventsByFaculty();
@@ -181,20 +224,28 @@ const EventosAprobadosPorFacultad = () => {
     });
   };
 
+  const curEvents = useMemo(() => {
+    if (vista === 'creados') return events.filter(e => String(e.idacademico || e.organizerId) === String(myId));
+    if (vista === 'comite') return comiteEvents;
+    return events;
+  }, [vista, events, comiteEvents, myId]);
+
+  const creadosCount = useMemo(() => events.filter(e => String(e.idacademico || e.organizerId) === String(myId)).length, [events, myId]);
+
   const faculties = useMemo(() => {
-    const list = [...new Set(events.map(getEventFaculty))].sort();
+    const list = [...new Set(curEvents.map(getEventFaculty))].sort();
     return list;
-  }, [events]);
+  }, [curEvents]);
 
   const stats = useMemo(() => {
-    const total = events.length;
+    const total = curEvents.length;
     const upcoming = total;
     return { total, upcoming, faculties: faculties.length };
-  }, [events, faculties]);
+  }, [curEvents, faculties]);
 
   const filteredEvents = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    return events.filter(event => {
+    return curEvents.filter(event => {
       if (isEventPast(event)) return false;
       if (faseFiltro !== 'todas' && String(event.idfase || 1) !== faseFiltro) return false;
       if (facultadFiltro !== 'todas' && getEventFaculty(event) !== facultadFiltro) return false;
@@ -208,14 +259,14 @@ const EventosAprobadosPorFacultad = () => {
       }
       return true;
     });
-  }, [events, searchTerm, facultadFiltro, faseFiltro]);
+  }, [curEvents, searchTerm, facultadFiltro, faseFiltro]);
 
   const phaseStats = useMemo(() => {
-    const upcoming = events.filter(e => !isEventPast(e));
+    const upcoming = curEvents.filter(e => !isEventPast(e));
     const fase1 = upcoming.filter(e => String(e.idfase || 1) === '1').length;
     const fase2 = upcoming.filter(e => String(e.idfase || 1) === '2').length;
     return { fase1, fase2 };
-  }, [events]);
+  }, [curEvents]);
 
   const sections = useMemo(() => {
     const grouped = {};
@@ -361,7 +412,7 @@ const EventosAprobadosPorFacultad = () => {
   };
 
   const renderListHeader = () => {
-    const phase2Count = events.filter(e => e.idfase === 2 && !isEventPast(e)).length;
+    const phase2Count = vista === 'todos' ? events.filter(e => e.idfase === 2 && !isEventPast(e)).length : 0;
 
     return (
       <View>
@@ -379,7 +430,34 @@ const EventosAprobadosPorFacultad = () => {
           </View>
         )}
 
-        <View style={styles.phaseTabs}>
+        {userRole === 'academico' && (
+          <View style={styles.vistaTabs}>
+            {[
+              { id: 'todos',    label: 'Todos',         count: events.length },
+              { id: 'creados',  label: 'Creados por mí', count: creadosCount },
+              { id: 'comite',   label: 'Como comité',    count: comiteEvents.length },
+            ].map(t => (
+              <TouchableOpacity
+                key={t.id}
+                style={[styles.vistaTab, vista === t.id && styles.vistaTabActive]}
+                onPress={() => setVista(t.id)}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.vistaTabText, vista === t.id && styles.vistaTabTextActive]} numberOfLines={1}>
+                  {t.label}
+                </Text>
+                <View style={[styles.vistaTabCount, vista === t.id && styles.vistaTabCountActive]}>
+                  <Text style={[styles.vistaTabCountText, vista === t.id && styles.vistaTabCountTextActive]}>
+                    {t.count}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {vista !== 'comite' && (
+          <View style={styles.phaseTabs}>
           <TouchableOpacity
             style={[styles.phaseTab, faseFiltro === '1' && styles.phaseTabActive1]}
             onPress={() => setFaseFiltro('1')}
@@ -412,6 +490,7 @@ const EventosAprobadosPorFacultad = () => {
             </View>
           </TouchableOpacity>
         </View>
+        )}
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -483,7 +562,9 @@ const EventosAprobadosPorFacultad = () => {
 
         <Text style={styles.resultsText}>
           {filteredEvents.length} {filteredEvents.length === 1 ? 'evento' : 'eventos'}
-          {searchTerm || facultadFiltro !== 'todas' ? ' encontrados' : ` en Fase ${faseFiltro}`}
+          {searchTerm || facultadFiltro !== 'todas'
+            ? ' encontrados'
+            : vista === 'creados' ? ' creados por ti' : vista === 'comite' ? ' como comité' : ` en Fase ${faseFiltro}`}
         </Text>
       </View>
     );
@@ -536,13 +617,17 @@ const EventosAprobadosPorFacultad = () => {
             <View style={styles.emptyIconContainer}>
               <Ionicons name="school-outline" size={72} color={COLORS.grayMedium} />
             </View>
-            <Text style={styles.emptyTitle}>{events.length === 0 ? 'No hay eventos' : 'Sin resultados'}</Text>
+            <Text style={styles.emptyTitle}>{curEvents.length === 0 ? 'No hay eventos' : 'Sin resultados'}</Text>
             <Text style={styles.emptyText}>
-              {events.length === 0
-                ? 'No se encontraron eventos aprobados organizados por facultad.'
+              {curEvents.length === 0
+                ? (vista === 'creados'
+                  ? 'Aún no has creado eventos aprobados.'
+                  : vista === 'comite'
+                    ? 'Aún no formas parte del comité de ningún evento aprobado.'
+                    : 'No se encontraron eventos aprobados organizados por facultad.')
                 : 'No hay eventos que coincidan con los filtros aplicados. Intenta ajustar la búsqueda.'}
             </Text>
-            {(events.length > 0 && (searchTerm || facultadFiltro !== 'todas')) && (
+            {(curEvents.length > 0 && (searchTerm || facultadFiltro !== 'todas')) && (
 
               <TouchableOpacity
                 style={styles.clearFiltersButton}
@@ -756,6 +841,59 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   phaseTabCountTextActive: {
+    color: COLORS.white,
+  },
+
+  vistaTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  vistaTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  vistaTabActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  vistaTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.grayText,
+    flexShrink: 1,
+  },
+  vistaTabTextActive: {
+    color: COLORS.white,
+  },
+  vistaTabCount: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  vistaTabCountActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  vistaTabCountText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  vistaTabCountTextActive: {
     color: COLORS.white,
   },
 
