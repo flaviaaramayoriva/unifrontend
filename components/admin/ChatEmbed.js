@@ -1,25 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, FlatList,
-  TextInput, KeyboardAvoidingView, ActivityIndicator, Platform,
+  View, Text, FlatList, TextInput, TouchableOpacity,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Alert, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import dayjs from 'dayjs';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
+const TOKEN_KEY    = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#C44200', primaryLight: '#FFF0E6', secondary: '#0F172A',
-  accent: '#EF4444', success: '#047857', warning: '#F59E0B',
-  info: '#3B82F6', background: '#F6F7F9', surface: '#FFFFFF',
-  textPrimary: '#1F2937', textSecondary: '#64748B', textTertiary: '#94A3B8',
-  border: '#E6E9EF', divider: '#D1D5DB', shadow: 'rgba(0,0,0,0.05)',
-  white: '#FFFFFF', black: '#000000',
+  primary: '#C44200', primaryLight: '#FFEDD5',
+  success: '#047857', warning: '#F59E0B',
+  accent: '#EF4444',  secondary: '#4B5563',
+  surface: '#FFFFFF', background: '#F4F7F9',
+  border: '#E6E9EF',  textPrimary: '#1F2937',
+  textSecondary: '#6B7280', textTertiary: '#9CA3AF',
+  white: '#FFFFFF',
 };
 
-const SALA_GENERAL = 'general';
-const ROL_COLORS = { admin: '#FF6B35', creador: '#007AFF', logistica: '#34C759' };
+const ROL_COLORS = {
+  admin: '#FF6B35', creador: '#007AFF',
+  logistica: '#34C759', academico: '#9B59B6',
+};
+
+const getToken = async () => {
+  if (Platform.OS === 'web') return sessionStorage.getItem(TOKEN_KEY);
+  return await SecureStore.getItemAsync(TOKEN_KEY);
+};
 
 const initialDe = (nombre) => (nombre || '?').trim().charAt(0).toUpperCase();
 
@@ -32,19 +40,25 @@ const formatTime = (ts) => {
   return `${hh}:${mm}`;
 };
 
-const isEventActive = (ev) => {
-  const dateStr = ev.fechaevento ?? ev.date ?? ev.fecha ?? ev.fechaInicio ?? null;
-  if (!dateStr) return true;
-  let eventDate;
-  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-    eventDate = dayjs(dateStr, 'YYYY-MM-DD');
-  } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-    eventDate = dayjs(dateStr, 'DD/MM/YYYY');
-  } else {
-    eventDate = dayjs(dateStr);
-  }
-  if (!eventDate.isValid()) return true;
-  return eventDate.isSame(dayjs().startOf('day')) || eventDate.isAfter(dayjs().startOf('day'));
+const fechaStr = (e) => {
+  const v = e?.fechaevento || e?.fechaEvento || '';
+  return String(v).split('T')[0];
+};
+
+const hoyStr = () => {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+};
+
+const formatearFecha = (f) => {
+  const s = (f || '').toString().split('T')[0];
+  if (s.length !== 10) return 'Fecha por definir';
+  const [y, m, d] = s.split('-').map(Number);
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  if (!y || !m || !d) return 'Fecha por definir';
+  return `${String(d).padStart(2, '0')} ${meses[m - 1]} ${y}`;
 };
 
 const Avatar = ({ nombre, color, size = 32 }) => (
@@ -57,7 +71,7 @@ const Avatar = ({ nombre, color, size = 32 }) => (
   </View>
 );
 
-const BurbujaAdmin = ({ item, myId, esPrimero }) => {
+const Burbuja = ({ item, myId, esPrimero }) => {
   if (item.system) return (
     <View style={{ alignItems: 'center', marginVertical: 6 }}>
       <Text style={{ fontSize: 11, color: '#b0b3bb', fontStyle: 'italic' }}>{item.text}</Text>
@@ -66,51 +80,47 @@ const BurbujaAdmin = ({ item, myId, esPrimero }) => {
 
   const isBot = Boolean(item.esBot) || item.userId === 0;
 
-  if (isBot) {
-    return (
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: esPrimero ? 5 : 1, justifyContent: 'flex-start' }}>
-        {esPrimero ? <Avatar nombre="IA" color="#9B59B6" /> : <View style={{ width: 32, height: 32 }} />}
-        <View style={{ maxWidth: '76%' }}>
-          {esPrimero && (
-            <Text style={{ fontSize: 11, color: '#9B59B6', fontWeight: '700', marginBottom: 3, marginLeft: 4 }}>
-              🤖 Asistente IA
-            </Text>
-          )}
-          <View style={{
-            backgroundColor: '#F3E5F5', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
-            borderTopLeftRadius: esPrimero ? 5 : 18,
-            borderLeftWidth: 3, borderLeftColor: '#9B59B6',
-          }}>
-            <Text style={{ fontSize: 14, color: COLORS.textPrimary, lineHeight: 20 }}>{item.message}</Text>
-          </View>
-          <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginLeft: 4 }}>
-            {formatTime(item.timestamp)}
+  if (isBot) return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: esPrimero ? 5 : 1, justifyContent: 'flex-start' }}>
+      {esPrimero ? <Avatar nombre="IA" color="#9B59B6" /> : <View style={{ width: 32, height: 32 }} />}
+      <View style={{ maxWidth: '76%' }}>
+        {esPrimero && (
+          <Text style={{ fontSize: 11, color: '#9B59B6', fontWeight: '700', marginBottom: 3, marginLeft: 4 }}>
+            🤖 Asistente IA
           </Text>
+        )}
+        <View style={{
+          backgroundColor: '#F3E5F5', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
+          borderTopLeftRadius: esPrimero ? 5 : 18,
+          borderLeftWidth: 3, borderLeftColor: '#9B59B6',
+        }}>
+          <Text style={{ fontSize: 14, color: COLORS.textPrimary, lineHeight: 20 }}>{item.message}</Text>
         </View>
+        <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginLeft: 4 }}>
+          {formatTime(item.timestamp)}
+        </Text>
       </View>
-    );
-  }
+    </View>
+  );
 
   const isMe = String(item.userId) === String(myId);
   const color = ROL_COLORS[item.role] || COLORS.secondary;
 
-  if (isMe) {
-    return (
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginVertical: esPrimero ? 5 : 1 }}>
-        <View style={{ maxWidth: '76%', alignItems: 'flex-end' }}>
-          <View style={{
-            backgroundColor: COLORS.primary, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
-            borderBottomRightRadius: esPrimero ? 5 : 18,
-          }}>
-            <Text style={{ fontSize: 14, color: '#fff', lineHeight: 20 }}>{item.message}</Text>
-          </View>
-          <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginRight: 4 }}>
-            {formatTime(item.timestamp)}
-          </Text>
+  if (isMe) return (
+    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginVertical: esPrimero ? 5 : 1 }}>
+      <View style={{ maxWidth: '76%', alignItems: 'flex-end' }}>
+        <View style={{
+          backgroundColor: COLORS.primary, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18,
+          borderBottomRightRadius: esPrimero ? 5 : 18,
+        }}>
+          <Text style={{ fontSize: 14, color: '#fff', lineHeight: 20 }}>{item.message}</Text>
         </View>
+        <Text style={{ fontSize: 10, color: COLORS.textTertiary, marginTop: 2, marginRight: 4 }}>
+          {formatTime(item.timestamp)}
+        </Text>
       </View>
-    );
-  }
+    </View>
+  );
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: esPrimero ? 5 : 1, justifyContent: 'flex-start' }}>
@@ -136,7 +146,7 @@ const BurbujaAdmin = ({ item, myId, esPrimero }) => {
   );
 };
 
-const InputPanelAdmin = ({ input, setInput, onSend, connected }) => {
+const InputPanel = ({ input, setInput, onSend, connected }) => {
   const disabled = !input.trim() || !connected;
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -177,208 +187,184 @@ const InputPanelAdmin = ({ input, setInput, onSend, connected }) => {
   );
 };
 
-const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
-  const [vista, setVista]           = useState('eventos'); // 'eventos' | 'chat'
-  const [eventos, setEventos]       = useState([]);
-  const [loadingEventos, setLoadingEventos] = useState(true);
-  const [eventoActual, setEventoActual]     = useState(null); // null = chat general
-  const [messages, setMessages]     = useState([]);
-  const [input, setInput]           = useState('');
-  const [connected, setConnected]   = useState(false);
-  const [botTyping, setBotTyping]   = useState(false);
-  const [usuarios, setUsuarios]     = useState([]);
-  const socketRef   = useRef(null);
-  const flatListRef = useRef(null);
-  const ioRef       = useRef(null);
-  const salaRef     = useRef(SALA_GENERAL);
-  const onRoomChangeRef = useRef(onRoomChange);
+const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, userName, onVolver, onRoomChange }) => {
+  const [messages, setMessages]   = useState([]);
+  const [input, setInput]         = useState('');
+  const [connected, setConnected] = useState(false);
+  const [botTyping, setBotTyping] = useState(false);
+  const [usuarios, setUsuarios]   = useState([]);
+  const socketRef  = useRef(null);
+  const flatRef    = useRef(null);
 
-  useEffect(() => { onRoomChangeRef.current = onRoomChange; }, [onRoomChange]);
-  useEffect(() => { onRoomChangeRef.current && onRoomChangeRef.current(null); }, []);
+  const roomIdRef   = useRef(roomId);
+  const userIdRef   = useRef(userId);
+  const userRoleRef = useRef(userRole);
+  const userNameRef = useRef(userName);
+  const eventoIdRef = useRef(eventoId);
 
   useEffect(() => {
-    const cargarEventos = async () => {
-      try {
-        const token = Platform.OS === 'web'
-          ? sessionStorage.getItem('adminAuthToken')
-          : await SecureStore.getItemAsync('adminAuthToken');
+    roomIdRef.current = roomId;
+    userIdRef.current = userId;
+    userRoleRef.current = userRole;
+    userNameRef.current = userName;
+    eventoIdRef.current = eventoId;
+  }, [roomId, userId, userRole, userName, eventoId]);
 
-        const res = await fetch(`${API_BASE_URL}/eventos`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        const aprobados = Array.isArray(data)
-          ? data.filter(e => e.estado === 'aprobado' && isEventActive(e))
-          : [];
-        setEventos(aprobados);
-      } catch (e) {
-        console.warn('Error cargando eventos:', e.message);
-      } finally {
-        setLoadingEventos(false);
-      }
-    };
-    cargarEventos();
-  }, []);
+  useEffect(() => {
+    let socket;
+    let isMounted = true;
 
-  const conectarSala = (eventoId) => {
-    salaRef.current = String(eventoId);
-    onRoomChangeRef.current && onRoomChangeRef.current(String(eventoId));
-    setMessages([]);
-    setVista('chat');
+    const initSocket = async () => {
+      const _roomId   = roomIdRef.current;
+      const _userId   = userIdRef.current;
+      const _userRole = userRoleRef.current;
+      const _userName = userNameRef.current;
+      const _eventoId = eventoIdRef.current;
 
-    import('socket.io-client').then(mod => {
-      ioRef.current = mod.io || mod.default;
+      const mod = await import('socket.io-client');
+      const io = mod.io || mod.default;
 
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-
-      const socket = ioRef.current(API_BASE_URL, {
-        transports: Platform.OS === 'web' ? ['polling', 'websocket'] : ['websocket']
+      socket = io(API_BASE_URL, {
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+        timeout: 20000,
       });
+
       socketRef.current = socket;
 
       socket.on('connect', () => {
+        if (!isMounted) return;
         setConnected(true);
-        socket.emit('join_event', {
-          eventoId: String(eventoId),
-          userId,
-          role: userRole,
-          userName: userName || userId
-        });
+
+        if (_roomId.startsWith('private_')) {
+          socket.emit('join_private', { roomId: _roomId, userId: _userId, userName: _userName });
+        } else {
+          socket.emit('join_event', {
+            eventoId: String(_eventoId),
+            userId: _userId,
+            role: _userRole,
+            userName: _userName
+          });
+        }
       });
 
-      socket.on('disconnect', () => setConnected(false));
-
       socket.on('history', (h) => {
-        setMessages(h.map((m, i) => ({ ...m, id: `h_${i}` })));
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 100);
+        if (!isMounted) return;
+        if (h.length > 0) {
+          setMessages(h.map((m, i) => ({ ...m, id: `h_${i}` })));
+        }
+        setTimeout(() => flatRef.current?.scrollToEnd({ animated: false }), 100);
       });
 
       socket.on('receive_message', (msg) => {
-        setMessages(prev => [...prev, { ...msg, id: `m_${Date.now()}` }]);
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        if (!isMounted) return;
+        setMessages(prev => [...prev, { ...msg, id: `m_${Date.now()}_${Math.random()}` }]);
+        setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 100);
+      });
+
+      socket.on('private_message', (msg) => {
+        if (!isMounted) return;
+        setMessages(prev => [...prev, { ...msg, id: `p_${Date.now()}_${Math.random()}` }]);
+        setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 100);
       });
 
       socket.on('user_list', (l) => {
-        setUsuarios(l || []);
+        if (isMounted) setUsuarios(l || []);
       });
 
       socket.on('user_joined', (u) => {
+        if (!isMounted) return;
         setUsuarios(prev => prev.some(x => String(x.userId) === String(u.userId)) ? prev : [...prev, u]);
       });
 
       socket.on('user_left', (u) => {
+        if (!isMounted) return;
         setUsuarios(prev => prev.filter(x => String(x.userId) !== String(u.userId)));
       });
 
       socket.on('bot_typing', () => {
+        if (!isMounted) return;
         setBotTyping(true);
         setTimeout(() => setBotTyping(false), 2000);
       });
-    });
-  };
 
-  const abrirChat = (evento) => {
-    setEventoActual(evento);
-    conectarSala(evento.idevento || evento.id);
-  };
+      socket.on('connect_error', () => {
+        if (isMounted) setConnected(false);
+      });
 
-  const abrirGeneral = () => {
-    setEventoActual(null);
-    conectarSala(SALA_GENERAL);
-  };
+      socket.on('disconnect', () => {
+        if (isMounted) setConnected(false);
+      });
 
-  const volverAEventos = () => {
-    if (socketRef.current) {
-      socketRef.current.emit('leave_event', { eventoId: salaRef.current });
-      socketRef.current.disconnect();
-    }
-    onRoomChangeRef.current && onRoomChangeRef.current(null);
-    setVista('eventos');
-    setConnected(false);
-    setMessages([]);
-  };
+      socket.on('error', (e) => {
+        Alert.alert('Error', e.message || 'Error en el chat');
+      });
+    };
+
+    initSocket();
+
+    return () => {
+      isMounted = false;
+      if (socket) {
+        const _roomId = roomIdRef.current;
+        const _eventoId = eventoIdRef.current;
+
+        if (_roomId.startsWith('private_')) {
+          socket.emit('leave_private', { roomId: _roomId });
+        } else {
+          socket.emit('leave_event', { eventoId: String(_eventoId) });
+        }
+        socket.disconnect();
+      }
+    };
+  }, [roomId, eventoId]);
+
+  useEffect(() => {
+    onRoomChange && onRoomChange(roomId);
+    return () => onRoomChange && onRoomChange(null);
+  }, [roomId]);
 
   const handleSend = () => {
     const texto = input.trim();
-    if (!texto || !socketRef.current?.connected) return;
-    socketRef.current.emit('send_message', {
-      eventoId: salaRef.current,
-      userId, role: userRole, userName: userName || userId, message: texto
-    });
+    if (!texto) return;
+
+    if (!socketRef.current?.connected) {
+      Alert.alert('Error', 'No hay conexión con el servidor de chat');
+      return;
+    }
+
+    const _roomId = roomIdRef.current;
+    const _userId = userIdRef.current;
+    const _userRole = userRoleRef.current;
+    const _userName = userNameRef.current;
+    const _eventoId = eventoIdRef.current;
+
+    if (_roomId.startsWith('private_')) {
+      socketRef.current.emit('send_private', {
+        roomId: _roomId,
+        userId: _userId,
+        userName: _userName,
+        role: _userRole,
+        message: texto
+      });
+    } else {
+      socketRef.current.emit('send_message', {
+        eventoId: String(_eventoId),
+        userId: _userId,
+        role: _userRole,
+        userName: _userName,
+        message: texto
+      });
+    }
+
     setInput('');
   };
 
-  if (vista === 'eventos') {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
-        <View style={{ padding: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee' }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#666', marginBottom: 10 }}>
-            Selecciona un evento o vuelve al chat general
-          </Text>
-          <TouchableOpacity
-            onPress={abrirGeneral}
-            style={{
-              flexDirection: 'row', alignItems: 'center', gap: 8,
-              backgroundColor: COLORS.primaryLight, borderRadius: 10,
-              paddingHorizontal: 12, paddingVertical: 10,
-            }}
-          >
-            <Ionicons name="chatbubbles" size={18} color={COLORS.primary} />
-            <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.primary }}>Ir al Chat General</Text>
-          </TouchableOpacity>
-        </View>
-
-        {loadingEventos ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          </View>
-        ) : eventos.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-            <Ionicons name="calendar-outline" size={40} color="#ccc" />
-            <Text style={{ color: '#aaa', marginTop: 10, textAlign: 'center' }}>
-              No hay eventos aprobados disponibles
-            </Text>
-          </View>
-        ) : (
-          <ScrollView contentContainerStyle={{ padding: 12 }}>
-            {eventos.map((evento) => (
-              <TouchableOpacity
-                key={evento.idevento || evento.id}
-                onPress={() => abrirChat(evento)}
-                style={{
-                  backgroundColor: '#fff', borderRadius: 12, padding: 14,
-                  marginBottom: 10, flexDirection: 'row', alignItems: 'center',
-                  borderLeftWidth: 4, borderLeftColor: COLORS.primary,
-                  shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 }}>
-                    {evento.nombreevento || 'Sin nombre'}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: '#888' }}>
-                    {evento.fechaevento?.split('T')[0] || '–'} · {evento.lugarevento || '–'}
-                  </Text>
-                  {evento.Comite && evento.Comite.length > 0 && (
-                    <Text style={{ fontSize: 11, color: COLORS.primary, marginTop: 4 }}>
-                      👥 {evento.Comite.length} miembro{evento.Comite.length > 1 ? 's' : ''} en el comité
-                    </Text>
-                  )}
-                </View>
-                <Ionicons name="chatbubbles-outline" size={22} color={COLORS.primary} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-      </View>
-    );
-  }
-
+  const esPrivado = roomId.startsWith('private_');
   const statusText = connected
-    ? `${eventoActual ? `${(eventoActual.Comite || []).length} miembros` : 'Todos los usuarios'}${usuarios.length ? ` · ${usuarios.length} en línea` : ''}`
+    ? `${subtitulo}${usuarios.length ? ` · ${usuarios.length} en línea` : ''}`
     : 'Conectando...';
 
   return (
@@ -389,7 +375,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
         backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border,
       }}>
         <TouchableOpacity
-          onPress={volverAEventos}
+          onPress={onVolver}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           style={{
             width: 36, height: 36, borderRadius: 18,
@@ -400,17 +386,21 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
           <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
         </TouchableOpacity>
 
-        <View style={{
-          width: 38, height: 38, borderRadius: 19,
-          backgroundColor: COLORS.primaryLight,
-          alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Ionicons name="chatbubbles" size={20} color={COLORS.primary} />
-        </View>
+        {esPrivado
+          ? <Avatar nombre={titulo} color={COLORS.primary} size={38} />
+          : (
+            <View style={{
+              width: 38, height: 38, borderRadius: 19,
+              backgroundColor: COLORS.primaryLight,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Ionicons name="chatbubbles" size={20} color={COLORS.primary} />
+            </View>
+          )}
 
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.textPrimary }} numberOfLines={1}>
-            {eventoActual ? (eventoActual.nombreevento || 'Evento') : 'Chat General'}
+            {titulo}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
             <View style={{
@@ -425,7 +415,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
       </View>
 
       <FlatList
-        ref={flatListRef}
+        ref={flatRef}
         data={messages}
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 12, flexGrow: 1 }}
@@ -439,8 +429,9 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
           const esPrimero = !prev
             || String(prev.userId) !== String(item.userId)
             || Boolean(prev.esBot) !== Boolean(item.esBot);
-          return <BurbujaAdmin item={item} myId={userId} esPrimero={esPrimero} />;
+          return <Burbuja item={item} myId={userId} esPrimero={esPrimero} />;
         }}
+
         ListFooterComponent={
           botTyping ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 6 }}>
@@ -449,6 +440,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
             </View>
           ) : null
         }
+
         ListEmptyComponent={
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
             <View style={{
@@ -466,7 +458,511 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
         }
       />
 
-      <InputPanelAdmin input={input} setInput={setInput} onSend={handleSend} connected={connected} />
+      <InputPanel input={input} setInput={setInput} onSend={handleSend} connected={connected} />
+    </View>
+  );
+};
+
+const VistaEvento = ({ evento, userId, userRole, userName, onVolver, onRoomChange }) => {
+  const [tab, setTab]         = useState('grupal');
+  const [chatPrivado, setChatPrivado] = useState(null);
+
+  const creadorId = String(evento.idacademico);
+  const miembrosComite = (evento.Comite || []).filter(m => String(m.idusuario) !== String(userId));
+
+  const miembros = String(userId) !== creadorId
+    ? [...miembrosComite, { idusuario: creadorId, nombre: 'Creador del evento', rol_comite: 'creador' }]
+    : miembrosComite;
+
+  if (chatPrivado) {
+    const roomId = 'private_' + [userId, chatPrivado.idusuario]
+      .map(String)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .join('_');
+
+    return (
+      <VistaChat
+        eventoId={evento.idevento}
+        titulo={chatPrivado.nombre || chatPrivado.usuario?.nombre || `Usuario ${chatPrivado.idusuario}`}
+        subtitulo="Chat privado"
+        roomId={roomId}
+        userId={userId} userRole={userRole} userName={userName}
+        onRoomChange={onRoomChange}
+        onVolver={() => setChatPrivado(null)}
+      />
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        paddingHorizontal: 12, paddingVertical: 10,
+        backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border,
+      }}>
+        <TouchableOpacity onPress={onVolver} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
+        </TouchableOpacity>
+        <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: COLORS.textPrimary }} numberOfLines={1}>
+          {evento.nombreevento || 'Evento'}
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border }}>
+        {[
+          { id: 'grupal',   label: 'Chat',     icon: 'chatbubbles-outline' },
+          { id: 'miembros', label: 'Miembros', icon: 'people-outline' },
+        ].map(t => (
+          <TouchableOpacity
+            key={t.id}
+            onPress={() => setTab(t.id)}
+            style={{
+              flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+              gap: 6, paddingVertical: 12,
+              borderBottomWidth: tab === t.id ? 2 : 0,
+              borderBottomColor: COLORS.primary,
+            }}
+          >
+            <Ionicons name={t.icon} size={16} color={tab === t.id ? COLORS.primary : COLORS.textTertiary} />
+            <Text style={{ fontSize: 11, fontWeight: '600', color: tab === t.id ? COLORS.primary : COLORS.textTertiary }} numberOfLines={1}>
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {tab === 'grupal' ? (
+        <VistaChat
+          eventoId={evento.idevento}
+          titulo={`#${evento.nombreevento}`}
+          subtitulo={`${(evento.Comite || []).length} miembros`}
+          roomId={String(evento.idevento)}
+          userId={userId} userRole={userRole} userName={userName}
+          onRoomChange={onRoomChange}
+          onVolver={onVolver}
+        />
+      ) : (
+        <ScrollView contentContainerStyle={{ padding: 16 }}>
+          {miembros.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingTop: 40 }}>
+              <Ionicons name="people-outline" size={40} color="#d3d6dc" />
+              <Text style={{ color: '#a6aab2', fontSize: 13, marginTop: 8 }}>No hay otros miembros</Text>
+            </View>
+          ) : (
+            miembros.map((m) => {
+              const nombre = m.nombre || m.usuario?.nombre || `Usuario ${m.idusuario}`;
+              const apellido = m.apellidopat || m.usuario?.apellidopat || '';
+              const rol = m.rol_comite || m.role || 'miembro';
+              const colorRol = ROL_COLORS[rol] || COLORS.secondary;
+
+              return (
+                <TouchableOpacity
+                  key={m.idusuario}
+                  onPress={() => setChatPrivado(m)}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 12,
+                    backgroundColor: COLORS.white, borderRadius: 12,
+                    padding: 14, marginBottom: 8,
+                    shadowColor: '#000', shadowOpacity: 0.04,
+                    shadowOffset: { width: 0, height: 1 }, shadowRadius: 3, elevation: 1,
+                  }}
+                >
+                  <Avatar nombre={`${nombre} ${apellido}`} color={colorRol} size={44} />
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.textPrimary }}>
+                      {nombre} {apellido}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colorRol }} />
+                      <Text style={{ fontSize: 11, color: COLORS.textTertiary, textTransform: 'capitalize' }}>{rol}</Text>
+                    </View>
+                  </View>
+
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 4,
+                    backgroundColor: COLORS.primaryLight, borderRadius: 20,
+                    paddingHorizontal: 12, paddingVertical: 6,
+                  }}>
+                    <Ionicons name="chatbubble-outline" size={14} color={COLORS.primary} />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.primary }}>Mensaje</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </ScrollView>
+      )}
+    </View>
+  );
+};
+
+const ChatEmbed = ({ userId, userRole, userName, onRoomChange }) => {
+  const [tabMain, setTabMain]           = useState('grupo'); // 'grupo' | 'personal'
+  const [vista, setVista]               = useState('eventos'); // 'chat' (general) | 'eventos'
+  const [eventos, setEventos]           = useState([]);
+  const [contactos, setContactos]       = useState([]);
+  const [loadingEventos, setLoading]    = useState(true);
+  const [eventoActual, setEventoActual] = useState(null);
+  const [chatPrivado, setChatPrivado]   = useState(null);
+  const [abriendoEvento, setAbriendoEvento] = useState(false);
+
+  const onRoomChangeRef = useRef(onRoomChange);
+  useEffect(() => { onRoomChangeRef.current = onRoomChange; }, [onRoomChange]);
+
+  useEffect(() => {
+    if (eventoActual || chatPrivado) return;
+    onRoomChangeRef.current && onRoomChangeRef.current(vista === 'chat' ? 'general' : null);
+  }, [vista, eventoActual, chatPrivado]);
+
+  useEffect(() => {
+    const cargar = async () => {
+      try {
+        const token = await getToken();
+
+        const [resComite, resCreados] = await Promise.all([
+          fetch(`${API_BASE_URL}/dashboard/my-committee-events`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch(`${API_BASE_URL}/eventos`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+        const dataComite = await resComite.json();
+        const dataCreados = await resCreados.json();
+        const eventosComite = dataComite.events || [];
+
+        const hoy = hoyStr();
+        const esFuturo = (e) => {
+          const s = fechaStr(e);
+          return s.length === 10 && s >= hoy;
+        };
+
+        const eventosComiteFuturos = eventosComite.filter(esFuturo);
+
+        const eventosCreados = Array.isArray(dataCreados)
+          ? dataCreados.filter(e => {
+            return e.estado === 'aprobado'
+              && String(e.idacademico) === String(userId)
+              && esFuturo(e);
+          })
+          : [];
+
+        const idsVistos = new Set();
+        const eventosUnicos = [...eventosComiteFuturos, ...eventosCreados]
+          .filter(e => {
+            if (idsVistos.has(e.idevento)) return false;
+            idsVistos.add(e.idevento);
+            return true;
+          })
+          .sort((a, b) => (fechaStr(a) || '9999').localeCompare(fechaStr(b) || '9999'));
+
+        setEventos(eventosUnicos);
+
+        const mapContactos = new Map();
+        eventosUnicos.forEach((ev) => {
+          const comite = ev.Comite || ev.comite || [];
+          comite.forEach((m) => {
+            const idC = String(m.idusuario);
+            if (idC !== String(userId) && !mapContactos.has(idC)) {
+              mapContactos.set(idC, { idusuario: idC, nombre: m.nombre || m.usuario?.nombre, apellidopat: m.apellidopat || m.usuario?.apellidopat, rol_comite: m.rol_comite || m.role || 'miembro' });
+            }
+          });
+          if (ev.idacademico && String(ev.idacademico) !== String(userId)) {
+            const idA = String(ev.idacademico);
+            if (!mapContactos.has(idA)) {
+              mapContactos.set(idA, { idusuario: idA, nombre: 'Creador del evento', apellidopat: '', rol_comite: 'creador' });
+            }
+          }
+        });
+        setContactos(Array.from(mapContactos.values()));
+      } catch (e) {
+        Alert.alert('Error', 'No se pudieron cargar los chats');
+      } finally {
+        setLoading(false);
+      }
+    };
+    cargar();
+  }, [userId]);
+
+  const abrirEvento = async (evento) => {
+    setAbriendoEvento(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/eventos/${evento.idevento}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const detalle = await res.json();
+      setEventoActual(detalle);
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo abrir el evento');
+    } finally {
+      setAbriendoEvento(false);
+    }
+  };
+
+  const abrirPrivado = (contacto) => {
+    const roomId = 'private_' + [userId, contacto.idusuario]
+      .map(String)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .join('_');
+    setChatPrivado({ ...contacto, roomId });
+  };
+
+  if (eventoActual) {
+    return (
+      <VistaEvento
+        evento={eventoActual}
+        userId={userId} userRole={userRole} userName={userName}
+        onRoomChange={onRoomChangeRef.current}
+        onVolver={() => { setVista('eventos'); setEventoActual(null); }}
+      />
+    );
+  }
+
+  if (chatPrivado) {
+    return (
+      <VistaChat
+        eventoId={chatPrivado.idusuario}
+        titulo={chatPrivado.nombre || `Usuario ${chatPrivado.idusuario}`}
+        subtitulo="Chat privado"
+        roomId={chatPrivado.roomId}
+        userId={userId} userRole={userRole} userName={userName}
+        onRoomChange={onRoomChangeRef.current}
+        onVolver={() => setChatPrivado(null)}
+      />
+    );
+  }
+
+  if (vista === 'chat') {
+    return (
+      <VistaChat
+        eventoId="general"
+        titulo="Chat General"
+        subtitulo="Todos los usuarios de la plataforma"
+        roomId="general"
+        userId={userId} userRole={userRole} userName={userName}
+        onRoomChange={onRoomChangeRef.current}
+        onVolver={() => setVista('eventos')}
+      />
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <View style={{
+        flexDirection: 'row', backgroundColor: COLORS.white,
+        borderBottomWidth: 1, borderColor: COLORS.border,
+      }}>
+        {[
+          { id: 'grupo',    label: 'Grupo',    icon: 'chatbubbles-outline' },
+          { id: 'personal', label: 'Personal', icon: 'person-outline' },
+        ].map(t => (
+          <TouchableOpacity
+            key={t.id}
+            onPress={() => setTabMain(t.id)}
+            style={{
+              flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+              gap: 6, paddingVertical: 12,
+              borderBottomWidth: tabMain === t.id ? 2 : 0,
+              borderBottomColor: COLORS.primary,
+            }}
+          >
+            <Ionicons name={t.icon} size={16} color={tabMain === t.id ? COLORS.primary : COLORS.textTertiary} />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: tabMain === t.id ? COLORS.primary : COLORS.textTertiary }}>
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {loadingEventos ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : tabMain === 'personal' ? (
+        contactos.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{
+              width: 72, height: 72, borderRadius: 36,
+              backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center',
+              shadowColor: '#000', shadowOpacity: 0.05,
+              shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2,
+            }}>
+              <Ionicons name="person-outline" size={34} color="#d3d6dc" />
+            </View>
+            <Text style={{ color: '#a6aab2', marginTop: 12, textAlign: 'center' }}>
+              No tienes contactos aún
+            </Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={{ padding: 12 }}>
+            {contactos.map((c) => {
+              const nombre = c.nombre || `Usuario ${c.idusuario}`;
+              const apellido = c.apellidopat || '';
+              const rol = c.rol_comite || 'miembro';
+              const colorRol = ROL_COLORS[rol] || COLORS.secondary;
+              return (
+                <TouchableOpacity
+                  key={c.idusuario}
+                  onPress={() => abrirPrivado(c)}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 12,
+                    backgroundColor: COLORS.white, borderRadius: 12,
+                    padding: 14, marginBottom: 8,
+                    shadowColor: '#000', shadowOpacity: 0.04,
+                    shadowOffset: { width: 0, height: 1 }, shadowRadius: 3, elevation: 1,
+                  }}
+                >
+                  <Avatar nombre={`${nombre} ${apellido}`} color={colorRol} size={44} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.textPrimary }}>
+                      {nombre} {apellido}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colorRol }} />
+                      <Text style={{ fontSize: 11, color: COLORS.textTertiary, textTransform: 'capitalize' }}>{rol}</Text>
+                    </View>
+                  </View>
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 4,
+                    backgroundColor: COLORS.primaryLight, borderRadius: 20,
+                    paddingHorizontal: 12, paddingVertical: 6,
+                  }}>
+                    <Ionicons name="chatbubble-outline" size={14} color={COLORS.primary} />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.primary }}>Mensaje</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )
+      ) : (
+        <View style={{ flex: 1 }}>
+          <View style={{
+            padding: 14, backgroundColor: COLORS.background,
+          }}>
+            <TouchableOpacity
+              onPress={() => { setVista('chat'); setEventoActual(null); setChatPrivado(null); }}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 8,
+                backgroundColor: COLORS.primaryLight, borderRadius: 10,
+                paddingHorizontal: 12, paddingVertical: 10,
+              }}
+            >
+              <Ionicons name="chatbubbles" size={18} color={COLORS.primary} />
+              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.primary }}>Ir al Chat General</Text>
+            </TouchableOpacity>
+          </View>
+
+          {abriendoEvento && (
+            <View style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(255,255,255,0.6)', zIndex: 10,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+          )}
+
+          {eventos.length === 0 ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+              <View style={{
+                width: 72, height: 72, borderRadius: 36,
+                backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center',
+                shadowColor: '#000', shadowOpacity: 0.05,
+                shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2,
+              }}>
+                <Ionicons name="calendar-outline" size={34} color="#d3d6dc" />
+              </View>
+              <Text style={{ color: '#a6aab2', marginTop: 12, textAlign: 'center' }}>
+                No tienes eventos próximos
+              </Text>
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={{ padding: 12 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 10 }}>
+                Tus eventos
+              </Text>
+              {eventos.map((evento) => {
+                const comite = evento.Comite || evento.comite || [];
+                const nMiembros = comite.length;
+                const esHoy = fechaStr(evento) === hoyStr();
+
+                return (
+                  <TouchableOpacity
+                    key={evento.idevento}
+                    onPress={() => abrirEvento(evento)}
+                    activeOpacity={0.7}
+                    style={{
+                      backgroundColor: COLORS.white, borderRadius: 14, padding: 12,
+                      marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12,
+                      borderLeftWidth: 4, borderLeftColor: COLORS.primary,
+                      shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+                    }}
+                  >
+                    <View style={{
+                      width: 46, height: 46, borderRadius: 12,
+                      backgroundColor: esHoy ? '#FFF7ED' : COLORS.primaryLight,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons name="calendar" size={20} color={COLORS.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 3 }} numberOfLines={1}>
+                        {evento.nombreevento || 'Sin nombre'}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+                        <Ionicons name="time-outline" size={12} color={COLORS.textTertiary} />
+                        <Text style={{ fontSize: 12, color: COLORS.textSecondary }} numberOfLines={1}>
+                          {formatearFecha(fechaStr(evento))} {esHoy ? '· Hoy' : ''}
+                        </Text>
+                      </View>
+                      {evento.lugarevento ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Ionicons name="location-outline" size={12} color={COLORS.textTertiary} />
+                          <Text style={{ fontSize: 12, color: COLORS.textTertiary }} numberOfLines={1}>
+                            {evento.lugarevento}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                      {nMiembros > 0 && (
+                        <View style={{
+                          flexDirection: 'row', alignItems: 'center', gap: 4,
+                          backgroundColor: COLORS.primaryLight, borderRadius: 12,
+                          paddingHorizontal: 8, paddingVertical: 3,
+                        }}>
+                          <Ionicons name="people-outline" size={11} color={COLORS.primary} />
+                          <Text style={{ fontSize: 10, color: COLORS.primary, fontWeight: '700' }}>{nMiembros}</Text>
+                        </View>
+                      )}
+                      <View style={{
+                        flexDirection: 'row', alignItems: 'center', gap: 4,
+                        backgroundColor: COLORS.primary, borderRadius: 16,
+                        paddingHorizontal: 10, paddingVertical: 5,
+                      }}>
+                        <Ionicons name="chatbubbles-outline" size={13} color="#fff" />
+                        <Text style={{ fontSize: 11, color: '#fff', fontWeight: '700' }}>Abrir</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              <Text style={{ textAlign: 'center', color: '#a6aab2', fontSize: 11, marginVertical: 6 }}>
+                {eventos.length > 0 ? 'Solo se muestran eventos próximos' : ''}
+              </Text>
+            </ScrollView>
+          )}
+        </View>
+      )}
     </View>
   );
 };
