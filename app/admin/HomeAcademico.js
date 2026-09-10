@@ -8,7 +8,6 @@ import { PieChart } from 'react-native-chart-kit';
 import Svg, { Line, Circle, Text as SvgText, Path, Rect } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import dayjs from 'dayjs';
@@ -297,7 +296,7 @@ const ProximoEventoCard = ({ evento, onPress }) => {
 
 const ProyectarEventoCTA = ({ onPress }) => (
   <Pressable onPress={onPress} style={({ pressed }) => [styles.proyectarBtnCard, pressed && styles.proyectarBtnPressed]}>
-    <LinearGradient colors={[COLORS.primary, '#8A2E00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.proyectarGradient}>
+    <View style={[styles.proyectarGradient, { backgroundColor: COLORS.primary }]}>
       <View style={styles.proyectarIconWrap}>
         <Ionicons name="add" size={30} color={COLORS.white} />
       </View>
@@ -308,8 +307,26 @@ const ProyectarEventoCTA = ({ onPress }) => (
       <View style={styles.proyectarArrow}>
         <Ionicons name="arrow-forward" size={22} color={COLORS.white} />
       </View>
-    </LinearGradient>
+    </View>
   </Pressable>
+);
+
+const ToolsTabs = ({ active, onChange }) => (
+  <View style={styles.toolsTabs}>
+    {[
+      { id: 'gestion', label: 'Gestión', icon: 'construct-outline' },
+      { id: 'comite', label: 'Comité y Reportes', icon: 'bar-chart-outline' },
+    ].map((t) => (
+      <TouchableOpacity
+        key={t.id}
+        style={[styles.toolsTab, active === t.id && styles.toolsTabActive]}
+        onPress={() => onChange(t.id)}
+      >
+        <Ionicons name={t.icon} size={16} color={active === t.id ? COLORS.white : COLORS.textSecondary} />
+        <Text style={[styles.toolsTabText, active === t.id && styles.toolsTabTextActive]}>{t.label}</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
 );
 
 const MinimalHeader = ({ nombreUsuario, unreadCount, onNotificationPress, onRefresh, refreshing, lastUpdated, onTelegramPress, isTelegramLinked }) => {
@@ -424,6 +441,7 @@ const HomeAcademicoScreen = () => {
   const [isTelegramLinked, setIsTelegramLinked] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState('');
   const [toast, setToast] = useState(null);
+  const [activeToolsTab, setActiveToolsTab] = useState('gestion');
 
   useEffect(() => {
     if (!toast) return;
@@ -600,15 +618,19 @@ const HomeAcademicoScreen = () => {
     }
   };
 
-  const adminActions = [
-    { id: '1', title: 'Pendientes', icon: 'timer-outline', route: '/admin/EventosPendientes', color: COLORS.warning, description: 'En espera de aprobación', badge: `${dashboardStats.find((s) => s.title === 'Pendientes')?.value ?? '0'} pendientes` },
-    { id: '3', title: 'Aprobados', icon: 'checkmark-circle-outline', route: '/admin/EventosAprobados', color: COLORS.success, description: 'Eventos aprobados' },
-    { id: '4', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité' },
-    { id: '5', title: 'Rechazados', icon: 'close-circle-outline', route: '/admin/EventosRechazados', color: COLORS.accent, description: 'Eventos rechazados' },
-    { id: '6', title: 'Programación', icon: 'calendar-outline', route: '/admin/ProgramacionEvento', color: COLORS.info, description: 'Carga programática' },
-    { id: '7', title: 'Vencidos', icon: 'alert-circle-outline', route: '/admin/EventosVencidos', color: COLORS.secondary, description: 'Eventos vencidos' },
-    { id: '8', title: 'Completados', icon: 'trophy-outline', route: '/admin/EventosCompletados', color: COLORS.info, description: 'Fase 3 finalizada' },
+const adminActions = [
+    { id: '1', title: 'Pendientes', icon: 'timer-outline', route: '/admin/EventosPendientes', color: COLORS.warning, description: 'En espera de aprobación', tab: 'gestion', badge: `${dashboardStats.find((s) => s.title === 'Pendientes')?.value ?? '0'} pendientes` },
+    { id: '2', title: 'Aprobados', icon: 'checkmark-circle-outline', route: '/admin/EventosAprobados', color: COLORS.success, description: 'Eventos aprobados', tab: 'gestion' },
+    { id: '3', title: 'Rechazados', icon: 'close-circle-outline', route: '/admin/EventosRechazados', color: COLORS.accent, description: 'Eventos rechazados', tab: 'gestion' },
+    { id: '4', title: 'Programación', icon: 'calendar-outline', route: '/admin/ProgramacionEvento', color: COLORS.info, description: 'Carga programática', tab: 'gestion' },
+    { id: '5', title: 'Vencidos', icon: 'alert-circle-outline', route: '/admin/EventosVencidos', color: COLORS.secondary, description: 'Eventos vencidos', tab: 'gestion' },
+    { id: '6', title: 'Completados', icon: 'trophy-outline', route: '/admin/EventosCompletados', color: COLORS.info, description: 'Fase 3 finalizada', tab: 'gestion' },
+    { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
+    { id: '8', title: 'Reportes Avanzados', icon: 'document-text-outline', route: '/admin/reportes', color: COLORS.secondary, description: 'Generación de reportes detallados', tab: 'comite', badge: 'Nuevo' },
   ];
+  const visibleTools = activeToolsTab === 'comite'
+    ? adminActions.filter((t) => t.tab === 'comite')
+    : adminActions.filter((t) => t.tab === 'gestion');
 
   const chartWidth = windowWidth - 60;
 
@@ -649,9 +671,10 @@ const HomeAcademicoScreen = () => {
         ) : (
           <>
             <Section title="Herramientas de Gestión" subtitle="Accede a las funcionalidades principales">
+              <ToolsTabs active={activeToolsTab} onChange={setActiveToolsTab} />
               {ultimoMensaje ? <Text style={styles.emptyMsg}>{ultimoMensaje}</Text> : null}
               <View style={styles.toolsGrid}>
-                {adminActions.map((tool, i) => (
+                {visibleTools.map((tool, i) => (
                   <ManagementToolCard
                     key={i}
                     title={tool.title}
@@ -938,6 +961,17 @@ const styles = StyleSheet.create({
   sectionSubtitle: { fontSize: 13, color: COLORS.textSecondary },
 
   toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN, justifyContent: 'space-between' },
+  toolsTabs: {
+    flexDirection: 'row', backgroundColor: COLORS.border, borderRadius: 12,
+    padding: 4, gap: 4, marginBottom: 14,
+  },
+  toolsTab: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 10, borderRadius: 9,
+  },
+  toolsTabActive: { backgroundColor: COLORS.primary },
+  toolsTabText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  toolsTabTextActive: { color: COLORS.white },
   toolCard: {
     backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, minHeight: 130,
     borderWidth: 1, maxWidth: '100%',
