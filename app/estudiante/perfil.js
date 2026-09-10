@@ -213,8 +213,8 @@ const telegramData = {
             setTelegramUnlinking(true);
             try {
               const token = await getToken();
-              await axios.post(
-                `${API_BASE_URL}/desvincular`,
+              await axios.put(
+                `${API_BASE_URL}/users/unlink-telegram`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
               );
