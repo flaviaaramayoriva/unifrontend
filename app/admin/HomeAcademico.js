@@ -574,7 +574,7 @@ const adminActions = [
     { id: '1', title: 'Pendientes', icon: 'timer-outline', route: '/admin/EventosPendientes', color: COLORS.warning, description: 'En espera de aprobación', tab: 'gestion', badge: `${dashboardStats.find((s) => s.title === 'Pendientes')?.value ?? '0'} pendientes` },
     { id: '2', title: 'Aprobados', icon: 'checkmark-circle-outline', route: '/admin/EventosAprobados', color: COLORS.success, description: 'Eventos aprobados', tab: 'gestion' },
     { id: '3', title: 'Rechazados', icon: 'close-circle-outline', route: '/admin/EventosRechazados', color: COLORS.accent, description: 'Eventos rechazados', tab: 'gestion' },
-    { id: '4', title: 'Programación', icon: 'calendar-outline', route: '/admin/ProgramacionEvento', color: COLORS.info, description: 'Carga programática', tab: 'gestion' },
+    { id: '4', title: 'Programación', icon: 'calendar-outline', route: '/admin/SeleccionarProgramacionEvento', color: COLORS.info, description: 'Elige evento aprobado para programar', tab: 'gestion' },
     { id: '5', title: 'Vencidos', icon: 'alert-circle-outline', route: '/admin/EventosVencidos', color: COLORS.secondary, description: 'Eventos vencidos', tab: 'gestion' },
     { id: '6', title: 'Completados', icon: 'trophy-outline', route: '/admin/EventosCompletados', color: COLORS.info, description: 'Fase 3 finalizada', tab: 'gestion' },
     { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
