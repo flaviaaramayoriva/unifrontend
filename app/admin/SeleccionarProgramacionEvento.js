@@ -297,7 +297,7 @@ const SeleccionarProgramacionEvento = () => {
                 <Ionicons name="hourglass-outline" size={18} color={COLORS.grayMedium} />
               </View>
               <Text style={styles.stepLabel}>
-                Aprobación{'\n'}Comité / DAF
+                Aprobación{'\n'}
               </Text>
             </View>
             <View style={styles.stepLine} />

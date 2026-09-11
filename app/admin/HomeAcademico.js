@@ -292,7 +292,7 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(dockHeight, { toValue: isExpanded ? 150 : 60, duration: 300, useNativeDriver: false }),
+      Animated.timing(dockHeight, { toValue: isExpanded ? 200 : 60, duration: 300, useNativeDriver: false }),
       Animated.timing(rotateAnim, { toValue: isExpanded ? 1 : 0, duration: 300, useNativeDriver: true }),
     ]).start();
   }, [isExpanded]);
@@ -327,7 +327,7 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
         <Animated.View style={{ transform: [{ rotate }] }}>
           <Ionicons name="chevron-up-outline" size={20} color={COLORS.white} />
         </Animated.View>
-        <Text style={styles.dockToggleText}>{isExpanded ? 'Cerrar' : 'Menú rápido'}</Text>
+        <Text style={styles.dockToggleText}>{isExpanded ? 'Ocultar menú' : 'Menú rápido'}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -588,7 +588,7 @@ const adminActions = [
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: isDockExpanded ? 210 : 100 }}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: isDockExpanded ? 260 : 100 }}>
         <MinimalHeader
           nombreUsuario={nombreUsuario}
           unreadCount={unreadCount}
