@@ -1794,7 +1794,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
       
       console.log("✅ 9. Respuesta exitosa del servidor:", response.data);
       
-      const successMessage = 'El evento ha sido creado correctamente.';
+      const successMessage = 'El evento ha sido creado correctamente.\n\nPASO 1 completado: tu evento fue enviado a revisión.\n\nCuando el comité lo apruebe, lo encontrarás en "Programación" (PASO 2) para que lo programes.';
       console.log("🎉 10. Mostrando alerta de éxito...");
       
       // CORRECCIÓN CLAVE: Fallback para Web + Navegación segura

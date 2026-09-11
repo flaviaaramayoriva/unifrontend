@@ -281,6 +281,43 @@ const SeleccionarProgramacionEvento = () => {
       />
 
       <View style={styles.content}>
+        <View style={styles.stepperCard}>
+          <View style={styles.stepperRow}>
+            <View style={styles.stepItem}>
+              <View style={[styles.stepCircle, styles.stepDone]}>
+                <Ionicons name="checkmark" size={18} color={COLORS.white} />
+              </View>
+              <Text style={[styles.stepLabel, styles.stepLabelDone]}>
+                Paso 1{'\n'}Crear evento
+              </Text>
+            </View>
+            <View style={styles.stepLine} />
+            <View style={styles.stepItem}>
+              <View style={[styles.stepCircle, styles.stepPending]}>
+                <Ionicons name="hourglass-outline" size={18} color={COLORS.grayMedium} />
+              </View>
+              <Text style={styles.stepLabel}>
+                Aprobación{'\n'}Comité / DAF
+              </Text>
+            </View>
+            <View style={styles.stepLine} />
+            <View style={styles.stepItem}>
+              <View style={[styles.stepCircle, styles.stepActive]}>
+                <Ionicons name="create-outline" size={18} color={COLORS.white} />
+              </View>
+              <Text style={[styles.stepLabel, styles.stepLabelActive]}>
+                Paso 2{'\n'}Programación
+              </Text>
+            </View>
+          </View>
+          <View style={styles.stepperNote}>
+            <Ionicons name="information-circle-outline" size={17} color={COLORS.info} />
+            <Text style={styles.stepperNoteText}>
+              Aquí solo aparecen eventos APROBADOS, que no han vencido y sin fase 3. Si tu evento está «Pendiente», míralo en la pestaña Pendientes hasta que lo aprueben.
+            </Text>
+          </View>
+        </View>
+
         <Text style={styles.resultsCount}>
           {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''} aprobado{filteredEvents.length !== 1 ? 's' : ''} por programar
         </Text>
@@ -333,6 +370,58 @@ const SeleccionarProgramacionEvento = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
+  stepperCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    marginBottom: 12,
+  },
+  stepperRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  stepItem: { alignItems: 'center', width: 76 },
+  stepCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepDone: { backgroundColor: COLORS.success },
+  stepPending: { backgroundColor: COLORS.grayLight },
+  stepActive: { backgroundColor: COLORS.primary },
+  stepLine: {
+    flex: 1,
+    height: 3,
+    backgroundColor: COLORS.grayLight,
+    marginTop: 17,
+    marginHorizontal: 2,
+  },
+  stepLabel: {
+    marginTop: 6,
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.grayText,
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+  stepLabelDone: { color: COLORS.success },
+  stepLabelActive: { color: COLORS.primary },
+  stepperNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: COLORS.infoLight,
+    borderRadius: 12,
+    padding: 10,
+    marginTop: 14,
+  },
+  stepperNoteText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#1E3A5F',
+    lineHeight: 18,
+  },
   resultsCount: {
     fontSize: 13,
     fontWeight: '600',
