@@ -1,6 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
-import Svg, { Line, Circle, Text as SvgText, Path, Rect } from 'react-native-svg';
+import React, { Fragment } from 'react';
+import Svg, { Line, Circle, Text as SvgText, Path, Rect, G } from 'react-native-svg';
 
 export const COLORS = {
   primary: '#C44200', primaryLight: '#FFF0E6', secondary: '#0F172A',
@@ -22,8 +21,6 @@ export const STATE_COLORS = {
 
 export const safeArray = (value) => (Array.isArray(value) ? value : []);
 export const safeObj = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
-
-const SvgView = ({ children }) => <View>{children}</View>;
 
 export const CustomLineChart = ({ data, width, height, color = COLORS.primary }) => {
   if (!data?.labels?.length) return null;
@@ -50,24 +47,28 @@ export const CustomLineChart = ({ data, width, height, color = COLORS.primary })
   const area = `${line} L ${pts[pts.length - 1].x} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
   return (
     <Svg width={width} height={height}>
-      {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-        const y = padding.top + ch * (1 - pct);
-        return (
-          <SvgView key={i}>
-            <Line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke={COLORS.border} strokeWidth="1" strokeDasharray="4,4" />
-            <SvgText x={padding.left - 6} y={y + 4} fontSize="10" fill={COLORS.textSecondary} textAnchor="end">{Math.round(minV + range * pct)}</SvgText>
-          </SvgView>
-        );
-      })}
+      <G>
+        {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+          const y = padding.top + ch * (1 - pct);
+          return (
+            <Fragment key={i}>
+              <Line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke={COLORS.border} strokeWidth="1" strokeDasharray="4,4" />
+              <SvgText x={padding.left - 6} y={y + 4} fontSize="10" fill={COLORS.textSecondary} textAnchor="end">{Math.round(minV + range * pct)}</SvgText>
+            </Fragment>
+          );
+        })}
+      </G>
       <Path d={area} fill={color} fillOpacity={0.1} />
       <Path d={line} stroke={color} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      {pts.map((p, i) => (
-        <SvgView key={i}>
-          <Circle cx={p.x} cy={p.y} r={5} fill={COLORS.surface} stroke={color} strokeWidth={2} />
-          <Circle cx={p.x} cy={p.y} r={3} fill={color} />
-          <SvgText x={p.x} y={height - padding.bottom + 22} fontSize="11" fill={COLORS.textSecondary} textAnchor="middle" fontWeight="500">{p.label}</SvgText>
-        </SvgView>
-      ))}
+      <G>
+        {pts.map((p, i) => (
+          <Fragment key={i}>
+            <Circle cx={p.x} cy={p.y} r={5} fill={COLORS.surface} stroke={color} strokeWidth={2} />
+            <Circle cx={p.x} cy={p.y} r={3} fill={color} />
+            <SvgText x={p.x} y={height - padding.bottom + 22} fontSize="11" fill={COLORS.textSecondary} textAnchor="middle" fontWeight="500">{p.label}</SvgText>
+          </Fragment>
+        ))}
+      </G>
     </Svg>
   );
 };
@@ -84,31 +85,35 @@ export const CustomBarChart = ({ data, width, height, color = COLORS.success }) 
   const gap = cw / labels.length;
   return (
     <Svg width={width} height={height}>
-      {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-        const y = padding.top + ch * (1 - pct);
-        return (
-          <SvgView key={i}>
-            <Line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke={COLORS.border} strokeWidth="1" strokeDasharray="4,4" />
-            <SvgText x={padding.left - 6} y={y + 4} fontSize="10" fill={COLORS.textSecondary} textAnchor="end">{Math.round(maxV * pct)}</SvgText>
-          </SvgView>
-        );
-      })}
-      {values.map((v, i) => {
-        const barH = (v / maxV) * ch;
-        const x = padding.left + gap * i + (gap - barW) / 2;
-        const y = padding.top + ch - barH;
-        const labelX = x + barW / 2;
-        const labelY = padding.top + ch + 12;
-        return (
-          <SvgView key={i}>
-            <Rect x={x} y={y} width={barW} height={barH} fill={color} rx={4} fillOpacity={0.85} />
-            {v > 0 && (
-              <SvgText x={labelX} y={y - 5} fontSize="10" fill={color} textAnchor="middle" fontWeight="700">{v}</SvgText>
-            )}
-            <SvgText x={labelX} y={labelY} fontSize="10" fill={COLORS.textSecondary} textAnchor="middle" fontWeight="500">{labels[i]}</SvgText>
-          </SvgView>
-        );
-      })}
+      <G>
+        {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+          const y = padding.top + ch * (1 - pct);
+          return (
+            <Fragment key={i}>
+              <Line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke={COLORS.border} strokeWidth="1" strokeDasharray="4,4" />
+              <SvgText x={padding.left - 6} y={y + 4} fontSize="10" fill={COLORS.textSecondary} textAnchor="end">{Math.round(maxV * pct)}</SvgText>
+            </Fragment>
+          );
+        })}
+      </G>
+      <G>
+        {values.map((v, i) => {
+          const barH = (v / maxV) * ch;
+          const x = padding.left + gap * i + (gap - barW) / 2;
+          const y = padding.top + ch - barH;
+          const labelX = x + barW / 2;
+          const labelY = padding.top + ch + 12;
+          return (
+            <Fragment key={i}>
+              <Rect x={x} y={y} width={barW} height={barH} fill={color} rx={4} fillOpacity={0.85} />
+              {v > 0 && (
+                <SvgText x={labelX} y={y - 5} fontSize="10" fill={color} textAnchor="middle" fontWeight="700">{v}</SvgText>
+              )}
+              <SvgText x={labelX} y={labelY} fontSize="10" fill={COLORS.textSecondary} textAnchor="middle" fontWeight="500">{labels[i]}</SvgText>
+            </Fragment>
+          );
+        })}
+      </G>
     </Svg>
   );
 };

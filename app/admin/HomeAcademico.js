@@ -447,8 +447,10 @@ const HomeAcademicoScreen = () => {
           statsCards = raw.map((s) => safeObj(s));
         }
         if (d && typeof d === 'object') {
+          const estadoSrc = d.estadoCounts && typeof d.estadoCounts === 'object' ? d.estadoCounts : d;
           Object.keys(counts).forEach((k) => {
-            if (typeof d[k] === 'number') counts[k] = d[k];
+            if (typeof estadoSrc[k] === 'number') counts[k] = estadoSrc[k];
+            else if (typeof d[k] === 'number') counts[k] = d[k];
           });
         }
       }
