@@ -292,7 +292,7 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(dockHeight, { toValue: isExpanded ? 200 : 60, duration: 300, useNativeDriver: false }),
+      Animated.timing(dockHeight, { toValue: isExpanded ? 240 : 60, duration: 300, useNativeDriver: false }),
       Animated.timing(rotateAnim, { toValue: isExpanded ? 1 : 0, duration: 300, useNativeDriver: true }),
     ]).start();
   }, [isExpanded]);
@@ -313,7 +313,7 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
             {quickActions.map((a) => (
               <TouchableOpacity key={a.id} style={styles.dockActionBtn} onPress={() => onActionPress(a.action)}>
                 <Ionicons name={a.icon} size={24} color={a.color} />
-                <Text style={[styles.dockActionText, { color: a.color }]}>{a.title}</Text>
+                <Text numberOfLines={1} style={[styles.dockActionText, { color: a.color }]}>{a.title}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -588,7 +588,7 @@ const adminActions = [
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: isDockExpanded ? 260 : 100 }}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: isDockExpanded ? 300 : 100 }}>
         <MinimalHeader
           nombreUsuario={nombreUsuario}
           unreadCount={unreadCount}
@@ -705,12 +705,18 @@ const adminActions = [
               </View>
             </Section>
 
-            <Section title="Resumen de Actividad" subtitle="Tus métricas clave">
-              <View style={styles.statsGrid}>
+            <Section title="Resumen de Actividad" subtitle="Tus métricas clave · Toca para ver el Análisis">
+              <TouchableOpacity
+                style={styles.statsGrid}
+                onPress={() => setActiveMainTab('analisis')}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Ir a Análisis"
+              >
                 {dashboardStats.map((stat, i) => (
                   <DashboardCard key={i} {...stat} />
                 ))}
-              </View>
+              </TouchableOpacity>
             </Section>
           </>
         )}
@@ -1092,7 +1098,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 10, overflow: 'hidden',
   },
-  dockToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, gap: 8 },
+  dockToggle: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, gap: 8,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.25)',
+  },
   dockToggleText: { color: COLORS.white, fontSize: 15, fontWeight: '600' },
   dockExpanded: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8, backgroundColor: COLORS.surface, flex: 1 },
   dockActions: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14, gap: 8 },
@@ -1100,7 +1109,7 @@ const styles = StyleSheet.create({
   dockActionText: { fontSize: 11, fontWeight: '600', textAlign: 'center', marginTop: 4 },
   dockLogout: {
     flexDirection: 'row', backgroundColor: COLORS.accent, paddingVertical: 12,
-    alignItems: 'center', justifyContent: 'center', borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginBottom: 4,
   },
   dockLogoutText: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginLeft: 8 },
 
