@@ -31,6 +31,7 @@ export default function TabLayout() {
         options={{
           title: 'Inicio',
           headerShown: false,
+          tabBarStyle: { display: 'none' },
           tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
         }}
       />
@@ -45,6 +46,7 @@ export default function TabLayout() {
         name="Login"
         options={{
           title: 'Login',
+          tabBarStyle: { display: 'none' },
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />
