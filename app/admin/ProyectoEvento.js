@@ -684,6 +684,8 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
       <View style={styles.daysGrid}>
         {days.map((day, index) => {
           const dayEvents = getEventsForDay(day.date);
+          const eventosActivos = dayEvents.filter(e => ['pendiente', 'aprobado'].includes((e.estado || '').toLowerCase()));
+          const diaLleno = eventosActivos.length >= 2;
           const isSelected = dayjs(fechaHoraSeleccionada).format('YYYY-MM-DD') === dayjs(day.date).format('YYYY-MM-DD');
           const isToday = dayjs().format('YYYY-MM-DD') === dayjs(day.date).format('YYYY-MM-DD');
           return (
@@ -693,7 +695,8 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
                 styles.dayCell,
                 !day.isCurrentMonth && styles.dayCellInactive,
                 isSelected && styles.dayCellSelected,
-                isToday && styles.dayCellToday
+                isToday && styles.dayCellToday,
+                diaLleno && styles.dayCellFull
               ]}
               onPress={() => {
                 const newDate = new Date(day.date);
@@ -745,6 +748,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
                       </Text>
                     ))}
                     {dayEvents.length > 3 && <Text style={styles.eventPreviewMore}>+{dayEvents.length - 3} más</Text>}
+                    {diaLleno && <Text style={styles.eventPreviewFull}>Día completo (máximo 2 eventos) - elige otra fecha</Text>}
                   </View>
                 )}
               </View>
@@ -1479,90 +1483,39 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
     setObjetivosPDI(newObjetivos);
   };
 
+  const scrollToIndice = (indice, setHighlight) => {
+    setTimeout(() => {
+      if (!horizontalScrollRef.current || formWidth <= 0) return;
+      if (setHighlight) setHighlight(true);
+      horizontalScrollRef.current.scrollTo({ x: indice * formWidth, animated: true });
+      setTimeout(() => { if (setHighlight) setHighlight(false); }, 900);
+    }, 80);
+  };
+
   const scrollToObjetivos = () => {
     setSeccionObjetivosVisible(true);
-    setTimeout(() => {
-      if (objetivosSectionRef.current && horizontalScrollRef.current) {
-        setIsScrollingToObjetivos(true);
-        objetivosSectionRef.current.measureLayout(
-          horizontalScrollRef.current.getInnerViewNode(),
-          (measuredX) => {
-            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
-            setTimeout(() => setIsScrollingToObjetivos(false), 1000);
-          },
-          (error) => { console.warn("Error:", error); setIsScrollingToObjetivos(false); }
-        );
-      }
-    }, 0);
+    scrollToIndice(1, setIsScrollingToObjetivos);
   };
 
   const scrollToResultados = () => {
     setSeccionResultadosVisible(true);
-    setTimeout(() => {
-      if (resultadosSectionRef.current && horizontalScrollRef.current) {
-        setIsScrollingToResultados(true);
-        resultadosSectionRef.current.measureLayout(
-          horizontalScrollRef.current.getInnerViewNode(),
-          (measuredX) => {
-            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
-            setTimeout(() => setIsScrollingToResultados(false), 1000);
-          },
-          (error) => { console.warn("Error:", error); setIsScrollingToResultados(false); }
-        );
-      }
-    }, 0);
+    scrollToIndice(2, setIsScrollingToResultados);
   };
 
   const scrollToComite = () => {
     setSeccionResultadosVisible(true);
     setSeccionComiteVisible(true);
-    setTimeout(() => {
-      if (comiteSectionRef.current && horizontalScrollRef.current) {
-        setisScrollingToComite(true);
-        comiteSectionRef.current.measureLayout(
-          horizontalScrollRef.current.getInnerViewNode(),
-          (measuredX) => {
-            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
-            setTimeout(() => setisScrollingToComite(false), 1000);
-          },
-          (error) => { console.warn("Error:", error); setisScrollingToComite(false); }
-        );
-      }
-    }, 0);
+    scrollToIndice(3, setisScrollingToComite);
   };
 
   const scrollToRecursos = () => {
     setSeccionRecursosVisible(true);
-    setTimeout(() => {
-      if (recursosSectionRef.current && horizontalScrollRef.current) {
-        setIsScrollingToRecursos(true);
-        recursosSectionRef.current.measureLayout(
-          horizontalScrollRef.current.getInnerViewNode(),
-          (measuredX) => {
-            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
-            setTimeout(() => setIsScrollingToRecursos(false), 1000);
-          },
-          (error) => { console.warn("Error:", error); setIsScrollingToRecursos(false); }
-        );
-      }
-    }, 0);
+    scrollToIndice(4, setIsScrollingToRecursos);
   };
 
   const scrollToPresupuesto = () => {
     setSeccionPresupuestoVisible(true);
-    setTimeout(() => {
-      if (presupuestoSectionRef.current && horizontalScrollRef.current) {
-        setIsScrollingToPresupuesto(true);
-        presupuestoSectionRef.current.measureLayout(
-          horizontalScrollRef.current.getInnerViewNode(),
-          (measuredX) => {
-            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
-            setTimeout(() => setIsScrollingToPresupuesto(false), 1000);
-          },
-          (error) => { console.warn("Error:", error); setIsScrollingToPresupuesto(false); }
-        );
-      }
-    }, 0);
+    scrollToIndice(5, setIsScrollingToPresupuesto);
   };
 
   const validateForm = () => {
@@ -3371,6 +3324,7 @@ facultadSelectedHint: {
   dayCellInactive: { backgroundColor: '#f8f9fa' },
   dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2, borderRadius: 6, margin: -1 },
   dayCellToday: { backgroundColor: '#e8f4fd' },
+  dayCellFull: { opacity: 0.35, backgroundColor: '#f2f2f2', borderStyle: 'dashed', borderWidth: 1, borderColor: '#bdbdbd' },
   dayCellContent: { flex: 1, alignItems: 'center' },
   dayNumber: { fontSize: 14, fontWeight: '500', color: '#333', marginBottom: 2 },
   dayNumberInactive: { color: '#999' },
@@ -3382,6 +3336,7 @@ facultadSelectedHint: {
   eventPreview: { marginTop: 4, width: '100%' },
   eventPreviewText: { fontSize: 8, color: '#333', marginBottom: 1, textAlign: 'center' },
   eventPreviewMore: { fontSize: 8, color: '#C44B0A', fontWeight: 'bold', textAlign: 'center' },
+  eventPreviewFull: { fontSize: 8, color: '#c0392b', fontWeight: 'bold', textAlign: 'center', marginTop: 2 },
   eventosDelDiaContainer: { backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2, overflow: 'hidden' },
   eventosDelDiaHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   eventosDelDiaTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginLeft: 8, flex: 1 },
