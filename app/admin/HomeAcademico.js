@@ -454,11 +454,12 @@ const HomeAcademicoScreen = () => {
       }
 
       if (histRes.status === 'fulfilled' && histRes.value && histRes.value.data) {
-        const raw = Array.isArray(histRes.value.data) ? histRes.value.data : histRes.value.data.data;
+        const payload = histRes.value.data;
+        const raw = Array.isArray(payload) ? payload : (payload.historical || payload.data || []);
         const arr = safeArray(raw);
         if (arr.length > 0) {
           setTendenciaMensual({
-            labels: arr.map((d) => String(d.name || '').slice(0, 3)),
+            labels: arr.map((d) => String(d.name || d.mes || '').slice(0, 3)),
             datasets: [{ data: arr.map((d) => Number(d.eventos ?? d.total ?? 0)) }],
           });
         } else {
