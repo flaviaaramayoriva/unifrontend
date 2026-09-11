@@ -1348,6 +1348,7 @@ const ProyectoEvento = () => {
     setEventosDelDia(eventsDelDia);
   }, [eventos, fechaHoraSeleccionada]);
 
+  const [timelineWidth, setTimelineWidth] = useState(0);
   const proximosEventosTimeline = useMemo(() => {
     const conFecha = eventos
       .filter(e => e.fechaevento && dayjs(e.fechaevento).isValid())
@@ -1363,6 +1364,8 @@ const ProyectoEvento = () => {
     const fuente = proximos.length > 0 ? proximos : conFecha;
     return fuente.slice(0, 3);
   }, [eventos]);
+
+  const timelineCabeCentrado = timelineWidth > 0 && (proximosEventosTimeline.length * 178 + 16) <= timelineWidth;
 
   const handleInputChange = (field, value) => {
     if (field === 'nombreevento') setNombreevento(value);
@@ -1804,10 +1807,13 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
           />
         }
       />
-      <Text style={styles.requirementInfo}>
-        Los campos marcados con <Text style={styles.requiredAsterisk}>*</Text> son obligatorios
-      </Text>
-
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.pageScroll}
+        contentContainerStyle={styles.scrollContentContainer}
+        keyboardShouldPersistTaps="always"
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.timePickerSection}>
         <View style={styles.timePickerHeader}>
           <Ionicons name="alarm" size={24} color="#C44B0A" />
@@ -1829,13 +1835,13 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
       </View>
 
       {/* Línea de tiempo de eventos */}
-      <View style={styles.timelineSection}>
+      <View style={styles.timelineSection} onLayout={(e) => setTimelineWidth(e.nativeEvent.layout.width)}>
         <View style={styles.timelineHeader}>
           <Text style={styles.timelineTitle}>Línea de tiempo de eventos</Text>
           <Text style={styles.timelineSubtitle}>Próximos eventos programados</Text>
         </View>
         {proximosEventosTimeline.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timelineScroll} contentContainerStyle={styles.timelineContent}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timelineScroll} contentContainerStyle={[styles.timelineContent, timelineCabeCentrado && styles.timelineContentCentered]}>
             {proximosEventosTimeline.map((e, idx) => (
               <View key={idx} style={styles.timelineItem}>
                 <View style={styles.timelineHeaderRow}>
@@ -1910,13 +1916,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
             </View>
           </View>
         )}
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.formColumn}
-          contentContainerStyle={styles.scrollContentContainer}
-          keyboardShouldPersistTaps="always"
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={[styles.formColumn, winWidth > 768 && styles.formColumnWide]}>
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>I. DATOS GENERALES</Text>
               <Text style={styles.requiredNote}>
@@ -2487,8 +2487,9 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               </View>
             </View>
           </Modal>
-        </ScrollView>
-      </View>
+        </View>
+        </View>
+      </ScrollView>
 
       <View style={styles.fixedBottomContainer}>
         <TouchableOpacity onPress={confirmSubmit} disabled={isLoading} style={[styles.floatingActionButton, isLoading && styles.buttonDisabled]}>
@@ -3035,7 +3036,6 @@ facultadSelectedHint: {
     elevation: 8,
   },
   mainContainer: {
-    flex: 1,
     flexDirection: 'column',
     paddingHorizontal: 20,
   },
@@ -3055,8 +3055,11 @@ facultadSelectedHint: {
   },
   formColumn: {
     marginTop: 10,
+  },
+  formColumnWide: {
     flex: 1,
   },
+  pageScroll: { flex: 1 },
   scrollContentContainer: { paddingBottom: 8 },
   calendarSection: { marginBottom: 20 },
   notificationMessage: { fontSize: 13, color: '#666', marginBottom: 5, lineHeight: 18 },
@@ -3499,11 +3502,6 @@ requiredNote: {
   marginBottom: 15,
   paddingHorizontal: 4,
 },
-requirementInfo: {
-  fontSize: 13,
-  marginBottom: 8,
-  color: '#555',
-},
 timelineSection: {
   marginTop: 20,
   marginBottom: 20,
@@ -3532,6 +3530,10 @@ timelineContent: {
   flexDirection: 'row',
   alignItems: 'flex-start',
   paddingHorizontal: 2,
+},
+timelineContentCentered: {
+  flexGrow: 1,
+  justifyContent: 'center',
 },
 timelineItem: {
   width: 170,
