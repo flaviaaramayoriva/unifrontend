@@ -128,10 +128,8 @@ const tieneProgramacion = (ev) =>
 const SeleccionarProgramacionEvento = () => {
   const router = useRouter();
   const [events, setEvents] = useState([]);
-  const [comiteEvents, setComiteEvents] = useState([]);
   const [myId, setMyId] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [vista, setVista] = useState('creados');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -156,34 +154,13 @@ const SeleccionarProgramacionEvento = () => {
       setEvents(mainList);
 
       try {
-        const [resComite, resProfile] = await Promise.all([
-          axios.get(`${API_BASE_URL}/dashboard/my-committee-events`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          axios.get(`${API_BASE_URL}/profile`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
-        ]);
-
-        const dataComite = Array.isArray(resComite.data) ? resComite.data : (resComite.data?.events || []);
-        const miId = resProfile.data?.id ?? resProfile.data?.idusuario ?? null;
-        setMyId(miId);
-        setUserRole(resProfile.data?.role || null);
-
-        const mapaComite = new Map();
-        dataComite.forEach(ev => { if (ev && ev.idevento) mapaComite.set(String(ev.idevento), ev); });
-        mainList.forEach(ev => {
-          if (ev && ev.idevento && (ev.Comite || []).some(c => String(c.idusuario) === String(miId))) {
-            mapaComite.set(String(ev.idevento), ev);
-          }
+        const resProfile = await axios.get(`${API_BASE_URL}/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        const approvedComite = [...mapaComite.values()]
-          .map(normalizeEvent)
-          .filter(ev => ev.estado === 'aprobado');
-        setComiteEvents(approvedComite);
+        setMyId(resProfile.data?.id ?? resProfile.data?.idusuario ?? null);
+        setUserRole(resProfile.data?.role || null);
       } catch (e) {
-        console.warn('No se pudo cargar comité/perfil:', e.message);
+        console.warn('No se pudo cargar el perfil:', e.message);
       }
     } catch (error) {
       console.error('Error al cargar eventos:', error);
@@ -213,11 +190,7 @@ const SeleccionarProgramacionEvento = () => {
   const filteredEvents = useMemo(() => {
     let list = [];
     if (userRole === 'academico') {
-      if (vista === 'creados') {
-        list = events.filter(ev => String(ev.idacademico) === String(myId));
-      } else {
-        list = comiteEvents;
-      }
+      list = events.filter(ev => String(ev.idacademico) === String(myId));
     } else {
       list = events;
     }
@@ -234,9 +207,7 @@ const SeleccionarProgramacionEvento = () => {
     list = list.filter(ev => !isEventPast(ev));
 
     return list.sort((a, b) => parseEventDate(a.fechaevento) - parseEventDate(b.fechaevento));
-  }, [vista, events, comiteEvents, myId, userRole, searchTerm]);
-
-  const creadosCount = events.filter(ev => String(ev.idacademico) === String(myId) && !isEventPast(ev)).length;
+  }, [events, myId, userRole, searchTerm]);
 
   const handleSelect = (event) => {
     const eventId = event.id || event.idevento;
@@ -308,28 +279,9 @@ const SeleccionarProgramacionEvento = () => {
       />
 
       <View style={styles.content}>
-        {userRole === 'academico' && (
-          <View style={styles.tabs}>
-            <TouchableOpacity
-              style={[styles.tab, vista === 'creados' && styles.tabActive]}
-              onPress={() => setVista('creados')}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.tabText, vista === 'creados' && styles.tabTextActive]}>
-                Mis eventos aprobados ({creadosCount})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, vista === 'comite' && styles.tabActive]}
-              onPress={() => setVista('comite')}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.tabText, vista === 'comite' && styles.tabTextActive]}>
-                Mi comité ({comiteEvents.length})
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <Text style={styles.resultsCount}>
+          {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''} aprobado{filteredEvents.length !== 1 ? 's' : ''} por programar
+        </Text>
 
         <View style={styles.searchBox}>
           <Ionicons name="search" size={18} color={COLORS.grayMedium} />
@@ -379,19 +331,12 @@ const SeleccionarProgramacionEvento = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
-  tabs: { flexDirection: 'row', marginBottom: 12, gap: 8 },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
+  resultsCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.grayText,
+    marginBottom: 10,
   },
-  tabActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  tabText: { fontSize: 13, fontWeight: '600', color: COLORS.grayText },
-  tabTextActive: { color: COLORS.white },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
