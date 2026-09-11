@@ -904,6 +904,7 @@ const ProyectoEvento = () => {
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictoDetectado, setConflictoDetectado] = useState(null);
   const scrollViewRef = useRef(null);
+  const horizontalScrollRef = useRef(null);
   const objetivosSectionRef = useRef(null);
   const [objetivosSectionY, setObjetivosSectionY] = useState(0);
   const [isScrollingToObjetivos, setIsScrollingToObjetivos] = useState(false);
@@ -1349,6 +1350,7 @@ const ProyectoEvento = () => {
   }, [eventos, fechaHoraSeleccionada]);
 
   const [timelineWidth, setTimelineWidth] = useState(0);
+  const [formWidth, setFormWidth] = useState(0);
   const proximosEventosTimeline = useMemo(() => {
     const conFecha = eventos
       .filter(e => e.fechaevento && dayjs(e.fechaevento).isValid())
@@ -1466,12 +1468,12 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
   const scrollToObjetivos = () => {
     setSeccionObjetivosVisible(true);
     setTimeout(() => {
-      if (objetivosSectionRef.current && scrollViewRef.current) {
+      if (objetivosSectionRef.current && horizontalScrollRef.current) {
         setIsScrollingToObjetivos(true);
         objetivosSectionRef.current.measureLayout(
-          scrollViewRef.current.getInnerViewNode(),
-          (x, y) => {
-            scrollViewRef.current?.scrollTo({ y: y - 60, animated: true });
+          horizontalScrollRef.current.getInnerViewNode(),
+          (measuredX) => {
+            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
             setTimeout(() => setIsScrollingToObjetivos(false), 1000);
           },
           (error) => { console.warn("Error:", error); setIsScrollingToObjetivos(false); }
@@ -1483,12 +1485,12 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
   const scrollToResultados = () => {
     setSeccionResultadosVisible(true);
     setTimeout(() => {
-      if (resultadosSectionRef.current && scrollViewRef.current) {
+      if (resultadosSectionRef.current && horizontalScrollRef.current) {
         setIsScrollingToResultados(true);
         resultadosSectionRef.current.measureLayout(
-          scrollViewRef.current.getInnerViewNode(),
-          (x, y) => {
-            scrollViewRef.current?.scrollTo({ y: y - 60, animated: true });
+          horizontalScrollRef.current.getInnerViewNode(),
+          (measuredX) => {
+            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
             setTimeout(() => setIsScrollingToResultados(false), 1000);
           },
           (error) => { console.warn("Error:", error); setIsScrollingToResultados(false); }
@@ -1498,14 +1500,15 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
   };
 
   const scrollToComite = () => {
+    setSeccionResultadosVisible(true);
     setSeccionComiteVisible(true);
     setTimeout(() => {
-      if (comiteSectionRef.current && scrollViewRef.current) {
+      if (comiteSectionRef.current && horizontalScrollRef.current) {
         setisScrollingToComite(true);
         comiteSectionRef.current.measureLayout(
-          scrollViewRef.current.getInnerViewNode(),
-          (x, y) => {
-            scrollViewRef.current?.scrollTo({ y: y - 60, animated: true });
+          horizontalScrollRef.current.getInnerViewNode(),
+          (measuredX) => {
+            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
             setTimeout(() => setisScrollingToComite(false), 1000);
           },
           (error) => { console.warn("Error:", error); setisScrollingToComite(false); }
@@ -1517,12 +1520,12 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
   const scrollToRecursos = () => {
     setSeccionRecursosVisible(true);
     setTimeout(() => {
-      if (recursosSectionRef.current && scrollViewRef.current) {
+      if (recursosSectionRef.current && horizontalScrollRef.current) {
         setIsScrollingToRecursos(true);
         recursosSectionRef.current.measureLayout(
-          scrollViewRef.current.getInnerViewNode(),
-          (x, y) => {
-            scrollViewRef.current?.scrollTo({ y: y - 60, animated: true });
+          horizontalScrollRef.current.getInnerViewNode(),
+          (measuredX) => {
+            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
             setTimeout(() => setIsScrollingToRecursos(false), 1000);
           },
           (error) => { console.warn("Error:", error); setIsScrollingToRecursos(false); }
@@ -1534,12 +1537,12 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
   const scrollToPresupuesto = () => {
     setSeccionPresupuestoVisible(true);
     setTimeout(() => {
-      if (presupuestoSectionRef.current && scrollViewRef.current) {
+      if (presupuestoSectionRef.current && horizontalScrollRef.current) {
         setIsScrollingToPresupuesto(true);
         presupuestoSectionRef.current.measureLayout(
-          scrollViewRef.current.getInnerViewNode(),
-          (x, y) => {
-            scrollViewRef.current?.scrollTo({ y: y - 60, animated: true });
+          horizontalScrollRef.current.getInnerViewNode(),
+          (measuredX) => {
+            horizontalScrollRef.current?.scrollTo({ x: measuredX, animated: true });
             setTimeout(() => setIsScrollingToPresupuesto(false), 1000);
           },
           (error) => { console.warn("Error:", error); setIsScrollingToPresupuesto(false); }
@@ -1560,12 +1563,60 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
     if (clasificacionSeleccionada && CLASIFICACION_ESTRATEGICA[clasificacionSeleccionada]?.subcategorias && !subcategoriaSeleccionada) {
       newErrors.subcategoriaSeleccionada = 'Selecciona una subcategoría.';
     }
+    if (!String(resultadosEsperados.participacion || '').trim()) newErrors.participacion = 'Indica la participación efectiva esperada.';
+    if (!String(resultadosEsperados.satisfaccion || '').trim()) newErrors.satisfaccion = 'Indica el índice de satisfacción esperado.';
+    if (!String(resultadosEsperados.otro || '').trim()) newErrors.otro = 'Completa otro resultado esperado.';
+    if (comiteSeleccionado.length === 0) newErrors.comite = 'Selecciona al menos un miembro del comité.';
+    if (recursosDisponibles.length > 0 && !Object.values(recursosSeleccionadosCount).some(v => v > 0)) newErrors.recursos = 'Selecciona al menos un recurso disponible.';
+    const tieneEgresos = egresos.some(r => r.descripcion?.trim());
+    const tieneIngresos = ingresos.some(r => r.descripcion?.trim());
+    if (!tieneEgresos || !tieneIngresos) newErrors.presupuesto = 'Completa el presupuesto (egresos e ingresos).';
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
+  };
+
+  const irAError = (primerError) => {
+    if (!primerError) return;
+    setTimeout(() => {
+      switch (primerError) {
+        case 'nombreevento':
+        case 'textoOtroTipo':
+        case 'argumentacion':
+        case 'clasificacionSeleccionada':
+        case 'subcategoriaSeleccionada':
+        case 'lugarevento':
+        case 'tipos':
+          horizontalScrollRef.current?.scrollTo({ x: 0, animated: true });
+          break;
+        case 'objetivos':
+        case 'objetivosOtroTexto':
+          scrollToObjetivos();
+          break;
+        case 'participacion':
+        case 'satisfaccion':
+        case 'otro':
+          scrollToResultados();
+          break;
+        case 'comite':
+          scrollToComite();
+          break;
+        case 'recursos':
+          scrollToRecursos();
+          break;
+        case 'presupuesto':
+          scrollToPresupuesto();
+          break;
+        default:
+          break;
+      }
+    }, 80);
   };
 
   const confirmSubmit = () => {
-    if (!validateForm()) {
+    const newErrors = validateForm();
+    const errorKeys = Object.keys(newErrors);
+    if (errorKeys.length > 0) {
+      irAError(errorKeys[0]);
       Alert.alert('Formulario Incompleto', 'Por favor, corrige los campos marcados en rojo antes de continuar.');
       return;
     }
@@ -1826,13 +1877,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
         />
       </View>
 
-      {/* Panel de progreso: muestra el paso actual y qué pasos están bloqueados */}
-      <View style={styles.progressSummary}>
-        <Text style={styles.progressText}>Paso {String(parseInt(seccionObjetivosVisible ? 2 : 1))} de VI</Text>
-        <Text style={styles.progressNote}>
-          {seccionObjetivosVisible ? 'Objetivos visibles' : 'Primer paso: Datos'}
-        </Text>
-      </View>
+     
 
       {/* Línea de tiempo de eventos */}
       <View style={styles.timelineSection} onLayout={(e) => setTimelineWidth(e.nativeEvent.layout.width)}>
@@ -1867,7 +1912,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
       <View style={styles.stepperContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepperContent}>
           {[
-            { num: 'I', label: 'Datos', locked: false, onPress: () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }) },
+            { num: 'I', label: 'Datos', locked: false, onPress: () => horizontalScrollRef.current?.scrollTo({ x: 0, animated: true }) },
             { num: 'II', label: 'Objetivos', locked: !seccionObjetivosVisible, onPress: scrollToObjetivos },
             { num: 'III', label: 'Resultados', locked: !seccionResultadosVisible, onPress: scrollToResultados },
             { num: 'IV', label: 'Comité', locked: !seccionResultadosVisible, onPress: scrollToComite },
@@ -1916,8 +1961,16 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
             </View>
           </View>
         )}
-        <View style={[styles.formColumn, winWidth > 768 && styles.formColumnWide]}>
-          <View style={styles.formSection}>
+        <ScrollView
+          ref={horizontalScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          style={[styles.formColumn, winWidth > 768 && styles.formColumnWide]}
+          contentContainerStyle={styles.formHorizontalContent}
+          onLayout={(e) => { const w = e.nativeEvent.layout.width; if (w > 0) setFormWidth(w); }}
+        >
+          <View style={[styles.formSection, { width: formWidth }]}>
             <Text style={styles.sectionTitle}>I. DATOS GENERALES</Text>
               <Text style={styles.requiredNote}>
               Los campos marcados con <Text style={styles.requiredAsterisk}>*</Text> son obligatorios
@@ -2031,7 +2084,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
 
           {seccionObjetivosVisible && (
             <View
-              style={[styles.formSection, isScrollingToObjetivos && styles.formSectionHighlighted]}
+              style={[styles.formSection, { width: formWidth }, isScrollingToObjetivos && styles.formSectionHighlighted]}
               ref={objetivosSectionRef}
               onLayout={(event) => { const { y } = event.nativeEvent.layout; setObjetivosSectionY(y); }}
             >
@@ -2165,22 +2218,25 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
 
           {seccionResultadosVisible && (
             <>
-              <View style={[styles.formSection, isScrollingToResultados && styles.formSectionHighlighted]} ref={resultadosSectionRef}>
+              <View style={[styles.formSection, { width: formWidth }, isScrollingToResultados && styles.formSectionHighlighted]} ref={resultadosSectionRef}>
                 <Text style={styles.sectionTitle}>III. RESULTADOS ESPERADOS</Text>
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Participación Efectiva<Text style={styles.requiredAsterisk}>*</Text></Text>
                   <TextInput style={styles.resultadoInput} placeholder="Ej: 150" value={resultadosEsperados.participacion} onChangeText={(text) => handleResultadoChange('participacion', text)} keyboardType="numeric" accessibilityLabel="Participación Efectiva" />
                 </View>
+                {errors.participacion && <Text style={styles.errorText}>{errors.participacion}</Text>}
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Índice de Satisfacción<Text style={styles.requiredAsterisk}>*</Text></Text>
                   <TextInput style={styles.resultadoInput} placeholder="Ej: 90% de satisfacción" value={resultadosEsperados.satisfaccion} onChangeText={(text) => handleResultadoChange('satisfaccion', text)} accessibilityLabel="Índice de Satisfacción" />
                 </View>
+                {errors.satisfaccion && <Text style={styles.errorText}>{errors.satisfaccion}</Text>}
                 <View style={styles.resultadoRow}>
                   <Text style={styles.resultadoLabel}>Otro<Text style={styles.requiredAsterisk}>*</Text></Text>
                   <TextInput style={styles.resultadoInput} placeholder="Otro resultado medible" value={resultadosEsperados.otro} onChangeText={(text) => handleResultadoChange('otro', text)} accessibilityLabel="Otro resultado" />
                 </View>
+                {errors.otro && <Text style={styles.errorText}>{errors.otro}</Text>}
               </View>
-              <View style={styles.formSection}>
+<View style={[styles.formSection, { width: formWidth }, isScrollingToComite && styles.formSectionHighlighted]} ref={comiteSectionRef}>
                 <Text style={styles.sectionTitle}>IV. COMITÉ DEL EVENTO</Text>
                 <Text style={styles.comiteDescription}>Selecciona a los miembros del comité del evento:<Text style={styles.requiredAsterisk}>*</Text></Text>
                 
@@ -2240,6 +2296,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     <Text style={styles.comitePlaceholder}>No hay usuarios disponibles para el comité.</Text>
                   </View>
                 )}
+                {errors.comite && <Text style={styles.errorText}>{errors.comite}</Text>}
                 
                 <TouchableOpacity style={styles.gotoButton} onPress={scrollToRecursos}>
                   <Ionicons name="arrow-forward" size={20} color="#ffffff" />
@@ -2250,7 +2307,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
           )}
 
           {seccionRecursosVisible && (
-          <View style={[styles.formSection, isScrollingToRecursos && styles.formSectionHighlighted]} ref={recursosSectionRef}>
+          <View style={[styles.formSection, { width: formWidth }, isScrollingToRecursos && styles.formSectionHighlighted]} ref={recursosSectionRef}>
             <Text style={styles.sectionTitle}>V. RECURSOS NECESARIOS</Text>
             <View style={styles.subsection}>
               <Text style={styles.subsectionTitle}>Recursos Disponibles<Text style={styles.requiredAsterisk}>*</Text></Text>
@@ -2328,6 +2385,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               ) : (
                 <Text style={styles.noRecursosText}> No hay recursos disponibles en este momento.</Text>
               )}
+              {errors.recursos && <Text style={styles.errorText}>{errors.recursos}</Text>}
             </View>
             <TouchableOpacity style={styles.gotoButton} onPress={scrollToPresupuesto}>
               <Ionicons name="arrow-forward" size={20} color="#ffffff" />
@@ -2337,7 +2395,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
           )}
 
           {seccionPresupuestoVisible && (
-            <View style={[styles.formSection, isScrollingToPresupuesto && styles.formSectionHighlighted]} ref={presupuestoSectionRef}>
+            <View style={[styles.formSection, { width: formWidth }, isScrollingToPresupuesto && styles.formSectionHighlighted]} ref={presupuestoSectionRef}>
               <Text style={styles.sectionTitle}>VI. PRESUPUESTO<Text style={styles.requiredAsterisk}>*</Text></Text>
               <TablaPresupuesto titulo="EGRESOS" items={egresos} setItems={setEgresos} totalGeneral={totalEgresos} handlePresupuestoChange={handlePresupuestoChange} eliminarFilaPresupuesto={eliminarFilaPresupuesto} agregarFilaPresupuesto={agregarFilaPresupuesto} />
               <TablaPresupuesto titulo="INGRESOS" items={ingresos} setItems={setIngresos} totalGeneral={totalIngresos} handlePresupuestoChange={handlePresupuestoChange} eliminarFilaPresupuesto={eliminarFilaPresupuesto} agregarFilaPresupuesto={agregarFilaPresupuesto} />
@@ -2345,6 +2403,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                 <Text style={styles.balanceText}>BALANCE ECONÓMICO</Text>
                 <Text style={[styles.balanceAmount, { color: balance >= 0 ? '#27ae60' : '#c0392b' }]}>{formatCurrency(balance)}</Text>
               </View>
+              {errors.presupuesto && <Text style={styles.errorText}>{errors.presupuesto}</Text>}
             </View>
           )}
 
@@ -2487,7 +2546,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               </View>
             </View>
           </Modal>
-        </View>
+        </ScrollView>
         </View>
       </ScrollView>
 
@@ -3059,6 +3118,9 @@ facultadSelectedHint: {
   formColumnWide: {
     flex: 1,
   },
+  formHorizontalContent: {
+    alignItems: 'flex-start',
+  },
   pageScroll: { flex: 1 },
   scrollContentContainer: { paddingBottom: 8 },
   calendarSection: { marginBottom: 20 },
@@ -3505,6 +3567,7 @@ requiredNote: {
 timelineSection: {
   marginTop: 20,
   marginBottom: 20,
+  marginHorizontal: 20,
 },
 timelineHeader: {
   flexDirection: 'row',
