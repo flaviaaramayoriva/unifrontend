@@ -75,6 +75,19 @@ const parseEventDate = (dateStr) => {
   return new Date(0);
 };
 
+const isEventPast = (event) => {
+  const dateStr = event.fechaevento || event.date;
+  if (!dateStr) return true;
+
+  const eventDate = parseEventDate(dateStr);
+  const today = new Date();
+
+  eventDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  return eventDate < today;
+};
+
 const getEventFaculty = (event) => event.faculty || event.facultad || 'Sin facultad';
 
 const getFacultyColor = (facultyName) => {
@@ -218,10 +231,12 @@ const SeleccionarProgramacionEvento = () => {
       );
     }
 
+    list = list.filter(ev => !isEventPast(ev));
+
     return list.sort((a, b) => parseEventDate(a.fechaevento) - parseEventDate(b.fechaevento));
   }, [vista, events, comiteEvents, myId, userRole, searchTerm]);
 
-  const creadosCount = events.filter(ev => String(ev.idacademico) === String(myId)).length;
+  const creadosCount = events.filter(ev => String(ev.idacademico) === String(myId) && !isEventPast(ev)).length;
 
   const handleSelect = (event) => {
     const eventId = event.id || event.idevento;
