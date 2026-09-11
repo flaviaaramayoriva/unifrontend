@@ -914,7 +914,6 @@ const ProyectoEvento = () => {
   const [textoOtroTipo, setTextoOtroTipo] = useState('');
   const [textoTiposSeleccionados, setTextoTiposSeleccionados] = useState('');
   const [recursosDisponibles, setRecursosDisponibles] = useState([]);
-  const [recursosSeleccionados, setRecursosSeleccionados] = useState([]);
   const [recursosTecnologicos, setRecursosTecnologicos] = useState([{ nombre: '', cantidad: '' }]);
   const [mobiliario, setMobiliario] = useState([{ nombre: '', cantidad: '' }]);
   const [vajilla, setVajilla] = useState([{ nombre: '', cantidad: '' }]);
@@ -926,7 +925,6 @@ const ProyectoEvento = () => {
   const [showSubcategoriaModal, setShowSubcategoriaModal] = useState(false);
   const [showLugarModal, setShowLugarModal] = useState(false);
   const [campusSeleccionado, setCampusSeleccionado] = useState(null);
-  const [areaSeleccionada, setAreaSeleccionada] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -941,7 +939,6 @@ const ProyectoEvento = () => {
   const [isScrollingToComite, setisScrollingToComite] = useState(false);
   const recursosSectionRef = useRef(null);
   const [isScrollingToRecursos, setIsScrollingToRecursos] = useState(false);
-  const [recursos, setRecursos] = useState([{ nombre_recurso: '', cantidad: '' }]);
   const presupuestoSectionRef = useRef(null);
   const [isScrollingToPresupuesto, setIsScrollingToPresupuesto] = useState(false);
   const [usuariosComite, setUsuariosComite] = useState([]);
@@ -1075,7 +1072,7 @@ const ProyectoEvento = () => {
     if (!authToken || authToken === 'null' || authToken === '') return;
     try {
       await axios.patch(`${API_BASE_URL}/notificaciones/${notificationId}/read`, {}, { headers: { Authorization: `Bearer ${authToken}` } });
-      setNotifications(prev => prev.map(n => n.idusuario === notificationId ? { ...n, read: true, estado: 'leido' } : n));
+      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true, estado: 'leido' } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error al marcar notificación como leída:', error);
@@ -1221,7 +1218,7 @@ const ProyectoEvento = () => {
 
       const sel = dayjs(fechaHora).startOf('day');
       const horaSeleccionada = sel.hour(dayjs(fechaHora).hour()).minute(dayjs(fechaHora).minute());
-      return Math.abs(horaEvento.diff(horaSeleccionada, 'minutes')) < 240;
+      return Math.abs(horaEvento.diff(horaSeleccionada, 'minutes')) < 120;
     });
   };
 
@@ -1351,13 +1348,21 @@ const ProyectoEvento = () => {
     setEventosDelDia(eventsDelDia);
   }, [eventos, fechaHoraSeleccionada]);
 
-  const addResource = () => setRecursos(prev => [...prev, { nombre_recurso: '', cantidad: '' }]);
-  const removeResource = (indexToRemove) => setRecursos(prev => prev.filter((_, index) => index !== indexToRemove));
-  const updateResource = (text, indexToUpdate, field) => {
-    const nuevosRecursos = [...recursos];
-    nuevosRecursos[indexToUpdate][field] = text;
-    setRecursos(nuevosRecursos);
-  };
+  const proximosEventosTimeline = useMemo(() => {
+    const conFecha = eventos
+      .filter(e => e.fechaevento && dayjs(e.fechaevento).isValid())
+      .map(e => ({
+        fechaISO: e.fechaevento,
+        fecha: dayjs(e.fechaevento).format('DD/MM/YYYY'),
+        nombre: e.nombreevento || 'Sin nombre'
+      }))
+      .sort((a, b) => dayjs(a.fechaISO).diff(dayjs(b.fechaISO)));
+
+    const hoy = dayjs().startOf('day');
+    const proximos = conFecha.filter(e => dayjs(e.fechaISO).startOf('day').isAfter(hoy));
+    const fuente = proximos.length > 0 ? proximos : conFecha;
+    return fuente.slice(0, 3);
+  }, [eventos]);
 
   const handleInputChange = (field, value) => {
     if (field === 'nombreevento') setNombreevento(value);
@@ -1397,12 +1402,35 @@ const ProyectoEvento = () => {
     return nuevoEstado;
   });
 }, []);
-    
-    
-    
 
-  
- const getCantidadDisponible = useCallback((recurso) => {
+  const incrementarRecurso = useCallback((idrecurso, recurso) => {
+    if (idrecurso == null || !recurso) return;
+    const idString = String(idrecurso);
+    const disponibleOriginal = recurso.cantidad || recurso.disponibles || 0;
+    setRecursosSeleccionadosCount(prev => {
+      const actual = prev[idString] || 0;
+      if (actual >= disponibleOriginal) return prev;
+      return { ...prev, [idString]: actual + 1 };
+    });
+  }, []);
+
+  const decrementarRecurso = useCallback((idrecurso) => {
+    if (idrecurso == null) return;
+    const idString = String(idrecurso);
+    setRecursosSeleccionadosCount(prev => {
+      const actual = prev[idString] || 0;
+      if (actual <= 1) {
+        const clon = { ...prev };
+        delete clon[idString];
+        return clon;
+      }
+      return { ...prev, [idString]: actual - 1 };
+    });
+  }, []);
+
+    
+    
+  const getCantidadDisponible = useCallback((recurso) => {
   if (!recurso || !recurso.idrecurso) return 0;
   const idString = String(recurso.idrecurso);
   const seleccionados = recursosSeleccionadosCount[idString] || 0;
@@ -1613,12 +1641,10 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
         objetivoParaEnviar.push({ id: OBJETIVOS_EVENTO_MAP.otro, texto_personalizado: objetivos.otroTexto.trim() });
       }
       
-      const pdiObjetivos = objetivosPDI
-        .filter(o => o.trim() !== '')
-        .map(texto => ({ id: OBJETIVOS_EVENTO_MAP.otro, texto_personalizado: texto.trim() }));
+      const pdiObjetivos = objetivosPDI.filter(o => o.trim() !== '');
         
-      const todosLosObjetivos = [...objetivoParaEnviar, ...pdiObjetivos];
-      if (todosLosObjetivos.length === 0) throw new Error('Debes seleccionar al menos un objetivo');
+      const todosLosObjetivos = [...objetivoParaEnviar];
+      if (todosLosObjetivos.length === 0 && pdiObjetivos.length === 0) throw new Error('Debes seleccionar al menos un objetivo');
       
       console.log("🔍 4. Procesando segmentos...");
       const segmentosParaEnviar = [];
@@ -1694,6 +1720,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
         resultados_esperados: JSON.stringify(resultadosEsperados),
         tipos_de_evento: tiposParaEnviar,
         objetivos: todosLosObjetivos,
+        objetivos_pdi: pdiObjetivos.length > 0 ? pdiObjetivos : null,
         segmentos_objetivo: segmentosParaEnviar.length > 0 ? segmentosParaEnviar : null,
         recursos_existentes: recursosExistentes.length > 0 ? recursosExistentes : null,
         recursos_nuevos: nuevosRecursos.length > 0 ? nuevosRecursos : null,
@@ -1803,19 +1830,32 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
 
       {/* Línea de tiempo de eventos */}
       <View style={styles.timelineSection}>
-        <Text style={styles.timelineTitle}>Línea de tiempo de eventos</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timelineScroll}>
-          {[
-            { fecha: '15/09/2026', nombre: 'Hackatón Universitario' },
-            { fecha: '21/09/2026', nombre: 'Taller Bancario' },
-            { fecha: '22/09/2026', nombre: 'Egreso de estudiantes' },
-          ].map((e) => (
-            <View key={e.fecha} style={styles.timelineEvent}>
-              <Text style={styles.timelineDate}>{e.fecha}</Text>
-              <Text style={styles.timelineNombre}>{e.nombre}</Text>
-            </View>
-          ))}
-        </ScrollView>
+        <View style={styles.timelineHeader}>
+          <Text style={styles.timelineTitle}>Línea de tiempo de eventos</Text>
+          <Text style={styles.timelineSubtitle}>Próximos eventos programados</Text>
+        </View>
+        {proximosEventosTimeline.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timelineScroll} contentContainerStyle={styles.timelineContent}>
+            {proximosEventosTimeline.map((e, idx) => (
+              <View key={idx} style={styles.timelineItem}>
+                <View style={styles.timelineHeaderRow}>
+                  <View style={[styles.timelineDot, idx === 0 && styles.timelineDotFirst]} />
+                  {idx < proximosEventosTimeline.length - 1 && <View style={styles.timelineConnector} />}
+                </View>
+                <View style={[styles.timelineEventCard, idx === 0 && styles.timelineEventCardFirst]}>
+                  <Ionicons name="calendar-outline" size={14} color="#C44B0A" />
+                  <Text style={styles.timelineDate}>{e.fecha}</Text>
+                  <Text style={styles.timelineNombre} numberOfLines={2}>{e.nombre}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.timelineEmpty}>
+            <Ionicons name="calendar-outline" size={22} color="#bbb" />
+            <Text style={styles.timelineEmptyText}>No hay eventos próximos programados.</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.stepperContainer}>
@@ -2225,39 +2265,63 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     const canSelect = puedeSeleccionarRecurso(recurso);
                     
                     return (
-                      <TouchableOpacity
+                      <View
                         key={idString}
                         style={[
                           styles.recursoDisponibleCard,
                           isSelected && styles.recursoDisponibleCardSelected,
-                          !canSelect && styles.recursoDisponibleCardDisabled,
+                          !canSelect && !isSelected && styles.recursoDisponibleCardDisabled,
                           winWidth < 768 && styles.recursoDisponibleCardMobile
                         ]}
-                        onPress={() => canSelect && handleRecursoChange(recurso.idrecurso, recurso)}
-                        disabled={!canSelect}
                       >
-                        <View style={styles.recursoCheckboxContainer}>
-                          <Ionicons
-                            name={isSelected ? "checkbox" : "square-outline"}
-                            size={24}
-                            color={isSelected ? "#C44B0A" : !canSelect ? "#ccc" : "#888"}
-                          />
-                        </View>
-                        <View style={styles.recursoInfo}>
-                          <Text style={styles.recursoNombre}>{recurso.nombre_recurso}</Text>
-                          <Text style={styles.recursoTipo}>
-                            {recurso.recurso_tipo === 'tecnologico' ? 'Tecnológico' :
-                            recurso.recurso_tipo === 'mobiliario' ? 'Mobiliario' : 'Vajilla'}
-                          </Text>
-                          <Text style={[
-                            styles.recursoCantidad,
-                            { color: cantidadDisponible <= 2 ? '#e74c3c' : '#27ae60' }
-                          ]}>
-                            Disponibles: {cantidadDisponible}
-                            {cantidadSeleccionada > 0 && ` (Seleccionadas: ${cantidadSeleccionada})`}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.recursoCardMain}
+                          onPress={() => canSelect && handleRecursoChange(recurso.idrecurso, recurso)}
+                          disabled={!canSelect}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.recursoCheckboxContainer}>
+                            <Ionicons
+                              name={isSelected ? "checkbox" : "square-outline"}
+                              size={24}
+                              color={isSelected ? "#C44B0A" : !canSelect ? "#ccc" : "#888"}
+                            />
+                          </View>
+                          <View style={styles.recursoInfo}>
+                            <Text style={styles.recursoNombre}>{recurso.nombre_recurso}</Text>
+                            <Text style={styles.recursoTipo}>
+                              {recurso.recurso_tipo === 'tecnologico' ? 'Tecnológico' :
+                              recurso.recurso_tipo === 'mobiliario' ? 'Mobiliario' : 'Vajilla'}
+                            </Text>
+                            <Text style={[
+                              styles.recursoCantidad,
+                              { color: cantidadDisponible <= 2 ? '#e74c3c' : '#27ae60' }
+                            ]}>
+                              Disponibles: {cantidadDisponible}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                        {isSelected && (
+                          <View style={styles.recursoStepper}>
+                            <TouchableOpacity
+                              style={styles.recursoStepperBtn}
+                              onPress={() => decrementarRecurso(recurso.idrecurso)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Ionicons name="remove" size={18} color="#C44B0A" />
+                            </TouchableOpacity>
+                            <Text style={styles.recursoStepperCount}>{cantidadSeleccionada}</Text>
+                            <TouchableOpacity
+                              style={[styles.recursoStepperBtn, cantidadSeleccionada >= (recurso.cantidad || recurso.disponibles || 0) && styles.recursoStepperBtnDisabled]}
+                              onPress={() => incrementarRecurso(recurso.idrecurso, recurso)}
+                              disabled={cantidadSeleccionada >= (recurso.cantidad || recurso.disponibles || 0)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Ionicons name="add" size={18} color="#C44B0A" />
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
                     );
                   })}
                 </View>
@@ -2329,7 +2393,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                 <ScrollView>
                   {campusSeleccionado ? (
                     LUGARES_CON_AREAS[campusSeleccionado].areas.map((area) => (
-                      <TouchableOpacity key={area.id} style={styles.modalOption} onPress={() => { setLugarevento(area.nombre); setShowLugarModal(false); setCampusSeleccionado(null); }}>
+                      <TouchableOpacity key={area.id} style={styles.modalOption} onPress={() => { setLugarevento(`${LUGARES_CON_AREAS[campusSeleccionado].label} – ${area.nombre}`); setShowLugarModal(false); setCampusSeleccionado(null); }}>
                         <Text style={styles.modalOptionText}>{area.nombre}</Text>
                       </TouchableOpacity>
                     ))
@@ -3032,6 +3096,11 @@ facultadSelectedHint: {
   recursoNombre: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4 },
   recursoTipo: { fontSize: 12, color: '#666', fontStyle: 'italic', marginBottom: 2 },
   recursoCantidad: { fontSize: 12, color: '#27ae60', fontWeight: '500' },
+  recursoCardMain: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  recursoStepper: { flexDirection: 'row', alignItems: 'center', marginLeft: 6 },
+  recursoStepperBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#fff0e6', alignItems: 'center', justifyContent: 'center' },
+  recursoStepperBtnDisabled: { opacity: 0.35 },
+  recursoStepperCount: { minWidth: 26, textAlign: 'center', fontSize: 15, fontWeight: '700', color: '#C44B0A' },
   noRecursosText: { fontStyle: 'italic', color: '#999', textAlign: 'center', marginTop: 10, fontSize: 14, paddingVertical: 15 },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, minHeight: 40 },
   checkboxLabel: { marginLeft: 8, fontSize: 15, color: '#333' },
@@ -3439,29 +3508,107 @@ timelineSection: {
   marginTop: 20,
   marginBottom: 20,
 },
+timelineHeader: {
+  flexDirection: 'row',
+  alignItems: 'baseline',
+  justifyContent: 'space-between',
+  flexWrap: 'wrap',
+  gap: 6,
+  marginBottom: 16,
+},
 timelineTitle: {
   fontSize: 16,
   fontWeight: '600',
   color: '#333',
-  marginBottom: 12,
+},
+timelineSubtitle: {
+  fontSize: 12,
+  color: '#999',
 },
 timelineScroll: {
-  height: 80,
+  paddingBottom: 6,
 },
-timelineEvent: {
-  flexDirection: 'column',
+timelineContent: {
+  flexDirection: 'row',
   alignItems: 'flex-start',
-  marginRight: 20,
+  paddingHorizontal: 2,
+},
+timelineItem: {
+  width: 170,
+},
+timelineHeaderRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  height: 22,
+  marginBottom: 10,
+},
+timelineDot: {
+  width: 16,
+  height: 16,
+  borderRadius: 8,
+  backgroundColor: '#d9d9d9',
+  borderWidth: 3,
+  borderColor: '#fff',
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.15,
+  shadowRadius: 2,
+},
+timelineDotFirst: {
+  backgroundColor: '#C44B0A',
+  width: 18,
+  height: 18,
+  borderRadius: 9,
+},
+timelineConnector: {
+  flex: 1,
+  height: 2,
+  backgroundColor: '#e0d4c9',
+  marginLeft: 4,
+  marginRight: 8,
+},
+timelineEventCard: {
+  backgroundColor: '#f8f9fa',
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: '#e8e8e8',
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  marginTop: 4,
+},
+timelineEventCardFirst: {
+  backgroundColor: '#fff5f0',
+  borderColor: '#f0c9b0',
 },
 timelineDate: {
   fontSize: 12,
-  color: '#666',
-  marginBottom: 4,
+  color: '#C44B0A',
+  fontWeight: '700',
+  marginTop: 4,
+  marginBottom: 2,
 },
 timelineNombre: {
-  fontSize: 14,
+  fontSize: 13,
+  lineHeight: 17,
   fontWeight: '500',
   color: '#333',
+},
+timelineEmpty: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  paddingVertical: 18,
+  backgroundColor: '#fafafa',
+  borderRadius: 10,
+  borderWidth: 1,
+  borderStyle: 'dashed',
+  borderColor: '#ddd',
+},
+timelineEmptyText: {
+  fontSize: 13,
+  color: '#999',
 },
 });
 

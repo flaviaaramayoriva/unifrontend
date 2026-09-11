@@ -539,7 +539,7 @@ const HomeAcademicoScreen = () => {
   const markAsRead = async (notifId) => {
     try {
       const token = await getTokenAsync();
-      await axios.put(`${API_BASE_URL}/notificaciones/${notifId}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.patch(`${API_BASE_URL}/notificaciones/${notifId}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
       setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)));
     } catch (e) {}
   };
