@@ -696,6 +696,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
           const diaLleno = eventosActivos.length >= 2;
           const isSelected = dayjs(fechaHoraSeleccionada).format('YYYY-MM-DD') === dayjs(day.date).format('YYYY-MM-DD');
           const isToday = dayjs().format('YYYY-MM-DD') === dayjs(day.date).format('YYYY-MM-DD');
+          const noDisponible = dayjs(day.date).startOf('day').diff(dayjs().startOf('day'), 'day') <= 0;
           return (
             <TouchableOpacity
               key={index}
@@ -704,31 +705,35 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
                 !day.isCurrentMonth && styles.dayCellInactive,
                 isSelected && styles.dayCellSelected,
                 isToday && styles.dayCellToday,
-                diaLleno && styles.dayCellFull
+                diaLleno && styles.dayCellFull,
+                noDisponible && styles.dayCellDisabled
               ]}
               onPress={() => {
+                const hoy = dayjs().startOf('day');
+                const fechaSeleccionada = dayjs(day.date).startOf('day');
+                const diasDiferencia = fechaSeleccionada.diff(hoy, 'day');
+
+                if (diasDiferencia <= 0) {
+                  const mensaje = 'No puedes crear eventos para hoy ni para fechas pasadas. Elige una fecha futura.';
+                  if (Platform.OS === 'web') {
+                    window.alert('❌ Fecha no disponible\n\n' + mensaje);
+                  } else {
+                    Alert.alert('Fecha no disponible', mensaje, [{ text: 'OK' }]);
+                  }
+                  return;
+                }
+
                 const newDate = new Date(day.date);
                 newDate.setHours(fechaHoraSeleccionada.getHours());
                 newDate.setMinutes(fechaHoraSeleccionada.getMinutes());
                 setFechaHoraSeleccionada(newDate);
 
-                const hoy = dayjs().startOf('day');
-                const fechaSeleccionada = dayjs(day.date).startOf('day');
-                const diasDiferencia = fechaSeleccionada.diff(hoy, 'day');
-
-                if (diasDiferencia < 14 && diasDiferencia >= 0) {
+                if (diasDiferencia < 14) {
                   const mensaje = `Recuerda que los eventos deben crearse con al menos 2 semanas (14 días) de anticipación.\n\nDías restantes: ${diasDiferencia}\n\nPodrás seleccionar esta fecha, pero el sistema validará la anticipación al momento de crear el evento.`;
                   if (Platform.OS === 'web') {
                     window.alert(`⚠️ Atención\n\n${mensaje}`);
                   } else {
                     Alert.alert('⚠️ Atención', mensaje, [{ text: 'Entendido' }]);
-                  }
-                } else if (diasDiferencia < 0) {
-                  const mensaje = 'No puedes seleccionar una fecha pasada. Por favor, elige una fecha futura.';
-                  if (Platform.OS === 'web') {
-                    window.alert(`❌ Fecha inválida\n\n${mensaje}`);
-                  } else {
-                    Alert.alert('❌ Fecha inválida', mensaje, [{ text: 'OK' }]);
                   }
                 }
               }}
@@ -738,7 +743,8 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
                   styles.dayNumber,
                   !day.isCurrentMonth && styles.dayNumberInactive,
                   isSelected && styles.dayNumberSelected,
-                  isToday && styles.dayNumberToday
+                  isToday && styles.dayNumberToday,
+                  noDisponible && styles.dayNumberDisabled
                 ]}>
                   {day.date.getDate()}
                 </Text>
@@ -1970,6 +1976,11 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                   }
                 }}
               />
+              <EventosDelDiaMejorado
+                eventosDelDia={eventosDelDia}
+                fechaHoraSeleccionada={fechaHoraSeleccionada}
+                verificarConflictoHorario={verificarConflictoHorario}
+              />
             </View>
           </View>
         )}
@@ -2066,17 +2077,34 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     }
                   }}
                 />
+                <EventosDelDiaMejorado
+                  eventosDelDia={eventosDelDia}
+                  fechaHoraSeleccionada={fechaHoraSeleccionada}
+                  verificarConflictoHorario={verificarConflictoHorario}
+                />
               </>
             )}
             <Text style={styles.label}>
               Tipo de Evento (puede seleccionar más de un tipo)<Text style={styles.requiredAsterisk}>*</Text>
             </Text>
-            {TIPOS_DE_EVENTO.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)}>
-                <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
-                <Text style={styles.checkboxLabel}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
+            <View style={styles.checkboxContainer}>
+              <View style={styles.checkboxColumn}>
+                {TIPOS_DE_EVENTO.slice(0, 3).map((item) => (
+                  <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)}>
+                    <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
+                    <Text style={styles.checkboxLabel}>{item.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.checkboxColumn}>
+                {TIPOS_DE_EVENTO.slice(3).map((item) => (
+                  <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)}>
+                    <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
+                    <Text style={styles.checkboxLabel}>{item.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
             {errors.tipos && <Text style={styles.errorText}>{errors.tipos}</Text>}
             {tiposSeleccionados['5'] && (
               <View style={styles.otroInputContainer}>
@@ -2242,6 +2270,10 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                   <TextInput style={styles.resultadoInput} placeholder="Otro resultado medible" value={resultadosEsperados.otro} onChangeText={(text) => handleResultadoChange('otro', text)} accessibilityLabel="Otro resultado" />
                 </View>
                 {errors.otro && <Text style={styles.errorText}>{errors.otro}</Text>}
+                <TouchableOpacity style={styles.gotoButton} onPress={scrollToComite}>
+                  <Ionicons name="arrow-forward" size={20} color="#ffffff" />
+                  <Text style={styles.gotoButtonText}>Ir a Comité</Text>
+                </TouchableOpacity>
               </View>
 <View style={[styles.formSection, { width: formWidth }, isScrollingToComite && styles.formSectionHighlighted]} ref={comiteSectionRef}>
                 <Text style={styles.sectionTitle}>IV. COMITÉ DEL EVENTO</Text>
@@ -2555,24 +2587,6 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
           </Modal>
         </ScrollView>
         </View>
-      </View>
-
-      {/* SECCIÓN 3: EVENTOS DEL DÍA */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionNumber}>
-            <Text style={styles.sectionNumberText}>3</Text>
-          </View>
-          <View style={styles.sectionHeaderText}>
-            <Text style={styles.sectionCardTitle}>Eventos del Día Seleccionado</Text>
-            <Text style={styles.sectionCardSubtitle}>Revisa los eventos que ya existen en esa fecha</Text>
-          </View>
-        </View>
-        <EventosDelDiaMejorado
-          eventosDelDia={eventosDelDia}
-          fechaHoraSeleccionada={fechaHoraSeleccionada}
-          verificarConflictoHorario={verificarConflictoHorario}
-        />
       </View>
       </ScrollView>
 
@@ -3415,11 +3429,13 @@ facultadSelectedHint: {
   dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2, borderRadius: 6, margin: -1 },
   dayCellToday: { backgroundColor: '#e8f4fd' },
   dayCellFull: { opacity: 0.35, backgroundColor: '#f2f2f2', borderStyle: 'dashed', borderWidth: 1, borderColor: '#bdbdbd' },
+  dayCellDisabled: { opacity: 0.45, backgroundColor: '#f5f5f5' },
   dayCellContent: { flex: 1, alignItems: 'center' },
   dayNumber: { fontSize: 14, fontWeight: '500', color: '#333', marginBottom: 2 },
   dayNumberInactive: { color: '#999' },
   dayNumberSelected: { color: '#C44B0A', fontWeight: 'bold', fontSize: 15 },
   dayNumberToday: { backgroundColor: '#2196f3', color: 'white', borderRadius: 10, paddingHorizontal: 5, paddingVertical: 1, overflow: 'hidden' },
+  dayNumberDisabled: { color: '#b0b0b0', backgroundColor: 'transparent', borderRadius: 10, paddingHorizontal: 0, paddingVertical: 0 },
   eventIndicators: { flexDirection: 'row', alignItems: 'center', marginTop: 1, flexWrap: 'nowrap' },
   eventDot: { width: 6, height: 6, borderRadius: 3, marginRight: 2 },
   eventCount: { fontSize: 10, color: '#666', fontWeight: '500' },
