@@ -163,6 +163,17 @@ const formatHoraEvento = (h, fallback = '--:--') => {
   return d ? d.format('HH:mm') : fallback;
 };
 
+// Extrae solo la parte de fecha (YYYY-MM-DD) sin conversión de zona horaria,
+// para que el calendario y el listado del día coincidan siempre.
+const fechaSolo = (f) => {
+  if (!f) return '';
+  const s = String(f);
+  if (s.includes('T')) return s.split('T')[0];
+  const dayMatch = s.match(/^\d{4}-\d{2}-\d{2}/);
+  if (dayMatch) return dayMatch[0];
+  return dayjs(f).isValid() ? dayjs(f).format('YYYY-MM-DD') : '';
+};
+
 const TimePicker = ({ value, onChange }) => {
   const [showModal, setShowModal] = useState(false);
   const [tempHour, setTempHour] = useState(dayjs(value).hour());
@@ -627,10 +638,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
 
   const getEventsForDay = (date) => {
     const dateStr = dayjs(date).format('YYYY-MM-DD');
-    return eventos.filter(evento => {
-      const fechaEventoStr = evento.fechaevento.split('T')[0];
-      return fechaEventoStr === dateStr;
-    });
+    return eventos.filter(evento => fechaSolo(evento.fechaevento) === dateStr);
   };
 
   const navigateMonth = (direction) => {
@@ -804,7 +812,19 @@ const ConflictModal = ({ showConflictModal, setShowConflictModal, conflictoDetec
 );
 
 const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificarConflictoHorario }) => {
-  if (eventosDelDia.length === 0) return null;
+  if (eventosDelDia.length === 0) {
+    return (
+      <View style={styles.eventosDelDiaContainer}>
+        <View style={styles.eventosDelDiaHeader}>
+          <Ionicons name="calendar-outline" size={20} color="#C44B0A" />
+          <Text style={styles.eventosDelDiaTitle}>Eventos en {dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')}</Text>
+        </View>
+        <View style={styles.eventosDelDiaEmpty}>
+          <Text style={styles.eventosDelDiaEmptyText}>No hay eventos en esta fecha. Estás libre para programar el nuevo evento.</Text>
+        </View>
+      </View>
+    );
+  }
   return (
     <View style={styles.eventosDelDiaContainer}>
       <View style={styles.eventosDelDiaHeader}>
@@ -1222,7 +1242,7 @@ const ProyectoEvento = () => {
   const verificarConflictoHorario = (fechaHora) => {
     const fechaFormateada = dayjs(fechaHora).format('YYYY-MM-DD');
     const eventosEnMismaFecha = eventos.filter(evento =>
-      dayjs(evento.fechaevento).format('YYYY-MM-DD') === fechaFormateada &&
+      fechaSolo(evento.fechaevento) === fechaFormateada &&
       ['pendiente', 'aprobado'].includes((evento.estado || '').toLowerCase())
     );
 
@@ -1359,9 +1379,7 @@ const ProyectoEvento = () => {
   useEffect(() => {
     const selectedDateStr = dayjs(fechaHoraSeleccionada).format('YYYY-MM-DD');
     const eventsDelDia = eventos.filter(e =>
-      e.fechaevento &&
-      dayjs(e.fechaevento).isValid() &&
-      dayjs(e.fechaevento).format('YYYY-MM-DD') === selectedDateStr &&
+      fechaSolo(e.fechaevento) === selectedDateStr &&
       ['pendiente', 'aprobado'].includes((e.estado || '').toLowerCase())
     );
     setEventosDelDia(eventsDelDia);
@@ -1841,7 +1859,18 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
         keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
       >
-      <View style={styles.timePickerSection}>
+      {/* SECCIÓN 1: HORA Y LÍNEA DE TIEMPO */}
+      <View style={styles.sectionCard}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionNumber}>
+            <Text style={styles.sectionNumberText}>1</Text>
+          </View>
+          <View style={styles.sectionHeaderText}>
+            <Text style={styles.sectionCardTitle}>Hora y Línea de Tiempo</Text>
+            <Text style={styles.sectionCardSubtitle}>Elige la hora de inicio y revisa los próximos eventos</Text>
+          </View>
+        </View>
+        <View style={styles.timePickerSection}>
         <View style={styles.timePickerHeader}>
           <Ionicons name="alarm" size={24} color="#C44B0A" />
           <Text style={styles.timePickerSectionTitle}>Hora de Inicio del Evento <Text style={styles.requiredAsterisk}>*</Text>
@@ -1884,8 +1913,20 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
           </View>
         )}
       </View>
+      </View>
 
-      <View style={styles.stepperContainer}>
+      {/* SECCIÓN 2: FECHA Y FORMULARIO */}
+      <View style={styles.sectionCard}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionNumber}>
+            <Text style={styles.sectionNumberText}>2</Text>
+          </View>
+          <View style={styles.sectionHeaderText}>
+            <Text style={styles.sectionCardTitle}>Fecha y Formulario</Text>
+            <Text style={styles.sectionCardSubtitle}>Selecciona la fecha en el calendario y completa el formulario por pasos</Text>
+          </View>
+        </View>
+        <View style={styles.stepperContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepperContent}>
           {[
             { num: 'I', label: 'Datos', locked: false, onPress: () => horizontalScrollRef.current?.scrollTo({ x: 0, animated: true }) },
@@ -1928,11 +1969,6 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     Alert.alert('Anticipación requerida', mensaje, [{ text: 'Entendido' }]);
                   }
                 }}
-              />
-              <EventosDelDiaMejorado
-                eventosDelDia={eventosDelDia}
-                fechaHoraSeleccionada={fechaHoraSeleccionada}
-                verificarConflictoHorario={verificarConflictoHorario}
               />
             </View>
           </View>
@@ -2029,11 +2065,6 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                       Alert.alert('Anticipación requerida', mensaje, [{ text: 'Entendido' }]);
                     }
                   }}
-                />
-                <EventosDelDiaMejorado
-                  eventosDelDia={eventosDelDia}
-                  fechaHoraSeleccionada={fechaHoraSeleccionada}
-                  verificarConflictoHorario={verificarConflictoHorario}
                 />
               </>
             )}
@@ -2524,6 +2555,25 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
           </Modal>
         </ScrollView>
         </View>
+      </View>
+
+      {/* SECCIÓN 3: EVENTOS DEL DÍA */}
+      <View style={styles.sectionCard}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionNumber}>
+            <Text style={styles.sectionNumberText}>3</Text>
+          </View>
+          <View style={styles.sectionHeaderText}>
+            <Text style={styles.sectionCardTitle}>Eventos del Día Seleccionado</Text>
+            <Text style={styles.sectionCardSubtitle}>Revisa los eventos que ya existen en esa fecha</Text>
+          </View>
+        </View>
+        <EventosDelDiaMejorado
+          eventosDelDia={eventosDelDia}
+          fechaHoraSeleccionada={fechaHoraSeleccionada}
+          verificarConflictoHorario={verificarConflictoHorario}
+        />
+      </View>
       </ScrollView>
 
       <View style={styles.fixedBottomContainer}>
@@ -2581,17 +2631,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   timePickerSection: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginTop: 12,
-    borderRadius: 12,
+    backgroundColor: '#faf7f4',
+    borderRadius: 10,
     paddingVertical: 16,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    paddingHorizontal: 16,
   },
   timePickerHeader: {
     flexDirection: 'row',
@@ -2605,8 +2648,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   stepperContainer: {
-    marginHorizontal: 20,
-    marginTop: 10,
+    marginTop: 0,
   },
   progressSummary: {
     flexDirection: 'row',
@@ -3072,7 +3114,6 @@ facultadSelectedHint: {
   },
   mainContainer: {
     flexDirection: 'column',
-    paddingHorizontal: 20,
   },
   mainContainerWide: {
     flexDirection: 'row',
@@ -3111,6 +3152,55 @@ facultadSelectedHint: {
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  sectionCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginTop: 14,
+    borderRadius: 14,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 12,
+  },
+  sectionNumber: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#C44B0A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#C44B0A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  sectionNumberText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  sectionHeaderText: {
+    flex: 1,
+  },
+  sectionCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+  },
+  sectionCardSubtitle: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
   },
   checkboxColumn: { flex: 1, marginRight: 10 },
   recursosDisponiblesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 },
@@ -3357,6 +3447,8 @@ facultadSelectedHint: {
   eventoDetailText: { fontSize: 12, color: '#666', marginLeft: 4 },
   eventosDelDiaFooter: { padding: 16, borderTopWidth: 1, borderTopColor: '#e0e0e0', backgroundColor: '#f8f9fa' },
   eventosDelDiaNote: { fontSize: 12, color: '#666', textAlign: 'center', fontStyle: 'italic' },
+  eventosDelDiaEmpty: { paddingVertical: 24, paddingHorizontal: 20, alignItems: 'center' },
+  eventosDelDiaEmptyText: { fontSize: 13, color: '#999', textAlign: 'center', lineHeight: 20 },
   diaLimiteContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdecea', borderColor: '#e74c3c', borderWidth: 1, borderRadius: 8, marginHorizontal: 16, marginTop: 12, padding: 10 },
   diaLimiteText: { flex: 1, fontSize: 13, color: '#c0392b', marginLeft: 6, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
@@ -3546,8 +3638,6 @@ requiredNote: {
 },
 timelineSection: {
   marginTop: 20,
-  marginBottom: 20,
-  marginHorizontal: 20,
 },
 timelineHeader: {
   flexDirection: 'row',
