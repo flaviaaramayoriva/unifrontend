@@ -847,8 +847,14 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
           );
         })}
       </ScrollView>
+      {eventosDelDia.length >= 2 && (
+        <View style={styles.diaLimiteContainer}>
+          <Ionicons name="alert-circle" size={18} color="#c0392b" />
+          <Text style={styles.diaLimiteText}>Este día ya tiene 2 eventos programados (máximo permitido). Elige otra fecha.</Text>
+        </View>
+      )}
       <View style={styles.eventosDelDiaFooter}>
-        <Text style={styles.eventosDelDiaNote}>Verifica que tu nuevo evento no genere conflictos de horario</Text>
+        <Text style={styles.eventosDelDiaNote}>Máximo 2 eventos por día y sin coincidir la hora con otro evento</Text>
       </View>
     </View>
   );
@@ -1211,7 +1217,10 @@ const ProyectoEvento = () => {
 
   const verificarConflictoHorario = (fechaHora) => {
     const fechaFormateada = dayjs(fechaHora).format('YYYY-MM-DD');
-    const eventosEnMismaFecha = eventos.filter(evento => dayjs(evento.fechaevento).format('YYYY-MM-DD') === fechaFormateada);
+    const eventosEnMismaFecha = eventos.filter(evento =>
+      dayjs(evento.fechaevento).format('YYYY-MM-DD') === fechaFormateada &&
+      ['pendiente', 'aprobado'].includes((evento.estado || '').toLowerCase())
+    );
 
     return eventosEnMismaFecha.filter(evento => {
       const horaEvento = parseHoraEvento(evento.horaevento);
@@ -1345,7 +1354,12 @@ const ProyectoEvento = () => {
 
   useEffect(() => {
     const selectedDateStr = dayjs(fechaHoraSeleccionada).format('YYYY-MM-DD');
-    const eventsDelDia = eventos.filter(e => e.fechaevento === selectedDateStr);
+    const eventsDelDia = eventos.filter(e =>
+      e.fechaevento &&
+      dayjs(e.fechaevento).isValid() &&
+      dayjs(e.fechaevento).format('YYYY-MM-DD') === selectedDateStr &&
+      ['pendiente', 'aprobado'].includes((e.estado || '').toLowerCase())
+    );
     setEventosDelDia(eventsDelDia);
   }, [eventos, fechaHoraSeleccionada]);
 
@@ -1613,6 +1627,15 @@ const puedeSeleccionarRecurso = useCallback((recurso) => {
   };
 
   const confirmSubmit = () => {
+    if (eventosDelDia.length >= 2) {
+      const mensajeDia = `El día ${dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')} ya tiene 2 eventos programados (máximo permitido por día). Elige otra fecha.`;
+      if (Platform.OS === 'web') {
+        window.alert(`⚠️ Límite de eventos por día\n\n${mensajeDia}`);
+      } else {
+        Alert.alert('Límite de eventos por día', mensajeDia, [{ text: 'Entendido' }]);
+      }
+      return;
+    }
     const newErrors = validateForm();
     const errorKeys = Object.keys(newErrors);
     if (errorKeys.length > 0) {
@@ -3379,6 +3402,8 @@ facultadSelectedHint: {
   eventoDetailText: { fontSize: 12, color: '#666', marginLeft: 4 },
   eventosDelDiaFooter: { padding: 16, borderTopWidth: 1, borderTopColor: '#e0e0e0', backgroundColor: '#f8f9fa' },
   eventosDelDiaNote: { fontSize: 12, color: '#666', textAlign: 'center', fontStyle: 'italic' },
+  diaLimiteContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdecea', borderColor: '#e74c3c', borderWidth: 1, borderRadius: 8, marginHorizontal: 16, marginTop: 12, padding: 10 },
+  diaLimiteText: { flex: 1, fontSize: 13, color: '#c0392b', marginLeft: 6, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 20, width: '90%', maxWidth: 400, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
