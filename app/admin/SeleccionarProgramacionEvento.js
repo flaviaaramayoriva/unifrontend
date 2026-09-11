@@ -115,6 +115,7 @@ const normalizeEvent = (ev) => ({
   idacademico: ev.idacademico || ev.organizerId || ev.idusuario || null,
   facultad: ev.facultad || ev.faculty || 'Sin facultad',
   estado: ev.estado || 'aprobado',
+  idfase: ev.idfase ?? ev.fase ?? null,
   actividadesDurante: ev.actividadesDurante,
   actividadesPrevias: ev.actividadesPrevias,
   actividadesPost: ev.actividadesPost,
@@ -205,6 +206,7 @@ const SeleccionarProgramacionEvento = () => {
     }
 
     list = list.filter(ev => !isEventPast(ev));
+    list = list.filter(ev => Number(ev.idfase) !== 3);
 
     return list.sort((a, b) => parseEventDate(a.fechaevento) - parseEventDate(b.fechaevento));
   }, [events, myId, userRole, searchTerm]);
