@@ -102,6 +102,71 @@ const formatTime = (timeString) => {
   }
 };
 
+const STATUS_CONFIG = {
+  pendiente: { label: 'Pendiente', fg: '#B45309', bg: '#FEF3C7', icon: 'time-outline' },
+  aprobado: { label: 'Aprobado', fg: '#15803D', bg: '#DCFCE7', icon: 'checkmark-circle-outline' },
+  rechazado: { label: 'Rechazado', fg: '#B91C1C', bg: '#FEE2E2', icon: 'close-circle-outline' },
+  cancelado: { label: 'Cancelado', fg: '#4B5563', bg: '#F3F4F6', icon: 'ban-outline' },
+  vencido: { label: 'Vencido', fg: '#C2410C', bg: '#FFEDD5', icon: 'alert-circle-outline' },
+  completado: { label: 'Completado', fg: '#1D4ED8', bg: '#DBEAFE', icon: 'flag-outline' },
+};
+
+const PHASES = [
+  { number: 1, label: 'Planeación', icon: 'document-text-outline', color: COLORS.info },
+  { number: 2, label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.secondary },
+  { number: 3, label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
+  { number: 4, label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.purple },
+  { number: 5, label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.grayText },
+];
+
+const StatusPill = ({ status }) => {
+  const key = String(status || '').toLowerCase();
+  const cfg = STATUS_CONFIG[key] || {
+    label: key || 'Sin estado',
+    fg: COLORS.grayText,
+    bg: COLORS.grayLight,
+    icon: 'help-circle-outline',
+  };
+  return (
+    <View style={[styles.statusPill, { backgroundColor: cfg.bg }]} accessibilityLabel={`Estado: ${cfg.label}`}>
+      <Ionicons name={cfg.icon} size={14} color={cfg.fg} />
+      <Text style={[styles.statusPillText, { color: cfg.fg }]}>{cfg.label}</Text>
+    </View>
+  );
+};
+
+const PhaseTimeline = ({ current }) => {
+  const cur = Math.min(Math.max(Number(current) || 1, 1), PHASES.length);
+  return (
+    <View style={styles.timelineWrap}>
+      {PHASES.map((ph, idx) => {
+        const done = ph.number <= cur;
+        const prevDone = idx > 0 ? PHASES[idx - 1].number <= cur : false;
+        const nextDone = idx < PHASES.length - 1 ? PHASES[idx + 1].number <= cur : false;
+        return (
+          <View key={ph.number} style={styles.timelineStep}>
+            <View style={styles.timelineTrack}>
+              <View style={[styles.timelineLine, idx === 0 && styles.timelineLineHidden, (prevDone && done) && styles.timelineLineActive]} />
+              <View style={[styles.timelineDot, done ? { backgroundColor: ph.color } : styles.timelineDotIdle]}>
+                <Ionicons name={done ? ph.icon : 'ellipse-outline'} size={13} color={done ? COLORS.white : '#94A3B8'} />
+              </View>
+              <View style={[styles.timelineLine, idx === PHASES.length - 1 && styles.timelineLineHidden, (done && nextDone) && styles.timelineLineActive]} />
+            </View>
+            <Text style={[styles.timelineLabel, done && { color: ph.color, fontWeight: '700' }]} numberOfLines={2}>{ph.label}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
+
+const MetaChip = ({ icon, text, color = COLORS.primary }) => (
+  <View style={styles.metaChip}>
+    <Ionicons name={icon} size={15} color={color} />
+    <Text style={styles.metaChipText} numberOfLines={2}>{text}</Text>
+  </View>
+);
+
 const EventDetailScreen = () => {
   const { eventId } = useLocalSearchParams();
   const router = useRouter();
@@ -393,86 +458,152 @@ const EventDetailScreen = () => {
         </div>`;
     })();
 
-    return `
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            @page { margin: 1cm; }
-            body { font-family: Arial, sans-serif; padding: 1.5cm; line-height: 1.6; color: #333; }
-            h1 { color: #C44B0A; margin-bottom: 0.5cm; border-bottom: 2px solid #C44B0A; padding-bottom: 0.3cm; }
-            .section { margin-bottom: 1cm; }
-            .section-title { font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 0.3cm; padding-bottom: 0.2cm; border-bottom: 1px solid #ddd; }
-            .detail-row { margin-bottom: 0.2cm; }
-            .label { font-weight: bold; color: #2980b9; }
-            ul { padding-left: 1cm; margin: 0.2cm 0; }
-            li { margin-bottom: 0.3cm; }
-            .budget { font-weight: bold; }
-            .positive { color: #27ae60; }
-            .negative { color: #e74c3c; }
-          </style>
-        </head>
-        <body>
-          <h1>${event.title}</h1>
-          <div class="section">
-            <div class="section-title">Datos Generales</div>
-            <div class="detail-row"><span class="label">Fecha:</span> ${event.date}</div>
-            <div class="detail-row"><span class="label">Hora:</span> ${event.time}</div>
-            <div class="detail-row"><span class="label">Ubicación:</span> ${event.location}</div>
-            <div class="detail-row"><span class="label">Estado:</span> ${event.status}</div>
-            ${event.responsable ? `<div class="detail-row"><span class="label">Responsable:</span> ${event.responsable}</div>` : ''}
+    const estadoLabel = (STATUS_CONFIG[String(event.status || '').toLowerCase()] || {}).label || event.status;
+    const generadoEn = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    const fasesRow = Array.isArray(event.fases) && event.fases.length > 0
+      ? event.fases.map(f => f.nrofase ? `Fase ${f.nrofase}` : null).filter(Boolean).join(' · ')
+      : `Fase ${event.idfase || 1}`;
+
+    const presupuestoHtml = event.presupuesto ? `
+      <div class="section">
+        <div class="section-title">Presupuesto</div>
+        <div class="detail-row">Total Egresos: <strong class="negative">Bs ${(event.presupuesto.total_egresos || 0).toFixed(2)}</strong></div>
+        <div class="detail-row">Total Ingresos: <strong class="positive">Bs ${(event.presupuesto.total_ingresos || 0).toFixed(2)}</strong></div>
+        <div class="detail-row budget ${(event.presupuesto.balance || 0) >= 0 ? 'positive' : 'negative'}">
+          Balance: Bs ${(event.presupuesto.balance || 0).toFixed(2)}
+        </div>
+      </div>` : '';
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <style>
+        @page{size:A4 portrait;margin:13mm 11mm}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;background:#f3f4f6;color:#1f2937;font-size:12px;line-height:1.55}
+        .wrap{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+        .cover{background:linear-gradient(135deg,#123314 0%,#2d5016 55%,#C44B0A 100%);color:#fff;padding:38px 36px;position:relative}
+        .cover .uft-logo{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+        .cover .uft-monogram{width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800}
+        .cover .uft-name{font-size:12.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+        .cover .uft-sub{font-size:10px;opacity:.85}
+        .cover .reporte-kicker{font-size:10px;letter-spacing:4px;text-transform:uppercase;opacity:.8;margin-top:4px}
+        .cover h1{font-size:25px;font-weight:800;margin:6px 0;line-height:1.15}
+        .cover .cover-meta{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
+        .cover .meta-chip{background:rgba(255,255,255,.12);padding:6px 14px;border-radius:18px;font-size:11px;font-weight:600}
+        .cover .accent-bar{position:absolute;left:0;right:0;bottom:0;height:5px;background:#fff}
+        .content{padding:26px 32px 36px}
+        .exec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+        .exec-item{border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center}
+        .exec-label{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:4px}
+        .exec-value{font-size:16px;font-weight:800;color:#111827}
+        .section{margin-top:20px}
+        .section-title{font-size:14px;font-weight:800;color:#111827;text-transform:uppercase;border-left:4px solid #C44B0A;padding-left:10px;margin-bottom:10px;letter-spacing:.5px}
+        .detail-row{margin-bottom:.2cm;padding:2px 0}
+        .label{font-weight:700;color:#2980b9}
+        ul{padding-left:1.1cm;margin:.15cm 0}
+        li{margin-bottom:.25cm}
+        .positive{color:#16a34a;font-weight:700}
+        .negative{color:#dc2626;font-weight:700}
+        .budget{font-weight:800}
+        .main-table{width:100%;border-collapse:collapse;margin-top:6px}
+        .main-table td{padding:6px 0;border-bottom:1px solid #e5e7eb;font-size:11.5px}
+        .main-table .t-label{font-weight:700;width:180px}
+        img{max-width:100%;border-radius:8px;margin:.2cm 0}
+        .footer{margin-top:26px;text-align:center;font-size:10.5px;color:#9ca3af;padding:12px 0 2px;border-top:1px solid #e5e7eb}
+        .footer strong{color:#6b7280}
+        @media print{body{background:#fff}.wrap{box-shadow:none}}
+      </style></head><body><div class="wrap">
+
+      <div class="cover">
+        <div class="uft-logo">
+          <div class="uft-monogram">UFT</div>
+          <div>
+            <div class="uft-name">Universidad Franz Tamayo</div>
+            <div class="uft-sub">Autoridad de Fiscalización y Transparencia Universitaria</div>
           </div>
-          ${event.creador ? `
-          <div class="section">
-            <div class="section-title">Propuesto por</div>
-            <div>${event.creador.nombre}</div>
-            <div>Rol: ${event.creador.role}</div>
-            <div>Email: ${event.creador.email}</div>
-          </div>` : ''}
-          ${event.Clasificacion ? `
-          <div class="section">
-            <div class="section-title">Clasificación Estratégica</div>
-            <div>${event.Clasificacion.nombreClasificacion} - ${event.Clasificacion.nombresubcategoria}</div>
-          </div>` : ''}
-          ${event.tiposEvento?.length > 0 ? `
-          <div class="section">
-            <div class="section-title">Tipos de Evento</div>
-            <ul>${event.tiposEvento.map(t => `<li>${t.nombretipo || 'Tipo desconocido'}</li>`).join('')}</ul>
-          </div>` : ''}
-          ${segmentosHtml}
-          ${event.objetivosPDI?.length > 0 ? `
-          <div class="section">
-            <div class="section-title">Objetivos del PDI Institucional</div>
-            <ul>${event.objetivosPDI.map((p, i) => `<li>${i + 1}. ${p}</li>`).join('')}</ul>
-          </div>` : ''}
-          ${actividadesHtml('Actividades Previas', event.actividadesPrevias)}
-          ${actividadesHtml('Actividades Durante el Evento', event.actividadesDurante)}
-          ${actividadesHtml('Actividades Después del Evento', event.actividadesPost)}
-          ${serviciosHtml}
-          ${layoutHtml}
-          ${event.resultados ? `
-          <div class="section">
-            <div class="section-title">Resultados Esperados</div>
-            ${event.resultados.participacion_esperada ? `<div class="detail-row">Participación: ${event.resultados.participacion_esperada}</div>` : ''}
-            ${event.resultados.satisfaccion_esperada ? `<div class="detail-row">Satisfacción: ${event.resultados.satisfaccion_esperada}</div>` : ''}
-            ${event.resultados.otros_resultados ? `<div class="detail-row">Otros: ${event.resultados.otros_resultados}</div>` : ''}
-          </div>` : ''}
-          ${event.comite?.length > 0 ? `
-          <div class="section">
-            <div class="section-title">Comité del Evento</div>
-            <ul>${event.comite.map(m => `<li>${[m.nombre, m.apellidopat, m.apellidomat].filter(Boolean).join(' ')} (${m.role}) - ${m.email}</li>`).join('')}</ul>
-          </div>` : ''}
-          ${event.presupuesto ? `
-          <div class="section">
-            <div class="section-title">Presupuesto</div>
-            <div class="detail-row">Total Egresos: Bs ${(event.presupuesto.total_egresos || 0).toFixed(2)}</div>
-            <div class="detail-row">Total Ingresos: Bs ${(event.presupuesto.total_ingresos || 0).toFixed(2)}</div>
-            <div class="detail-row budget ${(event.presupuesto.balance || 0) >= 0 ? 'positive' : 'negative'}">
-              Balance: Bs ${(event.presupuesto.balance || 0).toFixed(2)}
-            </div>
-          </div>` : ''}
-        </body>
-      </html>
+        </div>
+        <div class="reporte-kicker">Informe de Gestión · Detalle de Evento</div>
+        <h1>${event.title}</h1>
+        <div class="cover-meta">
+          <div class="meta-chip">📅 ${event.date}</div>
+          <div class="meta-chip">🕒 ${event.time}</div>
+          <div class="meta-chip">📍 ${event.location}</div>
+          <div class="meta-chip">🏷 ${estadoLabel}</div>
+        </div>
+        <div class="accent-bar"></div>
+      </div>
+
+      <div class="content">
+
+        <div class="exec-grid">
+          <div class="exec-item">
+            <div class="exec-label">Estado</div>
+            <div class="exec-value">${estadoLabel}</div>
+          </div>
+          <div class="exec-item">
+            <div class="exec-label">Fase</div>
+            <div class="exec-value" style="font-size:13px">${fasesRow}</div>
+          </div>
+          <div class="exec-item">
+            <div class="exec-label">Ubicación</div>
+            <div class="exec-value" style="font-size:13px">${event.location}</div>
+          </div>
+        </div>
+
+        ${event.creador ? `
+        <div class="section">
+          <div class="section-title">Propuesto por</div>
+          <div class="detail-row"><span class="label">Nombre:</span> ${event.creador.nombre}</div>
+          <div class="detail-row"><span class="label">Rol:</span> ${event.creador.role}</div>
+          <div class="detail-row"><span class="label">Email:</span> ${event.creador.email}</div>
+        </div>` : ''}
+
+        ${event.Clasificacion ? `
+        <div class="section">
+          <div class="section-title">Clasificación Estratégica</div>
+          <div>${event.Clasificacion.nombreClasificacion} - ${event.Clasificacion.nombresubcategoria}</div>
+        </div>` : ''}
+
+        ${event.tiposEvento?.length > 0 ? `
+        <div class="section">
+          <div class="section-title">Tipos de Evento</div>
+          <ul>${event.tiposEvento.map(t => `<li>${t.nombretipo || 'Tipo desconocido'}</li>`).join('')}</ul>
+        </div>` : ''}
+
+        ${segmentosHtml}
+        ${event.objetivosPDI?.length > 0 ? `
+        <div class="section">
+          <div class="section-title">Objetivos del PDI Institucional</div>
+          <ul>${event.objetivosPDI.map((p, i) => `<li>${i + 1}. ${p}</li>`).join('')}</ul>
+        </div>` : ''}
+
+        ${actividadesHtml('Actividades Previas', event.actividadesPrevias)}
+        ${actividadesHtml('Actividades Durante el Evento', event.actividadesDurante)}
+        ${actividadesHtml('Actividades Después del Evento', event.actividadesPost)}
+        ${serviciosHtml}
+        ${layoutHtml}
+
+        ${event.resultados ? `
+        <div class="section">
+          <div class="section-title">Resultados Esperados</div>
+          ${event.resultados.participacion_esperada ? `<div class="detail-row">Participación: ${event.resultados.participacion_esperada}</div>` : ''}
+          ${event.resultados.satisfaccion_esperada ? `<div class="detail-row">Satisfacción: ${event.resultados.satisfaccion_esperada}</div>` : ''}
+          ${event.resultados.otros_resultados ? `<div class="detail-row">Otros: ${event.resultados.otros_resultados}</div>` : ''}
+        </div>` : ''}
+
+        ${event.comite?.length > 0 ? `
+        <div class="section">
+          <div class="section-title">Comité del Evento</div>
+          <ul>${event.comite.map(m => `<li>${[m.nombre, m.apellidopat, m.apellidomat].filter(Boolean).join(' ')} (${m.role}) - ${m.email}</li>`).join('')}</ul>
+        </div>` : ''}
+
+        ${presupuestoHtml}
+
+        <div class="footer">
+          <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos · ${event.title}<br>
+          Generado el ${generadoEn} · Documento confidencial de uso institucional
+        </div>
+      </div>
+      </div></body></html>
     `;
   };
 
@@ -553,6 +684,15 @@ const EventDetailScreen = () => {
     );
   }
 
+  const phaseInfo = getCurrentPhaseFromFases(event.fases);
+  const currentPhase = phaseInfo.number;
+
+  const canPrint = event.status === 'aprobado';
+  const canProgram = user?.role !== 'admin' && event.status === 'aprobado' && event.idfase === 1;
+  const canApprove = user?.role === 'admin' && event.status === 'pendiente';
+  const canEdit = event.status === 'pendiente' && user?.role !== 'admin';
+  const hasActions = canPrint || canProgram || canApprove || canEdit;
+
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
@@ -566,55 +706,38 @@ const EventDetailScreen = () => {
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {event.imageUrl && <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />}
-
-        <View style={styles.card}>
-          <Text style={styles.eventTitle}>{event.title}</Text>
-
-          {event && (() => {
-            const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
-            return (
-              <View style={[styles.phaseBadge, { backgroundColor: phaseInfo.color }]}>
-                <Ionicons name={phaseInfo.icon} size={16} color={COLORS.white} />
-                <Text style={styles.phaseBadgeText}>
-                  Fase {phaseInfo.number}: {phaseInfo.label}
-                </Text>
-              </View>
-            );
-          })()}
-        </View>
-
-        <View style={styles.sectionCard}>
-          <View style={styles.detailRow}>
-            <Ionicons
-              name={event.status === 'aprobado' ? 'checkmark-circle-outline' : 'time-outline'}
-              size={20}
-              color={event.status === 'aprobado' ? COLORS.success : COLORS.warning}
-              style={styles.detailIcon}
-            />
-            <Text style={[
-              styles.detailText,
-              { color: event.status === 'aprobado' ? COLORS.success : COLORS.warning }
-            ]}>
-              Estado: {event.status}
+        {/* HERO */}
+        <View style={styles.heroCard}>
+          {event.imageUrl ? (
+            <View style={styles.heroImageWrap}>
+              <Image source={{ uri: event.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+              <View style={styles.heroFade} />
+            </View>
+          ) : (
+            <View style={styles.heroImagePlaceholder}>
+              <Ionicons name="calendar-clear-outline" size={42} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.heroPlaceholderText}>Evento académico</Text>
+            </View>
+          )}
+          <View style={styles.heroBody}>
+            <View style={styles.heroTopRow}>
+              <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
+              <StatusPill status={event.status} />
+            </View>
+            <Text style={styles.heroSub} numberOfLines={2}>
+              {[event.date, event.time, event.location].filter(Boolean).join(' · ') || 'Sin fecha y ubicación especificadas'}
             </Text>
+            <PhaseTimeline current={currentPhase} />
           </View>
         </View>
 
         {/* Datos Generales */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Datos Generales</Text>
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Fecha: {event.date}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="time-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Hora: {event.time}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Ubicación: {event.location}</Text>
+          <View style={styles.metaGrid}>
+            <MetaChip icon="calendar-outline" text={`Fecha: ${event.date}`} color={COLORS.primary} />
+            <MetaChip icon="time-outline" text={`Hora: ${event.time}`} color={COLORS.secondary} />
+            <MetaChip icon="location-outline" text={`Lugar: ${event.location}`} color={COLORS.primary} />
           </View>
         </View>
 
@@ -981,6 +1104,7 @@ const EventDetailScreen = () => {
                   <Text style={styles.budgetSubtitle}>Egresos</Text>
                 </View>
 
+                <View style={styles.budgetTableWrap}>
                 <View style={styles.budgetTableHeader}>
                   <Text style={[styles.budgetCell, styles.budgetCellDesc]}>Descripción</Text>
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>Cant.</Text>
@@ -990,7 +1114,7 @@ const EventDetailScreen = () => {
 
                 {event.egresos.map((egreso, index) => (
                   <View key={egreso.idegreso || index} style={styles.budgetTableRow}>
-                    <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{egreso.descripcion}</Text>
+                    <Text style={[styles.budgetCell, styles.budgetCellDesc]} numberOfLines={3}>{egreso.descripcion}</Text>
                     <Text style={[styles.budgetCell, styles.budgetCellNum]}>{egreso.cantidad}</Text>
                     <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(egreso.precio_unitario).toFixed(2)}</Text>
                     <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>
@@ -998,6 +1122,7 @@ const EventDetailScreen = () => {
                     </Text>
                   </View>
                 ))}
+                </View>
 
                 <View style={styles.budgetTotalRow}>
                   <Text style={[styles.budgetTotalLabel, { flex: 3 }]}>TOTAL EGRESOS:</Text>
@@ -1013,6 +1138,7 @@ const EventDetailScreen = () => {
                   <Text style={styles.budgetSubtitle}>Ingresos</Text>
                 </View>
 
+                <View style={styles.budgetTableWrap}>
                 <View style={styles.budgetTableHeader}>
                   <Text style={[styles.budgetCell, styles.budgetCellDesc]}>Descripción</Text>
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>Cant.</Text>
@@ -1022,7 +1148,7 @@ const EventDetailScreen = () => {
 
                 {event.ingresos.map((ingreso, index) => (
                   <View key={ingreso.idingreso || index} style={styles.budgetTableRow}>
-                    <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{ingreso.descripcion}</Text>
+                    <Text style={[styles.budgetCell, styles.budgetCellDesc]} numberOfLines={3}>{ingreso.descripcion}</Text>
                     <Text style={[styles.budgetCell, styles.budgetCellNum]}>{ingreso.cantidad}</Text>
                     <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(ingreso.precio_unitario).toFixed(2)}</Text>
                     <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>
@@ -1030,6 +1156,7 @@ const EventDetailScreen = () => {
                     </Text>
                   </View>
                 ))}
+                </View>
 
                 <View style={styles.budgetTotalRow}>
                   <Text style={[styles.budgetTotalLabel, { flex: 3 }]}>TOTAL INGRESOS:</Text>
@@ -1052,62 +1179,71 @@ const EventDetailScreen = () => {
           </View>
         )}
 
-        <View style={styles.actionButtonsContainer}>
-          {/* IMPRIMIR EVENTO (visible siempre que el evento esté aprobado) */}
-          {event.status === 'aprobado' && (
-            <TouchableOpacity
-              style={styles.nextStepButton}
-              onPress={generateEventPDF}
-            >
-              <Ionicons name="print-outline" size={20} color={COLORS.white} />
-              <Text style={styles.nextStepButtonText}>Imprimir Evento</Text>
-            </TouchableOpacity>
-          )}
-          
+      </ScrollView>
 
-          {/* IR A PROGRAMACIÓN (académicos, evento aprobado en fase 1) */}
-          {user?.role !== 'admin' && event.status === 'aprobado' && event.idfase === 1 && (
-            <TouchableOpacity
-              style={styles.nextStepButton}
-              onPress={() => router.push(`/admin/ProgramacionEvento?idevento=${event.id}`)}
-            >
-              <Ionicons name="calendar-outline" size={20} color={COLORS.white} />
-              <Text style={styles.nextStepButtonText}>Ir a Programación del Evento</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* APROBAR / RECHAZAR (admin, evento pendiente) */}
-          {user?.role === 'admin' && event.status === 'pendiente' && (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+      {/* BARRA DE ACCIONES FIJA */}
+      {hasActions && (
+        <View style={styles.actionBar}>
+          {canApprove && (
+            <View style={styles.actionRow}>
               <TouchableOpacity
-                style={[styles.editButton, { backgroundColor: COLORS.success, flex: 1, marginRight: 8 }]}
+                style={[styles.actionButton, { flex: 1, backgroundColor: COLORS.success, marginRight: 6 }]}
                 onPress={handleApproveEvent}
+                accessibilityRole="button"
+                accessibilityLabel="Aprobar evento"
               >
                 <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.white} />
-                <Text style={styles.editButtonText}>Aprobar</Text>
+                <Text style={styles.actionButtonText}>Aprobar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.editButton, { backgroundColor: COLORS.logout, flex: 1, marginLeft: 8 }]}
+                style={[styles.actionButton, { flex: 1, backgroundColor: COLORS.logout, marginLeft: 6 }]}
                 onPress={handleRejectEvent}
+                accessibilityRole="button"
+                accessibilityLabel="Rechazar evento"
               >
                 <Ionicons name="close-circle-outline" size={20} color={COLORS.white} />
-                <Text style={styles.editButtonText}>Rechazar</Text>
+                <Text style={styles.actionButtonText}>Rechazar</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* EDITAR EVENTO (académicos, evento pendiente) */}
-          {event.status === 'pendiente' && user?.role !== 'admin' && (
+          {canPrint && (
             <TouchableOpacity
-              style={styles.editButton}
+              style={[styles.actionButton, { backgroundColor: COLORS.primary }]}
+              onPress={generateEventPDF}
+              accessibilityRole="button"
+              accessibilityLabel="Imprimir evento"
+            >
+              <Ionicons name="print-outline" size={20} color={COLORS.white} />
+              <Text style={styles.actionButtonText}>Imprimir Evento</Text>
+            </TouchableOpacity>
+          )}
+
+          {canProgram && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: COLORS.secondary }]}
+              onPress={() => router.push(`/admin/ProgramacionEvento?idevento=${event.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel="Ir a programación del evento"
+            >
+              <Ionicons name="calendar-outline" size={20} color={COLORS.white} />
+              <Text style={styles.actionButtonText}>Ir a Programación del Evento</Text>
+            </TouchableOpacity>
+          )}
+
+          {canEdit && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: COLORS.success }]}
               onPress={() => router.push(`/admin/EventDetailScreen?eventId=${event.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel="Editar evento"
             >
               <Ionicons name="create-outline" size={20} color={COLORS.white} />
-              <Text style={styles.editButtonText}>Editar Evento</Text>
+              <Text style={styles.actionButtonText}>Editar Evento</Text>
             </TouchableOpacity>
           )}
         </View>
-      </ScrollView>
+      )}
     </View>
   );
 };
@@ -1120,8 +1256,11 @@ const styles = StyleSheet.create({
   sectionCard: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,
+    borderTopWidth: 3,
+    borderTopColor: COLORS.primary,
     padding: 20,
     marginBottom: 16,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: COLORS.cardShadow,
@@ -1349,7 +1488,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 150,
     flexGrow: 1,
   },
   centered: {
@@ -1409,34 +1548,155 @@ const styles = StyleSheet.create({
     color: COLORS.grayText,
     fontStyle: 'italic',
   },
-  eventImage: {
-    width: '100%',
-    height: 250,
-    resizeMode: 'cover',
-    marginBottom: 20,
-  },
-  card: {
-    width: '90%',
+  heroCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 16,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.cardShadow,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 14,
       },
       android: {
-        elevation: 8,
+        elevation: 10,
       },
     }),
   },
+  heroImageWrap: {
+    width: '100%',
+    height: 190,
+    position: 'relative',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 70,
+    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+  },
+  heroImagePlaceholder: {
+    width: '100%',
+    height: 90,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroPlaceholderText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  heroBody: {
+    padding: 20,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  heroSub: {
+    fontSize: 13,
+    color: COLORS.grayText,
+    marginBottom: 16,
+    lineHeight: 19,
+  },
   eventTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.darkText,
-    marginBottom: 10,
+    flex: 1,
+    marginRight: 10,
+    lineHeight: 30,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  timelineWrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  timelineStep: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  timelineTrack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    marginBottom: 6,
+  },
+  timelineLine: {
+    flex: 1,
+    height: 3,
+    backgroundColor: '#E2E8F0',
+  },
+  timelineLineActive: {
+    backgroundColor: COLORS.primary,
+  },
+  timelineLineHidden: {
+    backgroundColor: 'transparent',
+  },
+  timelineDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.surface,
+  },
+  timelineDotIdle: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 2,
+    borderColor: '#CBD5E1',
+  },
+  timelineLabel: {
+    fontSize: 9,
+    color: COLORS.grayText,
+    textAlign: 'center',
+    lineHeight: 12,
+    paddingHorizontal: 2,
+  },
+  metaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    maxWidth: '48%',
+    flexGrow: 1,
+  },
+  metaChipText: {
+    fontSize: 13,
+    color: COLORS.darkText,
+    flexShrink: 1,
   },
   detailRow: {
     flexDirection: 'row',
@@ -1457,9 +1717,32 @@ const styles = StyleSheet.create({
     color: COLORS.darkText,
     marginBottom: 8,
   },
-  actionButtonsContainer: {
-    marginTop: 20,
-    marginBottom: 20,
+  actionBar: {
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+    gap: 10,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
   editButton: {
     flexDirection: 'row',
@@ -1513,13 +1796,22 @@ const styles = StyleSheet.create({
     color: COLORS.darkText,
     marginLeft: 8,
   },
+  budgetTableWrap: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
   budgetTableHeader: {
     flexDirection: 'row',
     backgroundColor: COLORS.grayLight,
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: 8,
-    marginBottom: 8,
+    margin: 4,
+    marginBottom: 4,
+    gap: 6,
   },
   budgetTableRow: {
     flexDirection: 'row',
@@ -1533,12 +1825,13 @@ const styles = StyleSheet.create({
     color: COLORS.darkText,
   },
   budgetCellDesc: {
-    flex: 3,
+    flex: 2.4,
     fontWeight: '500',
   },
   budgetCellNum: {
     flex: 1,
     textAlign: 'right',
+    paddingRight: 2,
   },
   budgetCellTotal: {
     fontWeight: '600',
