@@ -569,9 +569,10 @@ const ReportesAvanzadosScreen = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const lista = Array.isArray(res.data) ? res.data : [];
-      const eventosFase2 = lista.filter(ev => ev.idfase === 2);
-      eventosFase2.sort((a, b) => new Date(b.fechaevento || 0) - new Date(a.fechaevento || 0));
-      setTodosLosEventos(eventosFase2);
+      // Solo eventos en Fase 3 (programación) son seleccionables para ver su detalle
+      const eventosFase3 = lista.filter(ev => ev.idfase === 3);
+      eventosFase3.sort((a, b) => new Date(b.fechaevento || 0) - new Date(a.fechaevento || 0));
+      setTodosLosEventos(eventosFase3);
       setShowEventPicker(true);
     } catch (err) {
       console.error(err);
@@ -2078,7 +2079,7 @@ const ReportesAvanzadosScreen = () => {
                 <Ionicons name="list-circle-outline" size={22} color={COLORS.purple} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[styles.actionTitle, { color: COLORS.purple }]}>Ver Detalle de Evento</Text>
-                  <Text style={styles.actionSub}>Selecciona 1 evento para ver toda su información</Text>
+                  <Text style={styles.actionSub}>Solo eventos en Fase 3 (programación) · selecciona 1 para ver su información</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={COLORS.purple} />
               </TouchableOpacity>
@@ -2168,14 +2169,14 @@ const ReportesAvanzadosScreen = () => {
           <View style={[styles.modal, { width: '90%', maxWidth: 420, maxHeight: '80%' }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Seleccionar Evento</Text>
             <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 12, textAlign: 'center' }}>
-              Toca un evento para ver todos sus detalles completos
+              Toca un evento en Fase 3 (programación) para ver todos sus detalles completos
             </Text>
             
             <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
               {todosLosEventos.length === 0 ? (
                 <View style={styles.emptyChart}>
                   <Ionicons name="calendar-outline" size={40} color={COLORS.textTertiary} />
-                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No hay eventos disponibles</Text>
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No hay eventos en Fase 3 disponibles</Text>
                 </View>
               ) : (
                 todosLosEventos.map((ev, i) => (
