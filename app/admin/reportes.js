@@ -226,6 +226,13 @@ const ReportesAvanzadosScreen = () => {
   const [showEventPicker, setShowEventPicker] = useState(false);
   const [todosLosEventos, setTodosLosEventos] = useState([]);
 
+  // 🔥 REPORTES AMPLIADOS
+  const [repInscripciones, setRepInscripciones] = useState(null);
+  const [repOperacionales, setRepOperacionales] = useState(null);
+  const [repEconomicos, setRepEconomicos] = useState(null);
+  const [repRecursos, setRepRecursos] = useState(null);
+  const [repTipos, setRepTipos] = useState([]);
+
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
   const months = MONTH_NAMES_FULL.map((name, i) => ({ value: i + 1, name }));
 
@@ -248,6 +255,20 @@ const ReportesAvanzadosScreen = () => {
         axios.get(`${API_BASE_URL}/dashboard/mensual`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE_URL}/eventos`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
+
+      // 🔥 Reportes ampliados (parallel, tolerantes a fallos)
+      const [inscRes, opRes, ecoRes, recRes, tipoRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/reportes/inscripciones`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        axios.get(`${API_BASE_URL}/reportes/operacionales`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        axios.get(`${API_BASE_URL}/reportes/economicos`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        axios.get(`${API_BASE_URL}/reportes/recursos?periodo=mes`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        axios.get(`${API_BASE_URL}/reportes/tipos`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+      ]);
+      setRepInscripciones(inscRes?.data || null);
+      setRepOperacionales(opRes?.data || null);
+      setRepEconomicos(ecoRes?.data || null);
+      setRepRecursos(recRes?.data || null);
+      setRepTipos(Array.isArray(tipoRes?.data?.porTipo) ? tipoRes.data.porTipo : []);
 
       const data = statsRes.data;
       setStats(data);
@@ -525,6 +546,12 @@ const ReportesAvanzadosScreen = () => {
       return '–';
     };
 
+    const apMes = eventosDelMes.filter(e => e.estado === 'aprobado').length;
+    const peMes = eventosDelMes.filter(e => e.estado === 'pendiente').length;
+    const reMes = eventosDelMes.filter(e => e.estado === 'rechazado').length;
+    const totMes = eventosDelMes.length;
+    const tasaMes = totMes > 0 ? Math.round((apMes / totMes) * 100) : 0;
+
     const filasReporte = eventosDelMes.map(ev => {
       const fecha = ev.fechaevento
         ? new Date(ev.fechaevento).toLocaleDateString('es-BO', { 
@@ -590,6 +617,10 @@ const ReportesAvanzadosScreen = () => {
         .main-table td{padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;}
         .main-table tr:nth-child(even){background:#f9f9f9;}
         .footer{margin-top:30px;text-align:center;font-size:12px;color:#666;padding-top:20px;border-top:1px solid #ddd;}
+        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+        .stat-card{background:#f9fafb;border-radius:12px;padding:16px;text-align:center;border-left:4px solid #C44B0A;}
+        .stat-label{font-size:12px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
+        .stat-value{font-size:28px;font-weight:800;color:#1f2937;}
         @media print{body{padding:0}.wrap{box-shadow:none}}
       </style></head><body><div class="wrap">
       
@@ -605,6 +636,25 @@ const ReportesAvanzadosScreen = () => {
         <div class="info-field">
           <div class="info-label">Responsable de la Informacion</div>
           <div class="info-value">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Eventos</div>
+          <div class="stat-value">${totMes}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aprobados</div>
+          <div class="stat-value">${apMes}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pendientes</div>
+          <div class="stat-value">${peMes}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tasa de Aprobacion</div>
+          <div class="stat-value">${tasaMes}%</div>
         </div>
       </div>
       
@@ -834,6 +884,25 @@ const ReportesAvanzadosScreen = () => {
 
   const chartW = windowWidth - 48;
 
+  // 🔥 NUEVO: Tendencias reales (mes actual vs mes anterior) en vez de valores hardcodeados
+  const tendReal = (key) => {
+    if (!reportesMensuales || reportesMensuales.length < 2) return undefined;
+    const c = reportesMensuales[0]?.[key] || 0;
+    const p = reportesMensuales[1]?.[key] || 0;
+    if (!p) return undefined;
+    return Math.round(((c - p) / p) * 100);
+  };
+  const tendTasa = (() => {
+    if (!reportesMensuales || reportesMensuales.length < 2) return undefined;
+    const calc = (r) => { const t = r?.totalEvents; return t ? Math.round(((r.aprobado || 0) / t) * 100) : 0; };
+    const c = calc(reportesMensuales[0]);
+    const p = calc(reportesMensuales[1]);
+    if (!p) return undefined;
+    return Math.round(((c - p) / p) * 100);
+  })();
+  const fmtBs = (n) => `Bs ${(Math.round(Number(n) || 0)).toLocaleString('es-BO')}`;
+  const faseLabel = (f) => ({ 1: 'Creación', 2: 'Aprobación', 3: 'Programación', 4: 'Cierre' })[Number(f)] || `Fase ${f}`;
+
   // 🔥 NUEVO: Colores dinámicos según dark mode
   const theme = {
     background: darkMode ? COLORS.darkBackground : COLORS.background,
@@ -842,6 +911,15 @@ const ReportesAvanzadosScreen = () => {
     textSecondary: darkMode ? COLORS.darkTextSecondary : COLORS.textSecondary,
     border: darkMode ? COLORS.darkBorder : COLORS.border,
     divider: darkMode ? '#374151' : COLORS.divider,
+  };
+
+  const barChartConfig = {
+    backgroundGradientFrom: theme.surface,
+    backgroundGradientTo: theme.surface,
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(196, 75, 10, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+    propsForBackgroundLines: { stroke: theme.border, strokeWidth: 0.5 },
   };
 
   return (
@@ -903,32 +981,34 @@ const ReportesAvanzadosScreen = () => {
                   <SectionHeader icon="pulse-outline" title="Indicadores Clave" subtitle="Métricas principales" />
                   <View style={styles.kpiGrid}>
                     <KpiCard 
-                      label="Usuarios Activos" 
-                      value={stats?.activeUsers ?? '–'} 
-                      icon="people-outline" 
-                      color={COLORS.primary}
-                      trend={5.2}
-                    />
+                    label="Usuarios Activos" 
+                    value={stats?.activeUsers ?? '–'} 
+                    icon="people-outline" 
+                    color={COLORS.primary}
+                    sub="Cuentas habilitadas"
+                  />
                     <KpiCard 
                       label="Eventos Totales" 
                       value={stats?.totalEvents ?? '–'} 
                       icon="calendar-outline" 
                       color={COLORS.info}
-                      trend={12.5}
+                      trend={tendReal('totalEvents')}
+                      sub="vs mes anterior"
                     />
                     <KpiCard 
                       label="Tasa Aprobación" 
                       value={`${stats?.tasaAprobacion ?? 0}%`} 
                       icon="checkmark-done-outline" 
                       color={COLORS.success}
-                      trend={-2.3}
+                      trend={tendTasa}
+                      sub="Global"
                     />
                     <KpiCard 
                       label="Tiempo Prom." 
                       value={`${stats?.tiempoPromedioAprobacion ?? 0}h`} 
                       icon="time-outline" 
                       color={COLORS.warning}
-                      trend={-8.1}
+                      sub="Para aprobar"
                     />
                     <KpiCard 
                       label="Pendientes" 
@@ -936,6 +1016,7 @@ const ReportesAvanzadosScreen = () => {
                       icon="hourglass-outline" 
                       color={COLORS.warning} 
                       sub="Sin revisar"
+                      trend={tendReal('pendiente')}
                     />
                     <KpiCard 
                       label="Nuevos Usuarios" 
@@ -943,7 +1024,6 @@ const ReportesAvanzadosScreen = () => {
                       icon="person-add-outline" 
                       color={COLORS.purple} 
                       sub="Este mes"
-                      trend={15.7}
                     />
                   </View>
                 </View>
@@ -1102,35 +1182,204 @@ const ReportesAvanzadosScreen = () => {
             {/* TAB: ANÁLISIS */}
             {activeTab === 'analisis' && (
               <View style={styles.section}>
-                <SectionHeader icon="analytics-outline" title="Análisis Detallado" />
-                
-                {/* Estadísticas adicionales */}
-                <View style={[styles.card, { backgroundColor: theme.surface }]}>
-                  <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Métricas Avanzadas</Text>
-                  <View style={styles.statsGrid}>
-                    <View style={styles.statItem}>
-                      <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Promedio eventos/mes</Text>
-                      <Text style={[styles.statValue, { color: theme.textPrimary }]}>
-                        {reportesMensuales.length > 0 
-                          ? Math.round(reportesMensuales.reduce((acc, r) => acc + (r.totalEvents || 0), 0) / reportesMensuales.length)
-                          : 0
-                        }
-                      </Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Mejor mes</Text>
-                      <Text style={[styles.statValue, { color: COLORS.success }]}>
-                        {reportesMensuales.length > 0 
-                          ? (() => {
-                              const best = reportesMensuales.reduce((max, r) => (r.totalEvents || 0) > (max.totalEvents || 0) ? r : max, reportesMensuales[0]);
-                              return `${MONTH_NAMES_FULL[parseInt(best.mes.split('-')[1]) - 1]} ${best.mes.split('-')[0]}`;
-                            })()
-                          : 'N/A'
-                        }
-                      </Text>
+                <SectionHeader icon="analytics-outline" title="Análisis Detallado" subtitle="Métricas consolidadas" />
+
+                {/* KPIs ampliados */}
+                <View style={styles.kpiGrid}>
+                  <KpiCard label="Inscritos Totales" value={repInscripciones?.total ?? '–'} icon="person-add-outline" color={COLORS.info} sub="En todos los eventos" />
+                  <KpiCard label="Balance Real" value={repEconomicos?.resumen ? fmtBs(repEconomicos.resumen.balance_real) : '–'} icon="wallet-outline" color={COLORS.success} sub="Informes de cierre" />
+                  <KpiCard label="Tiempo Prom. Aprobación" value={repOperacionales?.tiempoAprobacionPorMes?.length ? `${repOperacionales.tiempoAprobacionPorMes.slice(-1)[0].horas}h` : '–'} icon="time-outline" color={COLORS.warning} sub="Último mes" />
+                  <KpiCard label="Recursos Solicitados" value={repRecursos?.totalSolicitudes ?? '–'} icon="cube-outline" color={COLORS.purple} sub="Este mes" />
+                </View>
+
+                {/* Distribución por tipo de evento */}
+                {repTipos.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="pricetags-outline" title="Eventos por Tipo" subtitle="Distribución" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      <PieChart
+                        data={repTipos.map((t, i) => ({
+                          name: String(t.tipo).length > 16 ? String(t.tipo).slice(0, 16) + '…' : t.tipo,
+                          population: t.total,
+                          color: ['#C44B0A', '#3B82F6', '#16A34A', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#EC4899'][i % 8],
+                          legendFontColor: theme.textSecondary,
+                          legendFontSize: 11,
+                        }))}
+                        width={chartW}
+                        height={200}
+                        accessor="population"
+                        backgroundColor="transparent"
+                        paddingLeft="10"
+                        absolute
+                        chartConfig={{ color: (o = 1) => `rgba(0,0,0,${o})` }}
+                      />
                     </View>
                   </View>
-                </View>
+                )}
+
+                {/* Funnel por fase */}
+                {repOperacionales?.porFase?.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="git-branch-outline" title="Embudo por Fase" subtitle="Eventos en cada etapa" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      {repOperacionales.porFase
+                        .slice()
+                        .sort((a, b) => a.idfase - b.idfase)
+                        .map((f, i) => {
+                          const max = Math.max(...repOperacionales.porFase.map(x => x.total), 1);
+                          return (
+                            <View key={i} style={styles.funnelRow}>
+                              <View style={styles.funnelLabelWrap}>
+                                <Text style={[styles.funnelLabel, { color: theme.textPrimary }]}>{faseLabel(f.idfase)}</Text>
+                                <Text style={[styles.funnelCount, { color: COLORS.primary }]}>{f.total}</Text>
+                              </View>
+                              <View style={[styles.funnelTrack, { backgroundColor: theme.divider }]}>
+                                <View style={[styles.funnelFill, { width: `${(f.total / max) * 100}%`, backgroundColor: COLORS.primary }]} />
+                              </View>
+                            </View>
+                          );
+                        })}
+                    </View>
+                  </View>
+                )}
+
+                {/* Top eventos con más inscritos */}
+                {repInscripciones?.topEventos?.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="ribbon-outline" title="Eventos con más Inscritos" subtitle="Top 10" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      <HorizontalBarChart
+                        data={repInscripciones.topEventos.map(e => ({ label: e.nombreevento, value: e.inscritos }))}
+                        width={chartW}
+                        height={Math.min(repInscripciones.topEventos.length * 50 + 40, 400)}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {/* Inscripciones por mes */}
+                {repInscripciones?.porMes?.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="calendar-outline" title="Inscripciones por Mes" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      <BarChart
+                        data={{
+                          labels: repInscripciones.porMes.map(r => { const [, m] = r.mes.split('-'); return MONTH_NAMES_SHORT[parseInt(m) - 1]; }),
+                          datasets: [{ data: repInscripciones.porMes.map(r => r.inscritos) }],
+                        }}
+                        width={chartW}
+                        height={220}
+                        chartConfig={barChartConfig}
+                        style={{ borderRadius: 16 }}
+                        fromZero
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {/* Tiempo de aprobación por mes */}
+                {repOperacionales?.tiempoAprobacionPorMes?.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="timer-outline" title="Tiempo de Aprobación" subtitle="Horas promedio por mes" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      <BarChart
+                        data={{
+                          labels: repOperacionales.tiempoAprobacionPorMes.map(r => { const [, m] = r.mes.split('-'); return MONTH_NAMES_SHORT[parseInt(m) - 1]; }),
+                          datasets: [{ data: repOperacionales.tiempoAprobacionPorMes.map(r => r.horas) }],
+                        }}
+                        width={chartW}
+                        height={220}
+                        chartConfig={barChartConfig}
+                        style={{ borderRadius: 16 }}
+                        fromZero
+                      />
+                      <Text style={[styles.chartHint, { color: theme.textSecondary }]}>Desde la creación del evento hasta su aprobación</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Balance económico por mes */}
+                {repEconomicos?.porMes?.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="trending-down-outline" title="Balance Económico por Mes" subtitle="Egresos vs Ingresos reales" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      <BarChart
+                        data={{
+                          labels: repEconomicos.porMes.map(r => { const [, m] = r.mes.split('-'); return MONTH_NAMES_SHORT[parseInt(m) - 1]; }),
+                          datasets: [
+                            { data: repEconomicos.porMes.map(r => r.egresos), color: (o = 1) => `rgba(239, 68, 68, ${o})` },
+                            { data: repEconomicos.porMes.map(r => r.ingresos), color: (o = 1) => `rgba(22, 163, 74, ${o})` },
+                          ],
+                        }}
+                        width={chartW}
+                        height={220}
+                        chartConfig={barChartConfig}
+                        style={{ borderRadius: 16 }}
+                        fromZero
+                      />
+                      <View style={styles.legend}>
+                        <View style={styles.legendItem}>
+                          <View style={[styles.legendDot, { backgroundColor: COLORS.accent }]} />
+                          <Text style={[styles.legendText, { color: theme.textSecondary }]}>Egresos</Text>
+                        </View>
+                        <View style={styles.legendItem}>
+                          <View style={[styles.legendDot, { backgroundColor: COLORS.success }]} />
+                          <Text style={[styles.legendText, { color: theme.textSecondary }]}>Ingresos</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Costo promedio por facultad */}
+                {repEconomicos?.porFacultad?.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="business-outline" title="Costo Promedio por Facultad" subtitle="Egresos reales (promedio)" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      <HorizontalBarChart
+                        data={repEconomicos.porFacultad.map(f => ({ label: f.facultad, value: f.egresos_promedio }))}
+                        width={chartW}
+                        height={Math.min(repEconomicos.porFacultad.length * 50 + 40, 400)}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {/* Presupuesto vs Real */}
+                {repEconomicos?.porEvento?.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="swap-horizontal-outline" title="Presupuesto vs Real" subtitle="Últimos eventos con informe" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      <View style={[styles.tableRow, styles.tableHead]}>
+                        {['Evento', 'Pres. Egr.', 'Real Egr.', 'Balance'].map((h, i) => (
+                          <Text key={i} style={[styles.tableHeadText, { color: theme.textSecondary }, i === 0 ? { flex: 2 } : { flex: 1, textAlign: 'right' }]}>{h}</Text>
+                        ))}
+                      </View>
+                      {repEconomicos.porEvento.slice(0, 8).map((ev, i) => (
+                        <View key={i} style={[styles.tableRow, { borderBottomColor: theme.divider }, i % 2 === 0 && { backgroundColor: theme.divider }]}>
+                          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.tableCell, { color: theme.textPrimary, flex: 2 }]}>{ev.nombreevento}</Text>
+                          <Text style={[styles.tableCell, { color: theme.textTertiary, flex: 1, textAlign: 'right' }]}>{fmtBs(ev.pres_egresos)}</Text>
+                          <Text style={[styles.tableCell, { color: theme.textPrimary, flex: 1, textAlign: 'right' }]}>{fmtBs(ev.real_egresos)}</Text>
+                          <Text style={[styles.tableCell, { color: ev.balance_real >= 0 ? COLORS.success : COLORS.accent, fontWeight: '700', flex: 1, textAlign: 'right' }]}>{fmtBs(ev.balance_real)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Recursos más usados */}
+                {repRecursos?.recursosMasUsados?.length > 0 && (
+                  <View style={styles.section}>
+                    <SectionHeader icon="cube-outline" title="Recursos Más Solicitados" subtitle="Este mes" />
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                      <HorizontalBarChart
+                        data={repRecursos.recursosMasUsados.map(r => ({ label: r.nombre, value: r.usos }))}
+                        width={chartW}
+                        height={Math.min(repRecursos.recursosMasUsados.length * 50 + 40, 400)}
+                      />
+                    </View>
+                  </View>
+                )}
               </View>
             )}
 
@@ -1151,6 +1400,46 @@ const ReportesAvanzadosScreen = () => {
                     </TouchableOpacity>
                   ))}
                 </View>
+
+                {/* 🔥 Filtros avanzados antes activados */}
+                <View style={styles.filterAdvancedRow}>
+                  <View style={[styles.searchBox, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+                    <Ionicons name="search-outline" size={16} color={theme.textSecondary} />
+                    <TextInput
+                      style={[styles.searchInput, { color: theme.textPrimary }]}
+                      placeholder="Buscar evento…"
+                      placeholderTextColor={COLORS.textTertiary}
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      accessibilityLabel="Buscar evento"
+                    />
+                    {searchQuery.length > 0 && (
+                      <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityRole="button">
+                        <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <TouchableOpacity style={[styles.filterBtn, showDateFilter && { backgroundColor: COLORS.primaryLight }]} onPress={() => setShowDateFilter(true)} accessibilityRole="button">
+                    <Ionicons name="calendar-outline" size={14} color={COLORS.primary} />
+                    <Text style={[styles.filterText, { color: COLORS.primary }]}>Fechas</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.filterBtn, showFacultadFilter && { backgroundColor: COLORS.primaryLight }]} onPress={() => setShowFacultadFilter(true)} accessibilityRole="button">
+                    <Ionicons name="school-outline" size={14} color={COLORS.primary} />
+                    <Text style={[styles.filterText, { color: COLORS.primary }]}>Facultad</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {(searchQuery || fechaInicio || fechaFin || selectedFacultad !== 'todas') && (
+                  <View style={styles.activeFilters}>
+                    {searchQuery ? <View style={styles.activeFilterTag}><Text style={styles.activeFilterText}>"{searchQuery}"</Text></View> : null}
+                    {(fechaInicio && fechaFin) ? <View style={styles.activeFilterTag}><Text style={styles.activeFilterText}>{fechaInicio.replace(/-/g, '/')} → {fechaFin.replace(/-/g, '/')}</Text></View> : null}
+                    {selectedFacultad !== 'todas' ? <View style={styles.activeFilterTag}><Text style={styles.activeFilterText}>{selectedFacultad}</Text></View> : null}
+                    <TouchableOpacity style={[styles.filterBtn, { borderColor: COLORS.error }]} onPress={() => { setSearchQuery(''); setFechaInicio(''); setFechaFin(''); setSelectedFacultad('todas'); }} accessibilityRole="button">
+                      <Ionicons name="trash-outline" size={13} color={COLORS.error} />
+                      <Text style={[styles.filterText, { color: COLORS.error }]}>Limpiar</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
                 <View style={[styles.card, { backgroundColor: theme.surface }]}>
                   {loadingEvents ? (
                     <View style={styles.centered}><ActivityIndicator color={COLORS.primary} /></View>
@@ -1219,8 +1508,8 @@ const ReportesAvanzadosScreen = () => {
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#EFF6FF' }]} onPress={exportarExcel}>
                 <Ionicons name="file-tray-full-outline" size={22} color={COLORS.info} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[styles.actionTitle, { color: COLORS.info }]}>Exportar a Excel</Text>
-                  <Text style={styles.actionSub}>Descarga en formato XLSX con todos los datos</Text>
+                  <Text style={[styles.actionTitle, { color: COLORS.info }]}>Exportar a Excel (CSV)</Text>
+                  <Text style={styles.actionSub}>CSV con separador «;» compatible con Excel</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={COLORS.info} />
               </TouchableOpacity>
@@ -1465,6 +1754,15 @@ const styles = StyleSheet.create({
   heatmapLegendBox: { width: 16, height: 16, borderRadius: 3 },
   heatmapLegendText: { fontSize: 11 },
 
+  // Funnel por fase
+  funnelRow: { marginBottom: 12 },
+  funnelLabelWrap: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
+  funnelLabel: { fontSize: 13, fontWeight: '600' },
+  funnelCount: { fontSize: 13, fontWeight: '700' },
+  funnelTrack: { height: 10, borderRadius: 5, overflow: 'hidden' },
+  funnelFill: { height: '100%', borderRadius: 5 },
+  chartHint: { fontSize: 11, marginTop: 8, textAlign: 'center' },
+
   // Estadísticas
   statsGrid: { flexDirection: 'row', gap: 16 },
   statItem: { flex: 1, padding: 12, backgroundColor: COLORS.divider, borderRadius: 8 },
@@ -1488,6 +1786,11 @@ const styles = StyleSheet.create({
   filterBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   filterText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
   filterTextActive: { color: COLORS.white, fontWeight: '700' },
+
+  // Filtros avanzados (búsqueda, fechas, facultad)
+  filterAdvancedRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
+  searchBox: { flex: 1, minWidth: 160, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  searchInput: { flex: 1, fontSize: 13, padding: 0 },
 
   // Eventos
   eventRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },

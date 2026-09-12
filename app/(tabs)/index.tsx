@@ -6,6 +6,7 @@ import {
   Animated,
   Pressable,
   Image,
+  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -34,18 +35,26 @@ export default function Welcome() {
   }, []);
 
   return (
-    <LinearGradient
-      colors={['#F37B2E', '#E95A0C', '#C44B0A']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <ImageBackground
+      source={require('../../assets/images/FONDO NARANJA_Mesa de trabajo 1.jpeg')}
       style={styles.background}
+      resizeMode="cover"
     >
+      <LinearGradient
+        colors={['rgba(15,23,42,0.68)', 'rgba(40,22,12,0.45)', 'rgba(15,8,4,0.84)']}
+        style={styles.overlay}
+      />
+
       <Animated.View
         style={[styles.content, { opacity: contentAnim, transform: [{ scale: contentAnim }] }]}
       >
-        <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
-        <Text style={styles.title}>UFT Eventos</Text>
-        <Text style={styles.subtitle}>Organiza y automatiza tus eventos con facilidad</Text>
+        <View style={styles.brand}>
+          <View style={styles.logoBadge}>
+            <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
+          </View>
+          <Text style={styles.brandName}>UFT Eventos</Text>
+          <Text style={styles.brandSub}>Organiza y automatiza tus eventos</Text>
+        </View>
 
         <Pressable style={styles.buttonPrimary} onPress={() => router.push('/Home')}>
           <Text style={styles.buttonPrimaryText}>Explorar Eventos</Text>
@@ -55,47 +64,66 @@ export default function Welcome() {
           <Text style={styles.buttonSecondaryText}>Iniciar Sesión</Text>
         </Pressable>
       </Animated.View>
-    </LinearGradient>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
   },
   content: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 30,
-    borderRadius: 24,
-    maxWidth: '90%',
-    width: 380,
+  },
+  brand: {
+    alignItems: 'center',
+    marginBottom: 36,
+  },
+  logoBadge: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.7)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 10,
+    marginBottom: 14,
   },
   logo: {
-    width: 130,
-    height: 130,
+    width: 88,
+    height: 88,
     resizeMode: 'contain',
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginBottom: 18,
   },
-  title: {
-    fontSize: 34,
+  brandName: {
+    color: '#FFFFFF',
+    fontSize: 28,
     fontWeight: '800',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  subtitle: {
-    fontSize: 15,
-    color: '#ffe3d2',
+  brandSub: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1.4,
+    marginTop: 6,
+    textTransform: 'uppercase',
     textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 22,
   },
   buttonPrimary: {
     backgroundColor: '#ffffff',
@@ -105,6 +133,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    maxWidth: 380,
   },
   buttonPrimaryText: {
     color: '#C44B0A',
@@ -120,6 +149,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    maxWidth: 380,
     marginTop: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.5)',
