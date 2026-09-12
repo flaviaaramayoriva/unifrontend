@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Animated,
   Pressable,
-  ImageBackground,
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -35,13 +34,12 @@ export default function Welcome() {
   }, []);
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/fondo-home.png')}
+    <LinearGradient
+      colors={['#F37B2E', '#E95A0C', '#C44B0A']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
       style={styles.background}
-      resizeMode="cover"
     >
-      <View style={styles.overlay} />
-
       <Animated.View
         style={[styles.content, { opacity: contentAnim, transform: [{ scale: contentAnim }] }]}
       >
@@ -57,7 +55,7 @@ export default function Welcome() {
           <Text style={styles.buttonSecondaryText}>Iniciar Sesión</Text>
         </Pressable>
       </Animated.View>
-    </ImageBackground>
+    </LinearGradient>
   );
 }
 
@@ -66,10 +64,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(20, 6, 1, 0.55)',
   },
   content: {
     alignItems: 'center',
