@@ -645,6 +645,14 @@ const adminActions = [
                 <CustomBarChart data={estadosBarra || { labels: [], datasets: [{ data: [] }] }} width={chartWidth} height={230} color={COLORS.success} />
               </ChartCard>
             </Section>
+
+            <Section title="Resumen de Actividad" subtitle="Tus métricas clave">
+              <View style={styles.statsGrid}>
+                {dashboardStats.map((stat, i) => (
+                  <DashboardCard key={i} {...stat} />
+                ))}
+              </View>
+            </Section>
           </>
         ) : (
           <>
@@ -703,20 +711,6 @@ const adminActions = [
                   </View>
                 )}
               </View>
-            </Section>
-
-            <Section title="Resumen de Actividad" subtitle="Tus métricas clave · Toca para ver el Análisis">
-              <TouchableOpacity
-                style={styles.statsGrid}
-                onPress={() => setActiveMainTab('analisis')}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel="Ir a Análisis"
-              >
-                {dashboardStats.map((stat, i) => (
-                  <DashboardCard key={i} {...stat} />
-                ))}
-              </TouchableOpacity>
             </Section>
           </>
         )}

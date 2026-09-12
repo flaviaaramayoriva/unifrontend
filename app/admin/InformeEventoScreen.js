@@ -623,9 +623,18 @@ const InformeEventoScreen = () => {
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="arrow-back" size={24} color={COLORS.white} /></TouchableOpacity>
-        <Text style={styles.headerTitle}>Informe del Evento</Text>
-        <TouchableOpacity onPress={generarPDF} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="print-outline" size={24} color={COLORS.white} /></TouchableOpacity>
+        <View style={styles.headerBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerIconBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel="Volver" accessibilityRole="button">
+            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+          <View style={styles.headerTitles}>
+            <Text style={styles.headerTitle}>Informe del Evento</Text>
+            <Text style={styles.headerSubtitle} numberOfLines={1}>{event?.title}</Text>
+          </View>
+          <TouchableOpacity onPress={generarPDF} style={styles.headerIconBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel="Imprimir" accessibilityRole="button">
+            <Ionicons name="print-outline" size={22} color={COLORS.white} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -922,7 +931,7 @@ const InformeEventoScreen = () => {
 
         {/* Participación / Satisfacción - COMPARACIÓN */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>3. Participación e Índice de Satisfacción</Text>
+          <Text style={styles.sectionTitle}>1. Participación e Índice de Satisfacción</Text>
 
           <View style={styles.compareBlock}>
             <View style={styles.compareRow}>
@@ -981,7 +990,7 @@ const InformeEventoScreen = () => {
 
         {/* Balance Económico Real - COMPARACIÓN */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>4. Balance Económico Real</Text>
+          <Text style={styles.sectionTitle}>2. Balance Económico Real</Text>
 
           <View style={styles.balanceComparison}>
             <View style={styles.balanceCompareBox}>
@@ -1083,7 +1092,7 @@ const InformeEventoScreen = () => {
 
         {/* Nota de Prensa */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>5. Información para la Nota de Prensa</Text>
+          <Text style={styles.sectionTitle}>3. Información para la Nota de Prensa</Text>
           <View style={styles.detailRow}>
             <Ionicons name="newspaper-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
             {readOnly ? (
@@ -1107,7 +1116,7 @@ const InformeEventoScreen = () => {
 
         {/* Análisis de Desviaciones */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>6. Análisis de Desviaciones Críticas/Significativas</Text>
+          <Text style={styles.sectionTitle}>4. Análisis de Desviaciones Críticas/Significativas</Text>
           <View style={styles.detailRow}>
             <Ionicons name="git-compare-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
             {readOnly ? (
@@ -1131,7 +1140,7 @@ const InformeEventoScreen = () => {
 
         {/* Lecciones Aprendidas */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>7. Lecciones Aprendidas</Text>
+          <Text style={styles.sectionTitle}>5. Lecciones Aprendidas</Text>
           <View style={styles.detailRow}>
             <Ionicons name="bulb-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
             {readOnly ? (
@@ -1178,13 +1187,18 @@ const InformeEventoScreen = () => {
       <Modal visible={showInscritos} animationType="slide" onRequestClose={() => setShowInscritos(false)} accessibilityViewIsModal={true}>
         <View style={{ flex: 1, backgroundColor: COLORS.background }}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setShowInscritos(false)} accessibilityLabel="Cerrar" accessibilityRole="button">
-              <Ionicons name="close" size={24} color={COLORS.white} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Estudiantes Inscritos</Text>
-            <TouchableOpacity onPress={generarPDFRegistro} accessibilityLabel="Imprimir" accessibilityRole="button">
-              <Ionicons name="print-outline" size={24} color={COLORS.white} />
-            </TouchableOpacity>
+            <View style={styles.headerBar}>
+              <TouchableOpacity onPress={() => setShowInscritos(false)} style={styles.headerIconBtn} accessibilityLabel="Cerrar" accessibilityRole="button">
+                <Ionicons name="close" size={24} color={COLORS.white} />
+              </TouchableOpacity>
+              <View style={styles.headerTitles}>
+                <Text style={styles.headerTitle}>Estudiantes Inscritos</Text>
+                <Text style={styles.headerSubtitle} numberOfLines={1}>{event?.title}</Text>
+              </View>
+              <TouchableOpacity onPress={generarPDFRegistro} style={styles.headerIconBtn} accessibilityLabel="Imprimir" accessibilityRole="button">
+                <Ionicons name="print-outline" size={22} color={COLORS.white} />
+              </TouchableOpacity>
+            </View>
           </View>
           {loadingInscritos ? (
             <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 30 }} />
@@ -1266,8 +1280,19 @@ const styles = StyleSheet.create({
   screenContainer: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1 },
   contentContainer: { padding: 16, paddingBottom: 40 },
-  header: { backgroundColor: COLORS.primary, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 50 : 20, paddingBottom: 15 },
+  header: { backgroundColor: COLORS.primary, paddingTop: Platform.OS === 'ios' ? 55 : Platform.OS === 'web' ? 22 : 26, paddingBottom: 16, paddingHorizontal: 16 },
+  headerBar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitles: { flex: 1 },
   headerTitle: { color: COLORS.white, fontSize: 18, fontWeight: 'bold' },
+  headerSubtitle: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 3 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
   loadingText: { marginTop: 15, fontSize: 16, color: COLORS.grayText },
   errorText: { marginTop: 15, fontSize: 16, color: COLORS.accent, textAlign: 'center', marginHorizontal: 20 },
