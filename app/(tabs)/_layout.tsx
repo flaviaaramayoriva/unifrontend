@@ -31,7 +31,11 @@ export default function TabLayout() {
         options={{
           title: 'Inicio',
           headerShown: false,
-          tabBarStyle: { display: 'none' },
+          tabBarStyle: {
+            position: 'absolute',
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            borderTopColor: 'rgba(0,0,0,0.06)',
+          },
           tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
         }}
       />
@@ -46,6 +50,11 @@ export default function TabLayout() {
         name="Login"
         options={{
           title: 'Login',
+          tabBarStyle: {
+            position: 'absolute',
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            borderTopColor: 'rgba(0,0,0,0.06)',
+          },
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />

@@ -1012,7 +1012,7 @@ const InformeEventoScreen = () => {
               <Text style={[styles.budgetCell, styles.budgetCellNum]}>Cant.</Text>
               <Text style={[styles.budgetCell, styles.budgetCellNum]}>Precio</Text>
               <Text style={[styles.budgetCell, styles.budgetCellNum]}>Total</Text>
-              {!readOnly && <View style={{ width: 24 }} />}
+              {!readOnly && <View style={{ width: 28 }} />}
             </View>
             {/* CORRECCIÓN 4: Blindar el .map */}
             {Array.isArray(egresosReales) && egresosReales.map((row, index) => (
@@ -1025,22 +1025,22 @@ const InformeEventoScreen = () => {
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>{row.cantidad || '0'}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0" accessibilityLabel="Cantidad" value={String(row.cantidad)} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'cantidad', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell, styles.inputCellNum]} keyboardType="numeric" editable={!readOnly} placeholder="0" accessibilityLabel="Cantidad" value={String(row.cantidad)} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'cantidad', v)} />
                 )}
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(row.precio_unitario || 0).toFixed(2)}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0.00" accessibilityLabel="Precio Unitario" value={String(row.precio_unitario)} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'precio_unitario', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell, styles.inputCellNum]} keyboardType="numeric" editable={!readOnly} placeholder="0.00" accessibilityLabel="Precio Unitario" value={String(row.precio_unitario)} onChangeText={(v) => updateRow(setEgresosReales, egresosReales, index, 'precio_unitario', v)} />
                 )}
                 <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>Bs {(row.total || 0).toFixed(2)}</Text>
-                {!readOnly && <TouchableOpacity onPress={() => removeRow(setEgresosReales, egresosReales, index)} style={{ width: 24, alignItems: 'center' }}><Ionicons name="trash-outline" size={18} color={COLORS.logout} /></TouchableOpacity>}
+                {!readOnly && <TouchableOpacity onPress={() => removeRow(setEgresosReales, egresosReales, index)} style={{ width: 28, alignItems: 'center' }}><Ionicons name="trash-outline" size={18} color={COLORS.logout} /></TouchableOpacity>}
               </View>
             ))}
             {!readOnly && <TouchableOpacity style={styles.addRowButton} onPress={() => addRow(setEgresosReales, egresosReales)}><Ionicons name="add-circle-outline" size={18} color={COLORS.primary} /><Text style={styles.addRowText}>Agregar egreso</Text></TouchableOpacity>}
             <View style={styles.budgetTotalRow}>
               <Text style={[styles.budgetTotalLabel, { flex: 3 }]}>TOTAL EGRESOS REALES:</Text>
               <Text style={styles.budgetTotalValue}>Bs {(totalEgresosReal || 0).toFixed(2)}</Text>
-              {!readOnly && <View style={{ width: 24 }} />}
+              {!readOnly && <View style={{ width: 28 }} />}
             </View>
           </View>
 
@@ -1052,7 +1052,7 @@ const InformeEventoScreen = () => {
               <Text style={[styles.budgetCell, styles.budgetCellNum]}>Cant.</Text>
               <Text style={[styles.budgetCell, styles.budgetCellNum]}>Precio</Text>
               <Text style={[styles.budgetCell, styles.budgetCellNum]}>Total</Text>
-              {!readOnly && <View style={{ width: 24 }} />}
+              {!readOnly && <View style={{ width: 28 }} />}
             </View>
             {/* CORRECCIÓN 5: Blindar el .map */}
             {Array.isArray(ingresosReales) && ingresosReales.map((row, index) => (
@@ -1065,22 +1065,22 @@ const InformeEventoScreen = () => {
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>{row.cantidad || '0'}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0" accessibilityLabel="Cantidad" value={String(row.cantidad)} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'cantidad', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell, styles.inputCellNum]} keyboardType="numeric" editable={!readOnly} placeholder="0" accessibilityLabel="Cantidad" value={String(row.cantidad)} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'cantidad', v)} />
                 )}
                 {readOnly ? (
                   <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(row.precio_unitario || 0).toFixed(2)}</Text>
                 ) : (
-                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell]} keyboardType="numeric" editable={!readOnly} placeholder="0.00" accessibilityLabel="Precio Unitario" value={String(row.precio_unitario)} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'precio_unitario', v)} />
+                  <TextInput style={[styles.budgetCell, styles.budgetCellNum, styles.inputCell, styles.inputCellNum]} keyboardType="numeric" editable={!readOnly} placeholder="0.00" accessibilityLabel="Precio Unitario" value={String(row.precio_unitario)} onChangeText={(v) => updateRow(setIngresosReales, ingresosReales, index, 'precio_unitario', v)} />
                 )}
                 <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>Bs {(row.total || 0).toFixed(2)}</Text>
-                {!readOnly && <TouchableOpacity onPress={() => removeRow(setIngresosReales, ingresosReales, index)} style={{ width: 24, alignItems: 'center' }}><Ionicons name="trash-outline" size={18} color={COLORS.logout} /></TouchableOpacity>}
+                {!readOnly && <TouchableOpacity onPress={() => removeRow(setIngresosReales, ingresosReales, index)} style={{ width: 28, alignItems: 'center' }}><Ionicons name="trash-outline" size={18} color={COLORS.logout} /></TouchableOpacity>}
               </View>
             ))}
             {!readOnly && <TouchableOpacity style={styles.addRowButton} onPress={() => addRow(setIngresosReales, ingresosReales)}><Ionicons name="add-circle-outline" size={18} color={COLORS.primary} /><Text style={styles.addRowText}>Agregar ingreso</Text></TouchableOpacity>}
             <View style={styles.budgetTotalRow}>
               <Text style={[styles.budgetTotalLabel, { flex: 3 }]}>TOTAL INGRESOS REALES:</Text>
               <Text style={[styles.budgetTotalValue, { color: COLORS.success }]}>Bs {(totalIngresosReal || 0).toFixed(2)}</Text>
-              {!readOnly && <View style={{ width: 24 }} />}
+              {!readOnly && <View style={{ width: 28 }} />}
             </View>
           </View>
 
@@ -1279,7 +1279,7 @@ InformeEventoScreen.options = { headerShown: false };
 const styles = StyleSheet.create({
   screenContainer: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1 },
-  contentContainer: { padding: 16, paddingBottom: 40 },
+  contentContainer: { padding: 20, paddingBottom: 48 },
   header: { backgroundColor: COLORS.primary, paddingTop: Platform.OS === 'ios' ? 55 : Platform.OS === 'web' ? 22 : 26, paddingBottom: 16, paddingHorizontal: 16 },
   headerBar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerIconBtn: {
@@ -1297,10 +1297,18 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 15, fontSize: 16, color: COLORS.grayText },
   errorText: { marginTop: 15, fontSize: 16, color: COLORS.accent, textAlign: 'center', marginHorizontal: 20 },
 
-  blockHeader: { backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, marginBottom: 16, gap: 10 },
+  blockHeader: { backgroundColor: COLORS.primary, flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, marginBottom: 20, gap: 10 },
   blockHeaderText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
 
-  sectionCard: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 20, marginBottom: 16, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 }, android: { elevation: 8 } }) },
+  sectionCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }, android: { elevation: 2 } }),
+  },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 12 },
   eventTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 10 },
   badgesRow: { flexDirection: 'row', gap: 8, marginTop: 5 },
@@ -1384,6 +1392,7 @@ const styles = StyleSheet.create({
 
   inputCell: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 6, padding: 6, backgroundColor: COLORS.background, fontSize: 14, color: COLORS.darkText },
   inputCellDesc: { textAlign: 'left' },
+  inputCellNum: { textAlign: 'right' },
 
   addRowButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, padding: 8 },
   addRowText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
