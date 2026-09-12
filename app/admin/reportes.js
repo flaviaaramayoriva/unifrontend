@@ -60,34 +60,28 @@ const DAYS_SHORT = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const HorizontalBarChart = ({ data, width, height = 300 }) => {
   if (!data?.length) return null;
   const max = Math.max(...data.map(d => d.value), 1);
-  const barHeight = 36;
-  const spacing = 14;
-  const totalHeight = Math.min(data.length * (barHeight + spacing) + 40, height);
   const CHART_COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F59E0B', '#047857'];
-  const labelWidth = 120;
 
   return (
-    <Svg width={width} height={totalHeight}>
+    <View style={{ width }}>
       {data.map((d, i) => {
-        const barMaxWidth = width - labelWidth - 60;
-        const barWidth = (d.value / max) * barMaxWidth;
-        const y = 20 + i * (barHeight + spacing);
         const color = CHART_COLORS[i % CHART_COLORS.length];
-
+        const pct = Math.min((d.value / max) * 100, 100);
         return (
-          <G key={i}>
-            <SvgText x={0} y={y + barHeight / 2 + 4} fontSize="12" fill={COLORS.textPrimary} fontWeight="600">
-              {d.label.length > 18 ? d.label.slice(0, 18) + '…' : d.label}
-            </SvgText>
-            <Rect x={labelWidth} y={y} width={barMaxWidth} height={barHeight} fill={COLORS.divider} rx={8} />
-            <Rect x={labelWidth} y={y} width={barWidth} height={barHeight} fill={color} rx={8} />
-            <SvgText x={width - 10} y={y + barHeight / 2 + 4} fontSize="14" fill={color} fontWeight="700" textAnchor="end">
-              {d.value}
-            </SvgText>
-          </G>
+          <View key={i} style={{ marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+              <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: COLORS.textPrimary }} numberOfLines={2}>
+                {d.label}
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color, marginLeft: 10 }}>{d.value}</Text>
+            </View>
+            <View style={{ height: 14, borderRadius: 7, backgroundColor: COLORS.divider, overflow: 'hidden' }}>
+              <View style={{ width: `${pct}%`, height: '100%', borderRadius: 7, backgroundColor: color }} />
+            </View>
+          </View>
         );
       })}
-    </Svg>
+    </View>
   );
 };
 
@@ -782,6 +776,33 @@ const ReportesAvanzadosScreen = () => {
     const total = eventosAnuales.length;
     const tasaAprobacion = total > 0 ? Math.round((aprobados / total) * 100) : 0;
 
+    // 🔥 NUEVO: Datos complementarios del año (inscripciones + ejecución económica)
+    const desde = `${year}-01-01`;
+    const hasta = `${year}-12-31`;
+    const headersAuth = { Authorization: `Bearer ${token}` };
+    const [inscRes, ecoRes] = await Promise.all([
+      axios.get(`${API_BASE_URL}/reportes/inscripciones`, { headers: headersAuth, params: { desde, hasta } }).catch(() => ({ data: null })),
+      axios.get(`${API_BASE_URL}/reportes/economicos`, { headers: headersAuth, params: { desde, hasta } }).catch(() => ({ data: null })),
+    ]);
+    const insAnual = inscRes?.data || null;
+    const ecoAnual = ecoRes?.data || null;
+    const inscritosAnio = Number(insAnual?.total) || 0;
+    const facRanking = Array.isArray(insAnual?.porFacultad) ? insAnual.porFacultad.slice(0, 8) : [];
+    const ecoResumen = ecoAnual?.resumen || null;
+    const ecoActivo = ecoResumen && (Number(ecoResumen.real_egresos) + Number(ecoResumen.real_ingresos) + Number(ecoResumen.balance_real)) !== 0;
+
+    // Actividad mensual (eventos y aprobaciones por mes)
+    const meses = Array.from({ length: 12 }, (_, i) => {
+      const evs = eventosAnuales.filter(ev => ev.fechaevento && new Date(ev.fechaevento).getMonth() === i);
+      return {
+        nombre: MONTH_NAMES_SHORT[i],
+        total: evs.length,
+        aprobados: evs.filter(e => (e.estado || '').toLowerCase() === 'aprobado').length,
+      };
+    });
+    const maxMes = Math.max(...meses.map(m => m.total), 1);
+    const fmtBsAnio = (n) => 'Bs ' + Math.round(Number(n) || 0).toLocaleString('es-BO');
+
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -799,6 +820,9 @@ const ReportesAvanzadosScreen = () => {
         .stat-card{background:#f9fafb;border-radius:12px;padding:16px;text-align:center;border-left:4px solid #C44B0A;}
         .stat-label{font-size:12px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
         .stat-value{font-size:28px;font-weight:800;color:#1f2937;}
+        .section-h{font-size:15px;font-weight:bold;margin:28px 0 10px;color:#1f2937;text-transform:uppercase;border-left:4px solid #C44B0A;padding-left:10px;}
+        .bar-track{background:#eee;border-radius:8px;height:16px;overflow:hidden;}
+        .bar-fill{height:100%;background:#C44B0A;border-radius:8px;}
         .main-table{width:100%;border-collapse:collapse;margin-top:20px;}
         .main-table th{background:#ccc;padding:12px;border:1px solid #999;text-align:left;font-weight:bold;font-size:13px;}
         .main-table td{padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;}
@@ -836,12 +860,106 @@ const ReportesAvanzadosScreen = () => {
           <div class="stat-label">Pendientes</div>
           <div class="stat-value" style="color:#f59e0b">${pendientes}</div>
         </div>
+        <div class="stat-card" style="border-left-color:#dc2626">
+          <div class="stat-label">Rechazados</div>
+          <div class="stat-value" style="color:#dc2626">${rechazados}</div>
+        </div>
         <div class="stat-card" style="border-left-color:#3B82F6">
           <div class="stat-label">Tasa Aprobación</div>
           <div class="stat-value" style="color:#3B82F6">${tasaAprobacion}%</div>
         </div>
+        <div class="stat-card" style="border-left-color:#8B5CF6">
+          <div class="stat-label">Inscritos</div>
+          <div class="stat-value" style="color:#8B5CF6">${inscritosAnio}</div>
+        </div>
+        ${ecoActivo ? `
+        <div class="stat-card" style="border-left-color:#0ea5e9">
+          <div class="stat-label">Balance Real</div>
+          <div class="stat-value" style="color:#0ea5e9">${fmtBsAnio(ecoResumen.balance_real)}</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#C44B0A">
+          <div class="stat-label">Egresos Real</div>
+          <div class="stat-value" style="color:#C44B0A">${fmtBsAnio(ecoResumen.real_egresos)}</div>
+        </div>` : ''}
       </div>
-      
+
+      <!-- Actividad mensual -->
+      <div class="section-h">Actividad Mensual</div>
+      <table class="main-table">
+        <thead>
+          <tr>
+            <th style="width:20%">Mes</th>
+            <th style="width:15%">Eventos</th>
+            <th style="width:15%">Aprobados</th>
+            <th style="width:50%">Distribución</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${meses.map(m => `
+            <tr>
+              <td>${m.nombre}</td>
+              <td><strong>${m.total}</strong></td>
+              <td style="color:#10b981;font-weight:bold">${m.aprobados}</td>
+              <td>
+                <div class="bar-track"><div class="bar-fill" style="width:${(m.total / maxMes) * 100}%"></div></div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+
+      ${facRanking.length ? `
+      <!-- Ranking de facultades -->
+      <div class="section-h">Ranking de Facultades por Inscritos</div>
+      <table class="main-table">
+        <thead>
+          <tr>
+            <th style="width:8%">#</th>
+            <th>Facultad</th>
+            <th style="width:16%">Inscritos</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${facRanking.map((f, i) => `
+            <tr>
+              <td><strong>${i + 1}</strong></td>
+              <td>${f.facultad}</td>
+              <td><strong>${f.inscritos}</strong></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>` : ''}
+
+      ${ecoActivo ? `
+      <!-- Resumen económico -->
+      <div class="section-h">Resumen Económico del Año</div>
+      <table class="main-table">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Presupuestado</th>
+            <th>Ejecutado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Ingresos</td>
+            <td>${fmtBsAnio(ecoResumen.pres_ingresos)}</td>
+            <td>${fmtBsAnio(ecoResumen.real_ingresos)}</td>
+          </tr>
+          <tr>
+            <td>Egresos</td>
+            <td>${fmtBsAnio(ecoResumen.pres_egresos)}</td>
+            <td>${fmtBsAnio(ecoResumen.real_egresos)}</td>
+          </tr>
+          <tr>
+            <td><strong>Balance</strong></td>
+            <td>–</td>
+            <td><strong>${fmtBsAnio(ecoResumen.balance_real)}</strong></td>
+          </tr>
+        </tbody>
+      </table>` : ''}
+
+      <!-- Listado de eventos -->
+      <div class="section-h">Listado de Eventos del Año</div>
       <table class="main-table">
         <thead>
           <tr>
@@ -1380,90 +1498,6 @@ const ReportesAvanzadosScreen = () => {
                     </View>
                   </View>
                 )}
-              </View>
-            )}
-
-            {/* Eventos recientes - visible en dashboard y analisis */}
-            {(activeTab === 'dashboard' || activeTab === 'analisis') && (
-              <View style={styles.section}>
-                <SectionHeader icon="list-outline" title="Eventos Recientes" subtitle={`${eventosRecientes.length} eventos`} />
-                <View style={styles.filterRow}>
-                  {['todos', 'pendiente', 'aprobado', 'rechazado'].map(f => (
-                    <TouchableOpacity
-                      key={f}
-                      onPress={() => setFiltroEstado(f)}
-                      style={[styles.filterBtn, filtroEstado === f && styles.filterBtnActive]}
-                    >
-                      <Text style={[styles.filterText, filtroEstado === f && styles.filterTextActive]}>
-                        {f.charAt(0).toUpperCase() + f.slice(1)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* 🔥 Filtros avanzados antes activados */}
-                <View style={styles.filterAdvancedRow}>
-                  <View style={[styles.searchBox, { borderColor: theme.border, backgroundColor: theme.surface }]}>
-                    <Ionicons name="search-outline" size={16} color={theme.textSecondary} />
-                    <TextInput
-                      style={[styles.searchInput, { color: theme.textPrimary }]}
-                      placeholder="Buscar evento…"
-                      placeholderTextColor={COLORS.textTertiary}
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                      accessibilityLabel="Buscar evento"
-                    />
-                    {searchQuery.length > 0 && (
-                      <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityRole="button">
-                        <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  <TouchableOpacity style={[styles.filterBtn, showDateFilter && { backgroundColor: COLORS.primaryLight }]} onPress={() => setShowDateFilter(true)} accessibilityRole="button">
-                    <Ionicons name="calendar-outline" size={14} color={COLORS.primary} />
-                    <Text style={[styles.filterText, { color: COLORS.primary }]}>Fechas</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.filterBtn, showFacultadFilter && { backgroundColor: COLORS.primaryLight }]} onPress={() => setShowFacultadFilter(true)} accessibilityRole="button">
-                    <Ionicons name="school-outline" size={14} color={COLORS.primary} />
-                    <Text style={[styles.filterText, { color: COLORS.primary }]}>Facultad</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {(searchQuery || fechaInicio || fechaFin || selectedFacultad !== 'todas') && (
-                  <View style={styles.activeFilters}>
-                    {searchQuery ? <View style={styles.activeFilterTag}><Text style={styles.activeFilterText}>"{searchQuery}"</Text></View> : null}
-                    {(fechaInicio && fechaFin) ? <View style={styles.activeFilterTag}><Text style={styles.activeFilterText}>{fechaInicio.replace(/-/g, '/')} → {fechaFin.replace(/-/g, '/')}</Text></View> : null}
-                    {selectedFacultad !== 'todas' ? <View style={styles.activeFilterTag}><Text style={styles.activeFilterText}>{selectedFacultad}</Text></View> : null}
-                    <TouchableOpacity style={[styles.filterBtn, { borderColor: COLORS.error }]} onPress={() => { setSearchQuery(''); setFechaInicio(''); setFechaFin(''); setSelectedFacultad('todas'); }} accessibilityRole="button">
-                      <Ionicons name="trash-outline" size={13} color={COLORS.error} />
-                      <Text style={[styles.filterText, { color: COLORS.error }]}>Limpiar</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                <View style={[styles.card, { backgroundColor: theme.surface }]}>
-                  {loadingEvents ? (
-                    <View style={styles.centered}><ActivityIndicator color={COLORS.primary} /></View>
-                  ) : eventosRecientes.length === 0 ? (
-                    <View style={styles.emptyChart}>
-                      <Ionicons name="calendar-outline" size={40} color={COLORS.textTertiary} />
-                      <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Sin eventos para mostrar</Text>
-                    </View>
-                  ) : (
-                    eventosRecientes.map((ev, i) => (
-                      <View key={i} style={[styles.eventRow, i < eventosRecientes.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.divider }]}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.eventName, { color: theme.textPrimary }]} numberOfLines={1}>{ev.nombreevento || 'Sin nombre'}</Text>
-                          <Text style={[styles.eventMeta, { color: theme.textSecondary }]}>
-                            {ev.fechaevento?.split('T')[0] || '–'} · {ev.lugarevento || '–'}
-                          </Text>
-                        </View>
-                        <View style={[styles.badge, styles[`badge${ev.estado}`]]}>
-                          <Text style={styles.badgeText}>{(ev.estado || 'N/A').charAt(0).toUpperCase() + (ev.estado || '').slice(1)}</Text>
-                        </View>
-                      </View>
-                    ))
-                  )}
-                </View>
               </View>
             )}
 
