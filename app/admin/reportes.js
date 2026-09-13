@@ -821,15 +821,34 @@ const ReportesAvanzadosScreen = () => {
     const token = await getTokenAsync();
     if (!token) return;
 
+    // Rango efectivo: respeta el filtro de fechas (reporteDesde / reporteHasta);
+    // sin filtro, usa el año seleccionado (selectedYear) completo.
+    const esAnual = !reporteDesde && !reporteHasta;
+    const desde = reporteDesde || `${year}-01-01`;
+    const hasta = reporteHasta || `${year}-12-31`;
+    const rangoTxt = `${desde} al ${hasta}`;
+
+    const paramsEventos = {};
+    if (esAnual) paramsEventos.year = year;
+    if (reporteDesde) paramsEventos.fechaInicio = reporteDesde;
+    if (reporteHasta) paramsEventos.fechaFin = reporteHasta;
+
     const res = await axios.get(`${API_BASE_URL}/eventos`, {
       headers: { Authorization: `Bearer ${token}` },
-      params: { year: year }
+      params: paramsEventos
     });
     const todosEventos = Array.isArray(res.data) ? res.data : [];
 
+    const fechaDesde = new Date(`${desde}T00:00:00`);
+    const fechaHasta = new Date(`${hasta}T23:59:59`);
+
     const eventosAnuales = todosEventos.filter(ev => {
       if (!ev.fechaevento) return false;
-      return new Date(ev.fechaevento).getFullYear() === year;
+      const fecha = new Date(ev.fechaevento);
+      if (Number.isNaN(fecha.getTime())) return false;
+      if (fecha < fechaDesde || fecha > fechaHasta) return false;
+      if (esAnual && fecha.getFullYear() !== year) return false;
+      return true;
     });
 
     const formatTime = (timeStr) => {
@@ -866,8 +885,12 @@ const ReportesAvanzadosScreen = () => {
       
       const estadoColors = {
         aprobado: { bg: '#d1fae5', text: '#059669' },
+        completado: { bg: '#dbeafe', text: '#1d4ed8' },
+        finalizado: { bg: '#dbeafe', text: '#1d4ed8' },
         pendiente: { bg: '#fef3c7', text: '#d97706' },
         rechazado: { bg: '#fee2e2', text: '#dc2626' },
+        cancelado: { bg: '#f3f4f6', text: '#4b5563' },
+        vencido: { bg: '#ffedd5', text: '#c2410c' },
       };
       const estadoStyle = estadoColors[(ev.estado || '').toLowerCase()] || { bg: '#f3f4f6', text: '#6b7280' };
       
@@ -891,16 +914,19 @@ const ReportesAvanzadosScreen = () => {
       `;
     }).join('');
 
-    // Calcular estadísticas
-    const aprobados = eventosAnuales.filter(e => e.estado === 'aprobado').length;
-    const pendientes = eventosAnuales.filter(e => e.estado === 'pendiente').length;
-    const rechazados = eventosAnuales.filter(e => e.estado === 'rechazado').length;
+    // Calcular estadísticas (todos los estados cuentan; completado/finalizado = logrados)
+    const normalizeEstado = (st) => String(st || '').toLowerCase();
+    const aprobados = eventosAnuales.filter(e => normalizeEstado(e.estado) === 'aprobado').length;
+    const completados = eventosAnuales.filter(e => ['completado', 'finalizado'].includes(normalizeEstado(e.estado))).length;
+    const pendientes = eventosAnuales.filter(e => normalizeEstado(e.estado) === 'pendiente').length;
+    const rechazados = eventosAnuales.filter(e => normalizeEstado(e.estado) === 'rechazado').length;
+    const cancelados = eventosAnuales.filter(e => normalizeEstado(e.estado) === 'cancelado').length;
+    const vencidos = eventosAnuales.filter(e => normalizeEstado(e.estado) === 'vencido').length;
     const total = eventosAnuales.length;
-    const tasaAprobacion = total > 0 ? Math.round((aprobados / total) * 100) : 0;
+    const logrados = aprobados + completados;
+    const tasaAprobacion = total > 0 ? Math.round((logrados / total) * 100) : 0;
 
-    // 🔥 NUEVO: Datos complementarios del año (inscripciones + ejecución económica)
-    const desde = `${year}-01-01`;
-    const hasta = `${year}-12-31`;
+    // 🔥 NUEVO: Datos complementarios (inscripciones + ejecución económica)
     const headersAuth = { Authorization: `Bearer ${token}` };
     const [inscRes, ecoRes] = await Promise.all([
       axios.get(`${API_BASE_URL}/reportes/inscripciones`, { headers: headersAuth, params: { desde, hasta } }).catch(() => ({ data: null })),
@@ -913,15 +939,17 @@ const ReportesAvanzadosScreen = () => {
     const ecoResumen = ecoAnual?.resumen || null;
     const ecoActivo = ecoResumen && (Number(ecoResumen.real_egresos) + Number(ecoResumen.real_ingresos) + Number(ecoResumen.balance_real)) !== 0;
 
-    // Actividad mensual (eventos y aprobaciones por mes)
-    const meses = Array.from({ length: 12 }, (_, i) => {
-      const evs = eventosAnuales.filter(ev => ev.fechaevento && new Date(ev.fechaevento).getMonth() === i);
-      return {
-        nombre: MONTH_NAMES_SHORT[i],
-        total: evs.length,
-        aprobados: evs.filter(e => (e.estado || '').toLowerCase() === 'aprobado').length,
-      };
+    // Actividad mensual (eventos y aprobaciones por mes, según el rango efectivo)
+    const esLogrado = (st) => ['aprobado', 'completado', 'finalizado'].includes(normalizeEstado(st));
+    const monthlyMap = {};
+    eventosAnuales.forEach(ev => {
+      const f = new Date(ev.fechaevento);
+      const mesISO = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthlyMap[mesISO]) monthlyMap[mesISO] = { nombre: `${MONTH_NAMES_SHORT[f.getMonth()]} ${String(f.getFullYear()).slice(2)}`, total: 0, aprobados: 0 };
+      monthlyMap[mesISO].total += 1;
+      if (esLogrado(ev.estado)) monthlyMap[mesISO].aprobados += 1;
     });
+    const meses = Object.keys(monthlyMap).sort().map(k => monthlyMap[k]);
     const maxMes = Math.max(...meses.map(m => m.total), 1);
     const mesTop = [...meses].sort((a, b) => b.total - a.total)[0];
     const facCabeza = facRanking[0];
@@ -954,6 +982,10 @@ const ReportesAvanzadosScreen = () => {
         .exec-item .k{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px}
         .exec-item .v{font-size:22px;font-weight:800;color:#111827}
         .exec-item .s{font-size:11px;color:#6b7280;margin-top:2px}
+        .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0}
+        .stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;border-left:4px solid #C44B0A}
+        .stat-label{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#6b7280;margin-bottom:4px}
+        .stat-value{font-size:22px;font-weight:800;color:#111827}
         /* Secciones y tablas */
         .section-h{font-size:14px;font-weight:800;margin:26px 0 10px;color:#111827;text-transform:uppercase;border-left:4px solid #C44B0A;padding-left:10px;letter-spacing:.5px}
         .main-table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff}
@@ -983,9 +1015,9 @@ const ReportesAvanzadosScreen = () => {
           </div>
         </div>
         <div class="reporte-kicker">Informe de Gestión</div>
-        <h1>Reporte Anual de Eventos ${year}</h1>
+        <h1>${esAnual ? `Reporte Anual de Eventos ${year}` : `Reporte de Eventos ${rangoTxt}`}</h1>
         <div class="cover-meta">
-          <div class="meta-chip">📅 Periodo: ${year}-01-01 al ${year}-12-31</div>
+          <div class="meta-chip">📅 Periodo: ${rangoTxt}</div>
           <div class="meta-chip">🗂 ${total} eventos registrados</div>
           <div class="meta-chip">👥 ${inscritosAnio} inscritos</div>
         </div>
@@ -995,7 +1027,7 @@ const ReportesAvanzadosScreen = () => {
       <div class="content">
       <!-- Resumen ejecutivo -->
       <div class="exec-grid">
-        <div class="exec-item"><div class="k">Tasa de Aprobación</div><div class="v" style="color:#16a34a">${tasaAprobacion}%</div><div class="s">${aprobados} de ${total} eventos</div></div>
+        <div class="exec-item"><div class="k">Tasa de Aprobación</div><div class="v" style="color:#16a34a">${tasaAprobacion}%</div><div class="s">${logrados} de ${total} eventos (aprobados + completados)</div></div>
         <div class="exec-item green"><div class="k">Inscritos / Participantes</div><div class="v" style="color:#3b82f6">${inscritosAnio}</div><div class="s">En eventos del año</div></div>
         <div class="exec-item blue"><div class="k">Mes más activo</div><div class="v" style="color:#C44B0A">${mesTop?.nombre || '—'}</div><div class="s">${mesTop?.total || 0} eventos</div></div>
       </div>
@@ -1013,6 +1045,10 @@ const ReportesAvanzadosScreen = () => {
           <div class="stat-label">Aprobados</div>
           <div class="stat-value" style="color:#10b981">${aprobados}</div>
         </div>
+        <div class="stat-card" style="border-left-color:#1d4ed8">
+          <div class="stat-label">Completados</div>
+          <div class="stat-value" style="color:#1d4ed8">${completados}</div>
+        </div>
         <div class="stat-card" style="border-left-color:#f59e0b">
           <div class="stat-label">Pendientes</div>
           <div class="stat-value" style="color:#f59e0b">${pendientes}</div>
@@ -1020,6 +1056,14 @@ const ReportesAvanzadosScreen = () => {
         <div class="stat-card" style="border-left-color:#dc2626">
           <div class="stat-label">Rechazados</div>
           <div class="stat-value" style="color:#dc2626">${rechazados}</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#c2410c">
+          <div class="stat-label">Vencidos</div>
+          <div class="stat-value" style="color:#c2410c">${vencidos}</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#6b7280">
+          <div class="stat-label">Cancelados</div>
+          <div class="stat-value" style="color:#6b7280">${cancelados}</div>
         </div>
         <div class="stat-card" style="border-left-color:#3B82F6">
           <div class="stat-label">Tasa Aprobación</div>
@@ -1047,7 +1091,7 @@ const ReportesAvanzadosScreen = () => {
           <tr>
             <th style="width:20%">Mes</th>
             <th style="width:15%">Eventos</th>
-            <th style="width:15%">Aprobados</th>
+            <th style="width:15%">Aprob./Compl.</th>
             <th style="width:50%">Distribución</th>
           </tr>
         </thead>
@@ -1133,7 +1177,7 @@ const ReportesAvanzadosScreen = () => {
       </table>
       
       <div class="footer">
-        <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos · Año ${year}<br>
+        <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos · ${esAnual ? `Año ${year}` : `Periodo ${rangoTxt}`}<br>
         Generado el ${generadoEn} · Documento confidencial de uso institucional
       </div>
       </div>
@@ -2061,12 +2105,12 @@ const ReportesAvanzadosScreen = () => {
               
               <TouchableOpacity 
                 style={[styles.actionBtn, { backgroundColor: '#FEF3C7', borderColor: '#F59E0B' }]} 
-                onPress={() => generarReporteAnual(new Date().getFullYear())}
+                onPress={() => generarReporteAnual(selectedYear)}
               >
                 <Ionicons name="document-lock-outline" size={22} color="#F59E0B" />
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[styles.actionTitle, { color: '#F59E0B' }]}>Reporte Anual Completo {new Date().getFullYear()}</Text>
-                  <Text style={styles.actionSub}>PDF con TODOS los eventos y facultades del año</Text>
+                  <Text style={[styles.actionTitle, { color: '#F59E0B' }]}>Reporte Anual Completo {selectedYear}</Text>
+                  <Text style={styles.actionSub}>PDF con TODOS los eventos y facultades · {reporteDesde || reporteHasta ? 'respeta el filtro de fechas' : `año ${selectedYear}`}</Text>
                 </View>
                 {loading && <ActivityIndicator size="small" color="#F59E0B" />}
                 <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
