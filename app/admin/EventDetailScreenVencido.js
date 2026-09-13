@@ -60,6 +60,7 @@ const COLORS = {
   darkText: '#1e293b',
   overlay: 'rgba(15, 23, 42, 0.7)',
   cardShadow: '#000000',
+  border: '#e2e8f0',
 };
 
 const formatDate = (dateString) => {
@@ -78,41 +79,88 @@ const formatTime = (timeString) => {
   } catch { return timeString; }
 };
 
+const STATUS_CONFIG = {
+  pendiente: { label: 'Pendiente', fg: '#B45309', bg: '#FEF3C7', icon: 'time-outline' },
+  aprobado: { label: 'Aprobado', fg: '#15803D', bg: '#DCFCE7', icon: 'checkmark-circle-outline' },
+  rechazado: { label: 'Rechazado', fg: '#B91C1C', bg: '#FEE2E2', icon: 'close-circle-outline' },
+  cancelado: { label: 'Cancelado', fg: '#4B5563', bg: '#F3F4F6', icon: 'ban-outline' },
+  vencido: { label: 'Vencido', fg: '#C2410C', bg: '#FFEDD5', icon: 'alert-circle-outline' },
+  completado: { label: 'Completado', fg: '#1D4ED8', bg: '#DBEAFE', icon: 'flag-outline' },
+};
+
+const PHASES = [
+  { number: 1, label: 'Planeación', icon: 'document-text-outline', color: COLORS.info },
+  { number: 2, label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.secondary },
+  { number: 3, label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
+  { number: 4, label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.purple },
+  { number: 5, label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.grayText },
+];
+
+const StatusPill = ({ status }) => {
+  const key = String(status || '').toLowerCase();
+  const cfg = STATUS_CONFIG[key] || {
+    label: key || 'Sin estado',
+    fg: COLORS.grayText,
+    bg: COLORS.grayLight,
+    icon: 'help-circle-outline',
+  };
+  return (
+    <View style={[styles.statusPill, { backgroundColor: cfg.bg }]} accessibilityLabel={`Estado: ${cfg.label}`}>
+      <Ionicons name={cfg.icon} size={14} color={cfg.fg} />
+      <Text style={[styles.statusPillText, { color: cfg.fg }]}>{cfg.label}</Text>
+    </View>
+  );
+};
+
+const PhaseTimeline = ({ current }) => {
+  const cur = Math.min(Math.max(Number(current) || 1, 1), PHASES.length);
+  return (
+    <View style={styles.timelineWrap}>
+      {PHASES.map((ph, idx) => {
+        const done = ph.number <= cur;
+        const prevDone = idx > 0 ? PHASES[idx - 1].number <= cur : false;
+        const nextDone = idx < PHASES.length - 1 ? PHASES[idx + 1].number <= cur : false;
+        return (
+          <View key={ph.number} style={styles.timelineStep}>
+            <View style={styles.timelineTrack}>
+              <View style={[styles.timelineLine, idx === 0 && styles.timelineLineHidden, (prevDone && done) && styles.timelineLineActive]} />
+              <View style={[styles.timelineDot, done ? { backgroundColor: ph.color } : styles.timelineDotIdle]}>
+                <Ionicons name={done ? ph.icon : 'ellipse-outline'} size={13} color={done ? COLORS.white : '#94A3B8'} />
+              </View>
+              <View style={[styles.timelineLine, idx === PHASES.length - 1 && styles.timelineLineHidden, (done && nextDone) && styles.timelineLineActive]} />
+            </View>
+            <Text style={[styles.timelineLabel, done && { color: ph.color, fontWeight: '700' }]} numberOfLines={2}>{ph.label}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
+
+const MetaChip = ({ icon, text, color = COLORS.primary }) => (
+  <View style={styles.metaChip}>
+    <Ionicons name={icon} size={15} color={color} />
+    <Text style={styles.metaChipText} numberOfLines={2}>{text}</Text>
+  </View>
+);
+
 const EventDetailScreenVencido = () => {
   const params = useLocalSearchParams();
   const router = useRouter();
   
-  // ✅ DEBUG: Ver qué parámetros llegan
-  console.log('🔍 Parámetros recibidos:', params);
-  console.log('🔍 Tipo de params:', typeof params);
-  console.log('🔍 Keys de params:', Object.keys(params));
-  
-  // ✅ Extraer ID de múltiples formas posibles
   const getEventId = () => {
-    // Forma 1: params.id directo
     if (params.id) {
-      const id = Array.isArray(params.id) ? params.id[0] : params.id;
-      console.log('✅ ID encontrado en params.id:', id);
-      return id;
+      return Array.isArray(params.id) ? params.id[0] : params.id;
     }
-    // Forma 2: params.eventId
     if (params.eventId) {
-      const id = Array.isArray(params.eventId) ? params.eventId[0] : params.eventId;
-      console.log('✅ ID encontrado en params.eventId:', id);
-      return id;
+      return Array.isArray(params.eventId) ? params.eventId[0] : params.eventId;
     }
-    // Forma 3: Buscar cualquier key que contenga 'id'
     const idKey = Object.keys(params).find(key => 
       key.toLowerCase().includes('id') && !key.toLowerCase().includes('eventid')
     );
     if (idKey) {
-      const id = Array.isArray(params[idKey]) ? params[idKey][0] : params[idKey];
-      console.log(`✅ ID encontrado en params.${idKey}:`, id);
-      return id;
+      return Array.isArray(params[idKey]) ? params[idKey][0] : params[idKey];
     }
-    
-    console.error('❌ No se encontró ningún ID en los parámetros');
-    console.error('❌ Params completos:', JSON.stringify(params, null, 2));
     return null;
   };
   
@@ -152,15 +200,11 @@ const EventDetailScreenVencido = () => {
       return;
     }
     
-    console.log('📡 Iniciando carga del evento ID:', eventId);
-    
     let processedEventId = Array.isArray(eventId) ? eventId[0] : eventId;
     if (typeof processedEventId === 'string' && processedEventId.startsWith('event-')) {
       processedEventId = processedEventId.replace('event-', '');
     }
     const numericId = Number(processedEventId);
-    
-    console.log('🔢 ID procesado:', processedEventId, 'Numérico:', numericId);
     
     if (isNaN(numericId) || !processedEventId) {
       setError('ID de evento inválido.');
@@ -179,8 +223,6 @@ const EventDetailScreenVencido = () => {
         return;
       }
       
-      console.log('🔗 URL de la API:', `${API_BASE_URL}/eventos/${numericId}`);
-      
       const [eventResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/eventos/${numericId}`, { 
           headers: { Authorization: `Bearer ${token}` },
@@ -188,8 +230,6 @@ const EventDetailScreenVencido = () => {
         }),
         fetchUserDetails(token)
       ]);
-      
-      console.log('✅ Respuesta de la API:', eventResponse.data);
       
       const eventData = eventResponse.data;
       if (!eventData || typeof eventData !== 'object' || Object.keys(eventData).length === 0) {
@@ -237,7 +277,6 @@ const EventDetailScreenVencido = () => {
       
       if (!transformedEvent.id) throw new Error('El evento no tiene un ID válido.');
       
-      console.log('✅ Evento transformado:', transformedEvent);
       setEvent(transformedEvent);
     } catch (err) {
       console.error('❌ Error en fetchEventDetails:', err);
@@ -271,11 +310,9 @@ const EventDetailScreenVencido = () => {
   };
 
   useEffect(() => {
-    console.log('🔄 useEffect ejecutado. eventId:', eventId);
     if (eventId) {
       fetchEventDetails();
     } else {
-      console.error('❌ No hay eventId, mostrando error');
       setError('No se proporcionó un ID de evento.');
       setLoading(false);
     }
@@ -371,7 +408,6 @@ const EventDetailScreenVencido = () => {
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>Cargando detalles del evento...</Text>
-        <Text style={styles.debugText}>ID: {eventId}</Text>
       </View>
     );
   }
@@ -381,8 +417,6 @@ const EventDetailScreenVencido = () => {
       <View style={styles.centered}>
         <Ionicons name="alert-circle-outline" size={50} color={COLORS.accent} />
         <Text style={styles.errorText}>{error}</Text>
-        <Text style={styles.debugText}>Params: {JSON.stringify(params)}</Text>
-        <Text style={styles.debugText}>Event ID: {eventId}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={fetchEventDetails}>
           <Text style={styles.retryButtonText}>Reintentar</Text>
         </TouchableOpacity>
@@ -405,6 +439,8 @@ const EventDetailScreenVencido = () => {
     );
   }
 
+  const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
+
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
@@ -418,56 +454,40 @@ const EventDetailScreenVencido = () => {
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {event.imageUrl && <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />}
-
-        <View style={styles.card}>
-          <Text style={styles.eventTitle}>{event.title}</Text>
-          {(() => {
-            const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
-            return (
-              <View style={[styles.phaseBadge, { backgroundColor: phaseInfo.color }]}>
-                <Ionicons name={phaseInfo.icon} size={16} color={COLORS.white} />
-                <Text style={styles.phaseBadgeText}>Fase {phaseInfo.number}: {phaseInfo.label}</Text>
-              </View>
-            );
-          })()}
-        </View>
-
-        <View style={styles.sectionCard}>
-          <View style={styles.detailRow}>
-            <Ionicons
-              name={event.status === 'aprobado' ? 'checkmark-circle-outline' : 'time-outline'}
-              size={20}
-              color={event.status === 'aprobado' ? COLORS.success : COLORS.warning}
-              style={styles.detailIcon}
-            />
-            <Text style={[styles.detailText, { color: event.status === 'aprobado' ? COLORS.success : COLORS.warning }]}>
-              Estado: {event.status}
+        {/* HERO */}
+        <View style={styles.heroCard}>
+          {event.imageUrl ? (
+            <View style={styles.heroImageWrap}>
+              <Image source={{ uri: event.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+              <View style={styles.heroFade} />
+            </View>
+          ) : (
+            <View style={styles.heroImagePlaceholder}>
+              <Ionicons name="calendar-clear-outline" size={42} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.heroPlaceholderText}>Evento académico</Text>
+            </View>
+          )}
+          <View style={styles.heroBody}>
+            <View style={styles.heroTopRow}>
+              <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
+              <StatusPill status={event.status} />
+            </View>
+            <Text style={styles.heroSub} numberOfLines={2}>
+              {[event.date, event.time, event.location].filter(Boolean).join(' · ') || 'Sin fecha y ubicación especificadas'}
             </Text>
+            <PhaseTimeline current={phaseInfo.number} />
           </View>
         </View>
 
+        {/* Datos Generales */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Datos Generales</Text>
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Fecha: {event.date}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="time-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Hora: {event.time}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Ubicación: {event.location}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="business-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Organizador: {event.organizer}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="people-outline" size={20} color={COLORS.primary} style={styles.detailIcon} />
-            <Text style={styles.detailText}>Asistentes: {event.attendees}</Text>
+          <View style={styles.metaGrid}>
+            <MetaChip icon="calendar-outline" text={`Fecha: ${event.date}`} color={COLORS.primary} />
+            <MetaChip icon="time-outline" text={`Hora: ${event.time}`} color={COLORS.secondary} />
+            <MetaChip icon="location-outline" text={`Lugar: ${event.location}`} color={COLORS.primary} />
+            <MetaChip icon="business-outline" text={`Organizador: ${event.organizer}`} color={COLORS.purple} />
+            <MetaChip icon="people-outline" text={`Asistentes: ${event.attendees}`} color={COLORS.success} />
           </View>
         </View>
 
@@ -483,9 +503,12 @@ const EventDetailScreenVencido = () => {
         {event.Clasificacion && (
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Clasificación Estratégica</Text>
-            <Text style={styles.detailText}>
-              • {event.Clasificacion.nombreClasificacion} - {event.Clasificacion.nombresubcategoria}
-            </Text>
+            <View style={styles.listItem}>
+              <Ionicons name="layers-outline" size={16} color={COLORS.primary} style={styles.listIcon} />
+              <Text style={styles.listText}>
+                {event.Clasificacion.nombreClasificacion} - {event.Clasificacion.nombresubcategoria}
+              </Text>
+            </View>
           </View>
         )}
 
@@ -520,8 +543,8 @@ const EventDetailScreenVencido = () => {
             <Text style={styles.sectionTitle}>Objetivos del PDI Institucional</Text>
             {event.objetivosPDI.map((pdi, index) => (
               <View key={index} style={styles.listItem}>
-                <Text style={[styles.listText, { fontWeight: 'bold', color: COLORS.primary }]}>{index + 1}.</Text>
-                <Text style={styles.listText}>{pdi}</Text>
+                <Text style={[styles.listText, { fontWeight: 'bold', color: COLORS.primary, flex: 0 }]}>{index + 1}.</Text>
+                <Text style={[styles.listText, { marginLeft: 8 }]}>{pdi}</Text>
               </View>
             ))}
           </View>
@@ -622,20 +645,22 @@ const EventDetailScreenVencido = () => {
                   <Ionicons name="arrow-down-circle" size={20} color={COLORS.logout} />
                   <Text style={styles.budgetSubtitle}>Egresos</Text>
                 </View>
-                <View style={styles.budgetTableHeader}>
-                  <Text style={[styles.budgetCell, styles.budgetCellDesc]}>Descripción</Text>
-                  <Text style={[styles.budgetCell, styles.budgetCellNum]}>Cant.</Text>
-                  <Text style={[styles.budgetCell, styles.budgetCellNum]}>Precio</Text>
-                  <Text style={[styles.budgetCell, styles.budgetCellNum]}>Total</Text>
-                </View>
-                {event.egresos.map((egreso, index) => (
-                  <View key={egreso.idegreso || index} style={styles.budgetTableRow}>
-                    <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{egreso.descripcion}</Text>
-                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>{egreso.cantidad}</Text>
-                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(egreso.precio_unitario).toFixed(2)}</Text>
-                    <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>Bs {parseFloat(egreso.total).toFixed(2)}</Text>
+                <View style={styles.budgetTableWrap}>
+                  <View style={styles.budgetTableHeader}>
+                    <Text style={[styles.budgetCell, styles.budgetCellDesc]}>Descripción</Text>
+                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>Cant.</Text>
+                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>Precio</Text>
+                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>Total</Text>
                   </View>
-                ))}
+                  {event.egresos.map((egreso, index) => (
+                    <View key={egreso.idegreso || index} style={styles.budgetTableRow}>
+                      <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{egreso.descripcion}</Text>
+                      <Text style={[styles.budgetCell, styles.budgetCellNum]}>{egreso.cantidad}</Text>
+                      <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(egreso.precio_unitario).toFixed(2)}</Text>
+                      <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>Bs {parseFloat(egreso.total).toFixed(2)}</Text>
+                    </View>
+                  ))}
+                </View>
                 <View style={styles.budgetTotalRow}>
                   <Text style={[styles.budgetTotalLabel, { flex: 3 }]}>TOTAL EGRESOS:</Text>
                   <Text style={styles.budgetTotalValue}>Bs {(event.presupuesto.total_egresos || 0).toFixed(2)}</Text>
@@ -648,20 +673,22 @@ const EventDetailScreenVencido = () => {
                   <Ionicons name="arrow-up-circle" size={20} color={COLORS.success} />
                   <Text style={styles.budgetSubtitle}>Ingresos</Text>
                 </View>
-                <View style={styles.budgetTableHeader}>
-                  <Text style={[styles.budgetCell, styles.budgetCellDesc]}>Descripción</Text>
-                  <Text style={[styles.budgetCell, styles.budgetCellNum]}>Cant.</Text>
-                  <Text style={[styles.budgetCell, styles.budgetCellNum]}>Precio</Text>
-                  <Text style={[styles.budgetCell, styles.budgetCellNum]}>Total</Text>
-                </View>
-                {event.ingresos.map((ingreso, index) => (
-                  <View key={ingreso.idingreso || index} style={styles.budgetTableRow}>
-                    <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{ingreso.descripcion}</Text>
-                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>{ingreso.cantidad}</Text>
-                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(ingreso.precio_unitario).toFixed(2)}</Text>
-                    <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>Bs {parseFloat(ingreso.total).toFixed(2)}</Text>
+                <View style={styles.budgetTableWrap}>
+                  <View style={styles.budgetTableHeader}>
+                    <Text style={[styles.budgetCell, styles.budgetCellDesc]}>Descripción</Text>
+                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>Cant.</Text>
+                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>Precio</Text>
+                    <Text style={[styles.budgetCell, styles.budgetCellNum]}>Total</Text>
                   </View>
-                ))}
+                  {event.ingresos.map((ingreso, index) => (
+                    <View key={ingreso.idingreso || index} style={styles.budgetTableRow}>
+                      <Text style={[styles.budgetCell, styles.budgetCellDesc]}>{ingreso.descripcion}</Text>
+                      <Text style={[styles.budgetCell, styles.budgetCellNum]}>{ingreso.cantidad}</Text>
+                      <Text style={[styles.budgetCell, styles.budgetCellNum]}>Bs {parseFloat(ingreso.precio_unitario).toFixed(2)}</Text>
+                      <Text style={[styles.budgetCell, styles.budgetCellNum, styles.budgetCellTotal]}>Bs {parseFloat(ingreso.total).toFixed(2)}</Text>
+                    </View>
+                  ))}
+                </View>
                 <View style={styles.budgetTotalRow}>
                   <Text style={[styles.budgetTotalLabel, { flex: 3 }]}>TOTAL INGRESOS:</Text>
                   <Text style={[styles.budgetTotalValue, { color: COLORS.success }]}>Bs {(event.presupuesto.total_ingresos || 0).toFixed(2)}</Text>
@@ -676,27 +703,29 @@ const EventDetailScreenVencido = () => {
             </View>
           </View>
         )}
+      </ScrollView>
 
-        {event.status?.toLowerCase() !== 'aprobado' && (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              style={styles.approveButton} 
+      {event.status?.toLowerCase() !== 'aprobado' && (
+        <View style={styles.actionBar}>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: COLORS.primary }]}
               onPress={() => setShowEditModal(true)}
             >
               <Ionicons name="calendar-outline" size={20} color={COLORS.white} />
               <Text style={styles.actionButtonText}>Reprogramar</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.rejectButton} 
+
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: COLORS.logout }]}
               onPress={handleRejectEvent}
             >
               <Ionicons name="close-outline" size={20} color={COLORS.white} />
               <Text style={styles.actionButtonText}>Rechazar</Text>
             </TouchableOpacity>
           </View>
-        )}
-      </ScrollView>
+        </View>
+      )}
 
       <CustomAlert
         visible={showEditModal}
@@ -721,7 +750,9 @@ const EventDetailScreenVencido = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <View style={styles.modalIconContainer}>
-              <Ionicons name="close-circle" size={48} color={COLORS.logout} />
+              <View style={styles.modalIconCircle}>
+                <Ionicons name="close-circle" size={34} color={COLORS.logout} />
+              </View>
             </View>
             <Text style={styles.modalTitle}>Rechazar Evento</Text>
             <Text style={styles.modalMessage}>
@@ -769,65 +800,163 @@ EventDetailScreenVencido.options = { headerShown: false };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  contentContainer: { paddingBottom: 40, alignItems: 'center' },
+  contentContainer: { padding: 16, paddingBottom: 150, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background, padding: 20 },
   screenContainer: { flex: 1, backgroundColor: COLORS.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: COLORS.primary },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: COLORS.primary,
+  },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.white },
-  card: {
-    width: '90%', backgroundColor: COLORS.surface, borderRadius: 16, padding: 20,
-    ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 }, android: { elevation: 8 } }),
-  },
   sectionCard: {
-    width: '90%', backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginTop: 12,
-    ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 }, android: { elevation: 3 } }),
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderTopWidth: 3,
+    borderTopColor: COLORS.primary,
+    padding: 20,
+    marginBottom: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.cardShadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: { elevation: 8 },
+    }),
   },
-  eventTitle: { fontSize: 28, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 10 },
-  phaseBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginTop: 8 },
-  phaseBadgeText: { color: COLORS.white, fontSize: 12, fontWeight: '600', marginLeft: 6 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 8 },
+  eventTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.darkText, flex: 1, marginRight: 10, lineHeight: 30 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 12 },
   detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   detailIcon: { marginRight: 10 },
   detailText: { fontSize: 16, color: COLORS.darkText, flex: 1 },
-  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingLeft: 8 },
-  listIcon: { marginRight: 8 },
-  listText: { fontSize: 14, color: COLORS.darkText, flex: 1 },
-  segmentItem: { backgroundColor: COLORS.grayLight, borderRadius: 8, padding: 12, marginTop: 8 },
+  listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
+  listIcon: { marginRight: 12, marginTop: 4 },
+  listText: { fontSize: 15, color: COLORS.darkText, flex: 1, lineHeight: 20 },
+  segmentItem: { marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.grayLight },
   segmentHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  segmentIcon: { marginRight: 6 },
-  segmentName: { fontSize: 14, fontWeight: '600', color: COLORS.darkText },
-  segmentDescription: { fontSize: 13, color: COLORS.grayText, paddingLeft: 22 },
-  resourceCategory: { marginTop: 12, paddingLeft: 8 },
-  resourceCategoryTitle: { fontSize: 15, fontWeight: '600', color: COLORS.darkText, marginBottom: 8, paddingLeft: 8 },
-  committeeMember: { backgroundColor: COLORS.grayLight, borderRadius: 8, padding: 12, marginTop: 8 },
-  committeeName: { fontSize: 14, fontWeight: '600', color: COLORS.darkText, marginBottom: 2 },
-  committeeRole: { fontSize: 13, color: COLORS.grayText, marginBottom: 2 },
-  committeeEmail: { fontSize: 13, color: COLORS.grayText, fontStyle: 'italic' },
+  segmentIcon: { marginRight: 8 },
+  segmentName: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
+  segmentDescription: { fontSize: 14, color: COLORS.grayText, fontStyle: 'italic', paddingLeft: 24 },
+  resourceCategory: { marginBottom: 12 },
+  resourceCategoryTitle: { fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 8, marginLeft: 28 },
+  committeeMember: { padding: 12, backgroundColor: COLORS.grayLight, borderRadius: 12, marginBottom: 12 },
+  committeeName: { fontSize: 15, fontWeight: '600', color: COLORS.darkText, marginBottom: 4 },
+  committeeRole: { fontSize: 14, color: COLORS.grayText, marginBottom: 4 },
+  committeeEmail: { fontSize: 14, color: COLORS.grayText, fontStyle: 'italic' },
   creatorName: { fontSize: 16, color: COLORS.darkText, fontWeight: '500', marginBottom: 3 },
   creatorRole: { fontSize: 14, color: COLORS.grayText, marginBottom: 3 },
   creatorEmail: { fontSize: 14, color: COLORS.grayText, fontStyle: 'italic' },
-  eventImage: { width: '100%', height: 250, resizeMode: 'cover', marginBottom: 20 },
+  heroCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.cardShadow,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 14,
+      },
+      android: { elevation: 10 },
+    }),
+  },
+  heroImageWrap: { width: '100%', height: 190, position: 'relative' },
+  heroImage: { width: '100%', height: '100%' },
+  heroFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 70,
+    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+  },
+  heroImagePlaceholder: {
+    width: '100%',
+    height: 90,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroPlaceholderText: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '600', marginTop: 6 },
+  heroBody: { padding: 20 },
+  heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+  heroSub: { fontSize: 13, color: COLORS.grayText, marginBottom: 16, lineHeight: 19 },
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16 },
+  statusPillText: { fontSize: 12, fontWeight: '700' },
+  timelineWrap: { flexDirection: 'row', alignItems: 'flex-start' },
+  timelineStep: { flex: 1, alignItems: 'center' },
+  timelineTrack: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginBottom: 6 },
+  timelineLine: { flex: 1, height: 3, backgroundColor: '#E2E8F0' },
+  timelineLineActive: { backgroundColor: COLORS.primary },
+  timelineLineHidden: { backgroundColor: 'transparent' },
+  timelineDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.surface,
+  },
+  timelineDotIdle: { backgroundColor: '#F1F5F9', borderWidth: 2, borderColor: '#CBD5E1' },
+  timelineLabel: { fontSize: 9, color: COLORS.grayText, textAlign: 'center', lineHeight: 12, paddingHorizontal: 2 },
+  metaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    maxWidth: '48%',
+    flexGrow: 1,
+  },
+  metaChipText: { fontSize: 13, color: COLORS.darkText, flexShrink: 1 },
   loadingText: { marginTop: 15, fontSize: 16, color: COLORS.grayText },
-  debugText: { marginTop: 10, fontSize: 12, color: COLORS.grayText, textAlign: 'center' },
   errorText: { marginTop: 15, fontSize: 16, color: COLORS.accent, textAlign: 'center', marginHorizontal: 20 },
   retryButton: { marginTop: 20, backgroundColor: COLORS.primary, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
   retryButtonText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
   backButton: { marginTop: 10, backgroundColor: COLORS.grayLight, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
   backButtonText: { color: COLORS.darkText, fontSize: 16 },
-  actionButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, marginBottom: 10, width: '90%' },
-  approveButton: { flexDirection: 'row', backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flex: 0.48 },
-  rejectButton: { flexDirection: 'row', backgroundColor: COLORS.logout, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flex: 0.48 },
-  actionButtonText: { color: COLORS.white, fontSize: 14, fontWeight: 'bold', marginLeft: 8 },
-  editButton: { flexDirection: 'row', backgroundColor: COLORS.accent, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 10, width: '90%' },
-  editButtonText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
+  actionBar: {
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+    gap: 10,
+  },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionButtonText: { color: COLORS.white, fontSize: 15, fontWeight: 'bold', marginLeft: 10 },
   budgetSubsection: { marginBottom: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: COLORS.grayLight },
   budgetHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottomWidth: 2, borderBottomColor: COLORS.primary },
   budgetSubtitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.darkText, marginLeft: 8 },
-  budgetTableHeader: { flexDirection: 'row', backgroundColor: COLORS.grayLight, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 8, marginBottom: 8 },
+  budgetTableWrap: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, overflow: 'hidden', marginBottom: 8 },
+  budgetTableHeader: { flexDirection: 'row', backgroundColor: COLORS.grayLight, paddingVertical: 10, paddingHorizontal: 8, gap: 6 },
   budgetTableRow: { flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: COLORS.grayLight },
   budgetCell: { fontSize: 13, color: COLORS.darkText },
-  budgetCellDesc: { flex: 3, fontWeight: '500' },
-  budgetCellNum: { flex: 1, textAlign: 'right' },
+  budgetCellDesc: { flex: 2.4, fontWeight: '500' },
+  budgetCellNum: { flex: 1, textAlign: 'right', paddingRight: 2 },
   budgetCellTotal: { fontWeight: '600', color: COLORS.primary },
   budgetTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 2, borderTopColor: COLORS.primary },
   budgetTotalLabel: { fontSize: 14, fontWeight: 'bold', color: COLORS.darkText },
@@ -837,16 +966,42 @@ const styles = StyleSheet.create({
   balanceFinalValue: { fontSize: 18, fontWeight: 'bold' },
   modalOverlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   modalBox: {
-    backgroundColor: COLORS.surface, borderRadius: 16, padding: 24, width: '100%',
-    ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }, android: { elevation: 8 } }),
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.cardShadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: { elevation: 8 },
+    }),
   },
   modalIconContainer: { alignItems: 'center', marginBottom: 12 },
+  modalIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 8, textAlign: 'center' },
   modalMessage: { fontSize: 14, color: COLORS.grayText, marginBottom: 20, lineHeight: 20, textAlign: 'center' },
   modalInput: {
-    borderWidth: 1, borderColor: COLORS.grayLight, borderRadius: 10, padding: 12,
-    fontSize: 14, color: COLORS.darkText, backgroundColor: COLORS.background,
-    minHeight: 90, textAlignVertical: 'top', marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    color: COLORS.darkText,
+    backgroundColor: COLORS.background,
+    minHeight: 90,
+    textAlignVertical: 'top',
+    marginBottom: 20,
   },
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   modalCancelBtn: { flex: 1, paddingVertical: 13, borderRadius: 10, backgroundColor: COLORS.grayLight, alignItems: 'center' },
