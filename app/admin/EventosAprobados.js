@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import AdminHeader from '../../components/admin/AdminHeader';
+import EventProcessTimeline from '../../components/admin/EventProcessTimeline';
 
 const { width } = Dimensions.get('window');
 
@@ -381,6 +382,8 @@ const EventosAprobadosPorFacultad = () => {
               {item.organizer || item.responsable_evento || item.organizador || 'Sin organizador'}
             </Text>
           </View>
+
+          <EventProcessTimeline compact estado={item.estado || 'aprobado'} idfase={item.idfase} fases={item.fases} />
 
           <View style={styles.cardFooter}>
             <View style={styles.facultyChip}>

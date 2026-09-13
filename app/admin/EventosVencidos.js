@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import AdminHeader from '../../components/admin/AdminHeader';
+import EventProcessTimeline from '../../components/admin/EventProcessTimeline';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
@@ -127,6 +128,8 @@ const ExpiredEventCard = ({ event, onPress }) => {
 
       <Text style={styles.eventTitle} numberOfLines={2}>{event.nombreevento || 'Sin título'}</Text>
       {hasDescription && <Text style={styles.eventDescription} numberOfLines={2}>{event.descripcion}</Text>}
+
+      <EventProcessTimeline compact estado={event.estado || 'vencido'} idfase={event.idfase} fases={event.fases} />
 
       <View style={styles.metaRow}>
         <View style={styles.metaItem}>

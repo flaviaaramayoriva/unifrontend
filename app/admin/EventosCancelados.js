@@ -17,6 +17,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import EventProcessTimeline from '../../components/admin/EventProcessTimeline';
 
 //const API_BASE_URL = 'https://evento.cidtec-uc.com'; // ✅ Sin espacios
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
@@ -102,6 +103,8 @@ const RejectedEventCard = ({ event, onPress }) => {
           {event.descripcion}
         </Text>
       )}
+
+      <EventProcessTimeline compact estado={event.estado || 'cancelado'} idfase={event.idfase} fases={event.fases} />
 
       <View style={styles.eventMeta}>
         <View style={styles.metaItem}>

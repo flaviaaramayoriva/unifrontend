@@ -9,6 +9,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
 import AdminHeader from '../../components/admin/AdminHeader';
+import EventProcessTimeline from '../../components/admin/EventProcessTimeline';
 
 const { width } = Dimensions.get('window');
 //const API_BASE_URL = 'https://evento.cidtec-uc.com';
@@ -190,6 +191,8 @@ const PendingEventCard = ({ event,userRole, onView, onApprove, onReject, onMarkE
           {event.descripcion || event.description}
         </Text>
       )}
+
+      <EventProcessTimeline compact estado={event.estado || 'pendiente'} idfase={event.idfase} fases={event.fases} />
 
       <View style={styles.infoGrid}>
         <View style={styles.infoRow}>

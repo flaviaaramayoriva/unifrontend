@@ -17,6 +17,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import EventProcessTimeline from '../../components/admin/EventProcessTimeline';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
@@ -424,6 +425,11 @@ const EventDetailScreen = () => {
             <Ionicons name={event.status === 'aprobado' ? 'checkmark-circle-outline' : 'time-outline'} size={20} color={event.status === 'aprobado' ? COLORS.success : COLORS.warning} style={styles.detailIcon} />
             <Text style={[styles.detailText, { color: event.status === 'aprobado' ? COLORS.success : COLORS.warning }]}>Estado: {event.status}</Text>
           </View>
+        </View>
+
+        {/* Proceso del evento */}
+        <View style={styles.sectionCard}>
+          <EventProcessTimeline estado={event.status} idfase={event.idfase} fases={event.fases} />
         </View>
 
         {/* 1. Datos Generales */}
