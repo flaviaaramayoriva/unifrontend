@@ -222,11 +222,13 @@ const ProgresoEventoCard = ({ evento, router }) => {
 
   if (!evento) return null;
 
-  const estKey = String(evento.estado || 'pendiente').toLowerCase();
+  const estRaw = String(evento.estado || 'pendiente').toLowerCase();
   const faseActual = numeroFaseEvento(evento);
-  const terminal = ['rechazado', 'cancelado', 'vencido'].includes(estKey) ? estKey : null;
   const dias = diasAntesEvento(evento.fechaevento);
   const esHoy = dias === 0;
+  const fechaPasada = dias !== null && dias < 0;
+  const estKey = estRaw === 'vencido' && !fechaPasada ? 'pendiente' : estRaw;
+  const terminal = ['rechazado', 'cancelado', 'vencido'].includes(estKey) ? estKey : null;
   const badge = BADGE_CONFIG[estKey] || { label: estKey, color: COLORS.textSecondary };
   const faseInfo = PROCESO_FASES.find((f) => f.number === faseActual) || PROCESO_FASES[0];
   const escala = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });
