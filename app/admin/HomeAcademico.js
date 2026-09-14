@@ -171,39 +171,197 @@ const ChartCard = ({ title, subtitle, children, empty, emptyIcon }) => (
   </View>
 );
 
-const ProximoEventoCard = ({ evento, onPress }) => {
+const PROCESO_FASES = [
+  { number: 1, label: 'Planeación', icon: 'document-text-outline', color: COLORS.info },
+  { number: 2, label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.primary },
+  { number: 3, label: 'Programación', icon: 'calendar-outline', color: COLORS.success },
+  { number: 4, label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.info },
+  { number: 5, label: 'Cierre e informe', icon: 'checkmark-done-outline', color: COLORS.textSecondary },
+];
+
+const BADGE_CONFIG = {
+  pendiente: { label: 'Pendiente de revisión', color: COLORS.warning },
+  proyectado: { label: 'Pendiente de revisión', color: COLORS.warning },
+  aprobado: { label: 'Aprobado', color: COLORS.success },
+  programado: { label: 'Programado', color: COLORS.info },
+  ejecucion: { label: 'En ejecución', color: COLORS.warning },
+  encurso: { label: 'En ejecución', color: COLORS.warning },
+  completado: { label: 'Completado', color: COLORS.info },
+  finalizado: { label: 'Completado', color: COLORS.info },
+  rechazado: { label: 'Rechazado', color: COLORS.accent },
+  cancelado: { label: 'Cancelado', color: COLORS.info },
+  vencido: { label: 'Vencido', color: COLORS.secondary },
+};
+
+const numeroFaseEvento = (ev) => {
+  const lista = Array.isArray(ev && ev.fases) && ev.fases.length > 0 ? ev.fases : null;
+  const raw = lista ? Number(lista[0] && lista[0].nrofase) : Number(ev && ev.idfase);
+  return raw && !isNaN(raw) ? Math.min(Math.max(raw, 1), 5) : 1;
+};
+
+const diasAntesEvento = (fechaStr) => {
+  if (!fechaStr) return null;
+  let fecha = dayjs(fechaStr, 'YYYY-MM-DD');
+  if (!fecha.isValid()) fecha = dayjs(fechaStr);
+  return fecha.isValid() ? fecha.startOf('day').diff(dayjs().startOf('day'), 'day') : null;
+};
+
+const ProgresoEventoCard = ({ evento, router }) => {
+  const breathe = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breathe, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(breathe, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [breathe]);
+
   if (!evento) return null;
-  const estadoColor = STATE_COLORS[String(evento.estado || '').toLowerCase()] || COLORS.textSecondary;
+
+  const estKey = String(evento.estado || 'pendiente').toLowerCase();
+  const faseActual = numeroFaseEvento(evento);
+  const terminal = ['rechazado', 'cancelado', 'vencido'].includes(estKey) ? estKey : null;
+  const dias = diasAntesEvento(evento.fechaevento);
+  const esHoy = dias === 0;
+  const badge = BADGE_CONFIG[estKey] || { label: estKey, color: COLORS.textSecondary };
+  const faseInfo = PROCESO_FASES.find((f) => f.number === faseActual) || PROCESO_FASES[0];
+  const escala = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });
+  const pct = Math.min(100, Math.max(0, Math.round((faseActual / PROCESO_FASES.length) * 100)));
+
+  const chipWarn = dias !== null && dias <= 7;
+  const chipText = dias === null ? '–' : dias > 0 ? `${dias} día${dias === 1 ? '' : 's'}` : dias === 0 ? 'Hoy' : 'Finalizado';
+  const chipIcon = esHoy ? 'play' : 'time-outline';
+
+  const irA = (ruta) => router.push(ruta);
+
+  let ctaTipo = 'detalle';
+  let ctaLabel = 'Ver detalles';
+  let ctaIcon = 'eye-outline';
+  let ctaSub = 'Consulta la información completa del evento.';
+  let ctaOnPress = () => irA(`/admin/EventDetailScreen?eventId=${evento.idevento}`);
+
+  if (!terminal && esHoy) {
+    ctaTipo = 'hoy';
+    ctaLabel = 'Es hoy · Abrir informe del evento';
+    ctaIcon = 'rocket-outline';
+    ctaSub = 'Registra asistencia, fotos y resultados. El informe cierra el proceso.';
+    ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
+  } else if (estKey === 'completado' || estKey === 'finalizado') {
+    ctaLabel = 'Ver informe del evento';
+    ctaIcon = 'document-text-outline';
+    ctaSub = 'Proceso finalizado.';
+    ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
+  } else if (estKey === 'aprobado') {
+    if (faseActual < 3) {
+      ctaLabel = 'Siguiente paso: Programar evento';
+      ctaIcon = 'calendar-outline';
+      ctaSub = 'El comité aprobó tu evento. Elige fecha y recursos disponibles.';
+      ctaOnPress = () => irA('/admin/SeleccionarProgramacionEvento');
+    } else {
+      ctaSub = 'Fecha y recursos asignados. El informe se habilitará el día del evento.';
+    }
+  } else if (estKey === 'pendiente' || estKey === 'proyectado') {
+    ctaTipo = 'deshabilitado';
+    ctaLabel = 'Enviado a revisión';
+    ctaIcon = 'time-outline';
+    ctaSub = 'Tu evento está siendo revisado por el comité. Te avisaremos aquí.';
+  }
+
   return (
-    <TouchableOpacity style={styles.eventoCard} onPress={onPress} activeOpacity={0.85}>
-      <View style={styles.eventoLeft}>
-        <View style={[styles.eventoIconBg, { backgroundColor: COLORS.primaryLight }]}>
-          <Ionicons name="calendar" size={22} color={COLORS.primary} />
+    <View style={styles.progCard}>
+      <View style={styles.progHead}>
+        <Text style={styles.progLabel}>Próximo evento</Text>
+        <View style={[styles.progBadge, { backgroundColor: badge.color + '18' }]}>
+          <View style={[styles.progBadgeDot, { backgroundColor: badge.color }]} />
+          <Text style={[styles.progBadgeText, { color: badge.color }]}>{badge.label}</Text>
         </View>
-        <View style={styles.eventoContent}>
-          <Text style={styles.eventoLabel}>Próximo evento de tu comité</Text>
-          <Text style={styles.eventoTitle} numberOfLines={2}>{evento.nombreevento || 'Sin nombre'}</Text>
-          <View style={styles.eventoMetaRow}>
-            <Ionicons name="time-outline" size={14} color={COLORS.textTertiary} />
-            <Text style={styles.eventoMeta}>{formatDate(evento.fechaevento)}{formatTime(evento.fechaevento) ? ` · ${formatTime(evento.fechaevento)}` : ''}</Text>
-          </View>
-          {evento.lugarevento ? (
-            <View style={styles.eventoMetaRow}>
-              <Ionicons name="location-outline" size={14} color={COLORS.textTertiary} />
-              <Text style={styles.eventoMeta}>{evento.lugarevento}</Text>
+      </View>
+
+      <Text style={styles.progTitle} numberOfLines={2}>{evento.nombreevento || 'Sin nombre'}</Text>
+
+      <View style={styles.progMetaRow}>
+        <Ionicons name="calendar-outline" size={14} color={COLORS.textTertiary} />
+        <Text style={styles.progMetaText}>{formatDate(evento.fechaevento)}{formatTime(evento.fechaevento) ? ` · ${formatTime(evento.fechaevento)}` : ''}</Text>
+      </View>
+      {evento.lugarevento ? (
+        <View style={styles.progMetaRow}>
+          <Ionicons name="location-outline" size={14} color={COLORS.textTertiary} />
+          <Text style={styles.progMetaText} numberOfLines={1}>{evento.lugarevento}</Text>
+        </View>
+      ) : null}
+
+      <Text style={styles.progStageLabel}>
+        Proceso del evento · {terminal ? (BADGE_CONFIG[terminal]?.label || terminal) : (faseInfo ? faseInfo.label : `Fase ${faseActual}`)}
+      </Text>
+
+      <View style={styles.progTrack}>
+        {PROCESO_FASES.map((fase, idx) => {
+          const completado = fase.number <= faseActual;
+          const actual = fase.number === faseActual && !terminal;
+          return (
+            <View key={fase.number} style={styles.progStep}>
+              <View style={styles.progStepRow}>
+                <View style={[styles.progLine, idx === 0 ? styles.progLineHidden : ((fase.number - 1) <= faseActual ? styles.progLineActive : null)]} />
+                {actual ? (
+                  <Animated.View style={[styles.progDot, styles.progDotCurrent, { transform: [{ scale: escala }] }]}>
+                    <Ionicons name={fase.icon} size={13} color={COLORS.primary} />
+                  </Animated.View>
+                ) : (
+                  <View style={[styles.progDot, completado ? { backgroundColor: fase.color, borderColor: fase.color } : null]}>
+                    <Ionicons name={completado ? fase.icon : 'ellipse-outline'} size={13} color={completado ? COLORS.white : COLORS.textTertiary} />
+                  </View>
+                )}
+                <View style={[styles.progLine, idx === PROCESO_FASES.length - 1 ? styles.progLineHidden : (completado ? styles.progLineActive : null)]} />
+              </View>
+              <Text style={[styles.progStepLabel, completado ? { color: fase.color, fontWeight: '700' } : null]} numberOfLines={2}>{fase.label}</Text>
             </View>
-          ) : null}
+          );
+        })}
+      </View>
+
+      <View style={styles.progBottomRow}>
+        <Text style={styles.progPasoText}>
+          Paso <Text style={styles.progPasoBold}>{terminal ? '—' : faseActual}</Text> de {PROCESO_FASES.length}
+        </Text>
+        <View style={styles.progBar}>
+          <View style={[styles.progBarFill, terminal ? { width: '100%', backgroundColor: badge.color } : { width: `${pct}%` }]} />
+        </View>
+        <View style={[styles.progChip, chipWarn ? styles.progChipWarn : null]}>
+          <Ionicons name={chipIcon} size={13} color={chipWarn ? COLORS.warning : COLORS.primary} />
+          <Text style={[styles.progChipText, { color: chipWarn ? COLORS.warning : COLORS.primary }]}>{chipText}</Text>
         </View>
       </View>
-      <View>
-        <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '18' }]}>
-          <Text style={[styles.estadoBadgeText, { color: estadoColor }]}>
-            {(evento.estado || 'N/A').charAt(0).toUpperCase() + (evento.estado || '').slice(1).toLowerCase()}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
+
+      <View style={styles.progCtaWrap}>
+        {terminal ? (
+          <TouchableOpacity style={[styles.progCta, styles.progCtaGhost]} onPress={ctaOnPress} activeOpacity={0.85}>
+            <Ionicons name="eye-outline" size={18} color={COLORS.textSecondary} />
+            <Text style={[styles.progCtaText, { color: COLORS.textSecondary }]}>Ver detalles</Text>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+        ) : ctaTipo === 'deshabilitado' ? (
+          <View style={[styles.progCta, styles.progCtaDisabled]}>
+            <Ionicons name={ctaIcon} size={18} color={COLORS.textTertiary} />
+            <Text style={[styles.progCtaText, { color: COLORS.textTertiary }]}>{ctaLabel}</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.progCta, styles.progCtaActive, ctaTipo === 'hoy' ? styles.progCtaHoy : null]}
+            onPress={ctaOnPress}
+            activeOpacity={0.88}
+          >
+            <Ionicons name={ctaIcon} size={18} color={COLORS.white} />
+            <Text style={styles.progCtaTextActive}>{ctaLabel}</Text>
+            <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+        {ctaSub ? <Text style={styles.progCtaSub}>{ctaSub}</Text> : null}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -606,10 +764,7 @@ const adminActions = [
 
         {proximoEvento ? (
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-            <ProximoEventoCard
-              evento={proximoEvento}
-              onPress={() => router.push(`/admin/EventDetailScreen?eventId=${proximoEvento.idevento}`)}
-            />
+            <ProgresoEventoCard evento={proximoEvento} router={router} />
           </View>
         ) : null}
 
@@ -1067,24 +1222,67 @@ const styles = StyleSheet.create({
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   trendText: { fontSize: 12, fontWeight: '600' },
 
-  eventoCard: {
-    backgroundColor: COLORS.surface, borderRadius: 16, padding: 16,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  progCard: {
+    backgroundColor: COLORS.surface, borderRadius: 18, padding: 18,
     borderWidth: 1, borderColor: COLORS.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4,
   },
-  eventoLeft: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, flex: 1, paddingRight: 8 },
-  eventoIconBg: { width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  eventoContent: { flex: 1, gap: 4 },
-  eventoLabel: {
-    fontSize: 11, color: COLORS.textTertiary, fontWeight: '500',
-    textTransform: 'uppercase', letterSpacing: 0.5,
+  progHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  progLabel: {
+    fontSize: 11, color: COLORS.textTertiary, fontWeight: '600',
+    textTransform: 'uppercase', letterSpacing: 0.6,
   },
-  eventoTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, lineHeight: 22 },
-  eventoMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  eventoMeta: { fontSize: 13, color: COLORS.textSecondary, flex: 1 },
-  estadoBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, alignSelf: 'flex-end', marginBottom: 8 },
-  estadoBadgeText: { fontSize: 12, fontWeight: '700', textTransform: 'capitalize' },
+  progBadge: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+  },
+  progBadgeDot: { width: 7, height: 7, borderRadius: 4 },
+  progBadgeText: { fontSize: 12, fontWeight: '700', textTransform: 'capitalize' },
+  progTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary, lineHeight: 24, marginBottom: 6 },
+  progMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
+  progMetaText: { fontSize: 13, color: COLORS.textSecondary, flex: 1 },
+  progStageLabel: {
+    fontSize: 11, fontWeight: '700', color: COLORS.textSecondary,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 12,
+  },
+  progTrack: { flexDirection: 'row', alignItems: 'flex-start' },
+  progStep: { flex: 1, alignItems: 'center' },
+  progStepRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginBottom: 7 },
+  progLine: { flex: 1, height: 3, backgroundColor: COLORS.border },
+  progLineActive: { backgroundColor: COLORS.primary },
+  progLineHidden: { backgroundColor: 'transparent' },
+  progDot: {
+    width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: COLORS.border, backgroundColor: COLORS.background,
+  },
+  progDotCurrent: {
+    backgroundColor: COLORS.primaryLight, borderColor: COLORS.primary,
+    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 6, elevation: 3,
+  },
+  progStepLabel: { fontSize: 9, color: COLORS.textTertiary, textAlign: 'center', lineHeight: 12, paddingHorizontal: 2 },
+  progBottomRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.divider },
+  progPasoText: { fontSize: 12, color: COLORS.textTertiary, fontWeight: '600' },
+  progPasoBold: { color: COLORS.textPrimary, fontWeight: '800' },
+  progBar: { flex: 1, height: 6, borderRadius: 4, backgroundColor: COLORS.background, marginHorizontal: 10, overflow: 'hidden' },
+  progBarFill: { height: '100%', borderRadius: 4, backgroundColor: COLORS.primary },
+  progChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.primaryLight, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
+  progChipWarn: { backgroundColor: '#FEF3C7' },
+  progChipText: { fontSize: 12, fontWeight: '800' },
+  progCtaWrap: { marginTop: 14 },
+  progCta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, minHeight: 50,
+  },
+  progCtaActive: { backgroundColor: COLORS.primary },
+  progCtaHoy: {
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
+  },
+  progCtaGhost: { backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border },
+  progCtaDisabled: { backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border, opacity: 0.85 },
+  progCtaText: { fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'center' },
+  progCtaTextActive: { fontSize: 15, fontWeight: '800', color: COLORS.white, flex: 1, textAlign: 'center' },
+  progCtaSub: { marginTop: 8, textAlign: 'center', fontSize: 11.5, color: COLORS.textTertiary, lineHeight: 16 },
 
   dockOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.35)', zIndex: 5 },
   dock: {
