@@ -14,6 +14,7 @@ import { CustomLineChart, CustomBarChart } from '../../components/admin/ChartsVi
 import ChatEmbed from '../../components/admin/ChatEmbed';
 import ChatAlertas from '../../components/ChatAlertas';
 import ChatFlotante from '../../components/ChatFlotante';
+import { PHASES as PROCESO_FASES, resolveCurrentPhase } from '../../components/admin/EventProcessTimeline';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
@@ -55,7 +56,7 @@ const safeObj = (value) => (value && typeof value === 'object' && !Array.isArray
 
 const COLORS = {
   primary: '#C44200', primaryLight: '#FFF0E6', secondary: '#0F172A',
-  accent: '#EF4444', success: '#047857', warning: '#F59E0B',
+  accent: '#EF4444', success: '#047857', warning: '#F59E0B', warningLight: '#FEF3C7',
   info: '#3B82F6', background: '#F6F7F9', surface: '#FFFFFF',
   textPrimary: '#1F2937', textSecondary: '#64748B', textTertiary: '#94A3B8',
   border: '#E6E9EF', divider: '#D1D5DB', shadow: 'rgba(0,0,0,0.05)',
@@ -171,14 +172,6 @@ const ChartCard = ({ title, subtitle, children, empty, emptyIcon }) => (
   </View>
 );
 
-const PROCESO_FASES = [
-  { number: 1, label: 'Planeación', icon: 'document-text-outline', color: COLORS.info },
-  { number: 2, label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.primary },
-  { number: 3, label: 'Programación', icon: 'calendar-outline', color: COLORS.success },
-  { number: 4, label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.info },
-  { number: 5, label: 'Cierre e informe', icon: 'checkmark-done-outline', color: COLORS.textSecondary },
-];
-
 const BADGE_CONFIG = {
   pendiente: { label: 'Pendiente de revisión', color: COLORS.warning },
   proyectado: { label: 'Pendiente de revisión', color: COLORS.warning },
@@ -201,15 +194,25 @@ const numeroFaseEvento = (ev) => {
 
 const diasAntesEvento = (fechaStr) => {
   if (!fechaStr) return null;
-  let fecha = dayjs(fechaStr, 'YYYY-MM-DD');
-  if (!fecha.isValid()) fecha = dayjs(fechaStr);
+  const s = String(fechaStr).slice(0, 10);
+  const fecha = dayjs(s, 'YYYY-MM-DD');
   return fecha.isValid() ? fecha.startOf('day').diff(dayjs().startOf('day'), 'day') : null;
 };
 
 const ProgresoEventoCard = ({ evento, router }) => {
   const breathe = useRef(new Animated.Value(0)).current;
 
+  const estRaw = String((evento && evento.estado) || 'pendiente').toLowerCase();
+  const dias = diasAntesEvento(evento && evento.fechaevento);
+  const esHoy = dias === 0;
+  const fechaPasada = dias !== null && dias < 0;
+  const estKey = estRaw === 'vencido' && !fechaPasada ? 'pendiente' : estRaw;
+  const resuelto = evento ? resolveCurrentPhase(estKey, evento.idfase, evento.fases) : null;
+  const faseActual = resuelto ? resuelto.phase : 1;
+  const terminal = resuelto ? resuelto.terminal || null : null;
+
   useEffect(() => {
+    if (!evento || terminal || faseActual >= PROCESO_FASES.length) return;
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(breathe, { toValue: 1, duration: 900, useNativeDriver: true }),
@@ -218,17 +221,9 @@ const ProgresoEventoCard = ({ evento, router }) => {
     );
     loop.start();
     return () => loop.stop();
-  }, [breathe]);
+  }, [breathe, evento, terminal, faseActual]);
 
   if (!evento) return null;
-
-  const estRaw = String(evento.estado || 'pendiente').toLowerCase();
-  const faseActual = numeroFaseEvento(evento);
-  const dias = diasAntesEvento(evento.fechaevento);
-  const esHoy = dias === 0;
-  const fechaPasada = dias !== null && dias < 0;
-  const estKey = estRaw === 'vencido' && !fechaPasada ? 'pendiente' : estRaw;
-  const terminal = ['rechazado', 'cancelado', 'vencido'].includes(estKey) ? estKey : null;
   const badge = BADGE_CONFIG[estKey] || { label: estKey, color: COLORS.textSecondary };
   const faseInfo = PROCESO_FASES.find((f) => f.number === faseActual) || PROCESO_FASES[0];
   const escala = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });
@@ -246,26 +241,24 @@ const ProgresoEventoCard = ({ evento, router }) => {
   let ctaSub = 'Consulta la información completa del evento.';
   let ctaOnPress = () => irA(`/admin/EventDetailScreen?eventId=${evento.idevento}`);
 
-  if (!terminal && esHoy) {
+  if (estKey === 'completado' || estKey === 'finalizado') {
+    ctaLabel = 'Ver informe del evento';
+    ctaIcon = 'document-text-outline';
+    ctaSub = 'Proceso finalizado.';
+    ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
+  } else if (esHoy && !terminal && numeroFaseEvento(evento) >= 3) {
     ctaTipo = 'hoy';
     ctaLabel = 'Es hoy · Abrir informe del evento';
     ctaIcon = 'rocket-outline';
     ctaSub = 'Registra asistencia, fotos y resultados. El informe cierra el proceso.';
     ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
-  } else if (estKey === 'completado' || estKey === 'finalizado') {
-    ctaLabel = 'Ver informe del evento';
-    ctaIcon = 'document-text-outline';
-    ctaSub = 'Proceso finalizado.';
-    ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
+  } else if (estKey === 'aprobado' && numeroFaseEvento(evento) < 3) {
+    ctaLabel = 'Siguiente paso: Programar evento';
+    ctaIcon = 'calendar-outline';
+    ctaSub = 'El comité aprobó tu evento. Elige fecha y recursos disponibles.';
+    ctaOnPress = () => irA('/admin/SeleccionarProgramacionEvento');
   } else if (estKey === 'aprobado') {
-    if (faseActual < 3) {
-      ctaLabel = 'Siguiente paso: Programar evento';
-      ctaIcon = 'calendar-outline';
-      ctaSub = 'El comité aprobó tu evento. Elige fecha y recursos disponibles.';
-      ctaOnPress = () => irA('/admin/SeleccionarProgramacionEvento');
-    } else {
-      ctaSub = 'Fecha y recursos asignados. El informe se habilitará el día del evento.';
-    }
+    ctaSub = 'Fecha y recursos asignados. El informe se habilitará el día del evento.';
   } else if (estKey === 'pendiente' || estKey === 'proyectado') {
     ctaTipo = 'deshabilitado';
     ctaLabel = 'Enviado a revisión';
@@ -1268,7 +1261,7 @@ const styles = StyleSheet.create({
   progBar: { flex: 1, height: 6, borderRadius: 4, backgroundColor: COLORS.background, marginHorizontal: 10, overflow: 'hidden' },
   progBarFill: { height: '100%', borderRadius: 4, backgroundColor: COLORS.primary },
   progChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.primaryLight, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
-  progChipWarn: { backgroundColor: '#FEF3C7' },
+  progChipWarn: { backgroundColor: COLORS.warningLight },
   progChipText: { fontSize: 12, fontWeight: '800' },
   progCtaWrap: { marginTop: 14 },
   progCta: {

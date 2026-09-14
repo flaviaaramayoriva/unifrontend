@@ -21,7 +21,7 @@ const COLORS = {
   vencidoLight: '#FFEDD5',
 };
 
-const PHASES = [
+export const PHASES = [
   { number: 1, label: 'Planeación', icon: 'document-text-outline', color: COLORS.info },
   { number: 2, label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.primary },
   { number: 3, label: 'Programación', icon: 'calendar-outline', color: COLORS.success },
@@ -36,7 +36,7 @@ const TERMINAL_CONFIG = {
 };
 
 // Mapea estado + fase del backend a un número de fase visible (1..5)
-const resolveCurrentPhase = (estado, idfase, fases) => {
+export const resolveCurrentPhase = (estado, idfase, fases) => {
   const st = String(estado || 'pendiente').toLowerCase();
   const hasFases = Array.isArray(fases) && fases.length > 0;
   const nroFases = hasFases ? Number(fases[0]?.nrofase) : Number(idfase);
