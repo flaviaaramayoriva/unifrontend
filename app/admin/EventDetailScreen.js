@@ -908,18 +908,11 @@ const EditEventScreen = () => {
 const [horaSeleccionada, setHoraSeleccionada] = useState(new Date());
   const [idevento, setIdevento] = useState(null);
   const [estadoEvento, setEstadoEvento] = useState('pendiente');
-  const [esCreador, setEsCreador] = useState(false);
 
   const [token, setToken] = useState(null);
   const [userId, setUserId] = useState(null);
-  const [screenMode, setScreenMode] = useState('view');
 
-  useEffect(() => {
-    const { mode: routeMode } = useLocalSearchParams();
-    setScreenMode(routeMode || 'view');
-  }, []);
-
-  const isReadOnly = screenMode === 'view' || !esCreador;
+  const isReadOnly = true;
 
   const addRecursoTecnologico = () => setRecursosTecnologicos(prev => [...prev, { nombre: '', cantidad: '' }]);
   const removeRecursoTecnologico = (index) => setRecursosTecnologicos(prev => prev.filter((_, i) => i !== index));
