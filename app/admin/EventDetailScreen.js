@@ -909,7 +909,7 @@ const EditEventScreen = () => {
   const [idevento, setIdevento] = useState(null);
   const [estadoEvento, setEstadoEvento] = useState('pendiente');
 
-  const isReadOnly = mode === 'view' || estadoEvento === 'aprobado';
+  const isReadOnly = mode === 'view';
 
   const addRecursoTecnologico = () => setRecursosTecnologicos(prev => [...prev, { nombre: '', cantidad: '' }]);
   const removeRecursoTecnologico = (index) => setRecursosTecnologicos(prev => prev.filter((_, i) => i !== index));

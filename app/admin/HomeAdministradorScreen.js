@@ -288,10 +288,10 @@ const UltimoEventoCard = ({ evento, onPress }) => {
     }
   };
 
-  const formatTime = (dateStr) => {
-    if (!dateStr) return '';
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '';
     try {
-      const date = dayjs(dateStr);
+      const date = dayjs(timeStr, 'HH:mm:ss');
       if (!date.isValid()) return '';
       return date.format('HH:mm'); // Ej: "14:30"
     } catch {
@@ -300,7 +300,7 @@ const UltimoEventoCard = ({ evento, onPress }) => {
   };
 
   const fechaFormateada = formatDate(evento.fechaevento);
-  const horaFormateada = formatTime(evento.fechaevento);
+  const horaFormateada = evento.horaevento ? formatTime(evento.horaevento) : '';
 
   return (
     <TouchableOpacity 
