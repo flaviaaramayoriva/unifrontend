@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, useWindowDimensions, Platform,
@@ -54,9 +54,17 @@ const getTokenAsync = async () => {
 
 const MONTH_NAMES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MONTH_NAMES_FULL  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DAYS_SHORT = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DAYS_SHORT = ['Dom','Lun','Mar','MiÃƒÂ©','Jue','Vie','SÃƒÂ¡b'];
 
-// 🔥 NUEVO: Componente HorizontalBarChart mejorado
+// Formatea una fecha a YYYY-MM-DD usando la zona horaria LOCAL (evita el desfase de toISOString)
+const fmtLocalDate = (d) => {
+  const anyo = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${anyo}-${mes}-${dia}`;
+};
+
+// Ã°Å¸â€Â¥ NUEVO: Componente HorizontalBarChart mejorado
 const HorizontalBarChart = ({ data, width, height = 300 }) => {
   if (!data?.length) return null;
   const max = Math.max(...data.map(d => d.value), 1);
@@ -85,7 +93,7 @@ const HorizontalBarChart = ({ data, width, height = 300 }) => {
   );
 };
 
-// 🔥 MEJORADO: Componente Heatmap Calendar con fechas alineadas correctamente
+// Ã°Å¸â€Â¥ MEJORADO: Componente Heatmap Calendar con fechas alineadas correctamente
 const CalendarHeatmap = ({ data, width, darkMode }) => {
   const cellSize = 14;
   const cellGap = 4;
@@ -108,7 +116,7 @@ const CalendarHeatmap = ({ data, width, darkMode }) => {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingBottom: 10 }}>
       <Svg width={weeks * (cellSize + cellGap) + 40} height={days * (cellSize + cellGap) + 20}>
-        {/* Días de la semana (eje Y) */}
+        {/* DÃƒÂ­as de la semana (eje Y) */}
         {DAYS_SHORT.map((day, i) => (
           <SvgText 
             key={i} 
@@ -128,7 +136,7 @@ const CalendarHeatmap = ({ data, width, darkMode }) => {
             // Calcular la fecha exacta para cada celda
             const cellDate = new Date(startDate);
             cellDate.setDate(startDate.getDate() + (week * 7) + day);
-            const dateStr = cellDate.toISOString().split('T')[0];
+            const dateStr = fmtLocalDate(cellDate);
             const value = data[dateStr] || 0;
             
             return (
@@ -183,7 +191,7 @@ const SectionHeader = ({ title, subtitle, icon, action }) => (
   </View>
 );
 
-// 🔥 NUEVO: Card de insight para el Resumen Ejecutivo (win / alert / info)
+// Ã°Å¸â€Â¥ NUEVO: Card de insight para el Resumen Ejecutivo (win / alert / info)
 const InsightCard = ({ icon, title, value, subtitle, color, type = 'info' }) => {
   const fg = type === 'alert' ? COLORS.accent : type === 'win' ? COLORS.success : (color || COLORS.primary);
   const bg = type === 'alert' ? '#FEF2F2' : type === 'win' ? '#F0FDF4' : (color || COLORS.primary) + '15';
@@ -201,7 +209,7 @@ const InsightCard = ({ icon, title, value, subtitle, color, type = 'info' }) => 
   );
 };
 
-// 🔥 NUEVO: Fila horizontal con valor + barra proporcional (reutilizable)
+// Ã°Å¸â€Â¥ NUEVO: Fila horizontal con valor + barra proporcional (reutilizable)
 const MiniBarRow = ({ label, value, color, max }) => {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
@@ -232,8 +240,11 @@ const ReportesAvanzadosScreen = () => {
   const [eventosRecientes, setEventosRecientes] = useState([]);
   const [filtroEstado, setFiltroEstado] = useState('todos');
 
-  // 🔥 NUEVOS ESTADOS
+  // Ã°Å¸â€Â¥ NUEVOS ESTADOS
   const [darkMode, setDarkMode] = useState(false);
+  // Ref para leer darkMode dentro de cargarDatos sin recargar todo al cambiar el tema
+  const darkModeRef = useRef(false);
+  useEffect(() => { darkModeRef.current = darkMode; }, [darkMode]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFacultad, setSelectedFacultad] = useState('todas');
   const [todasFacultades, setTodasFacultades] = useState([]);
@@ -245,7 +256,7 @@ const ReportesAvanzadosScreen = () => {
   const [showFacultadFilter, setShowFacultadFilter] = useState(false);
   const [activeTab, setActiveTab] = useState('resumen'); // resumen, dashboard, calendario, analisis
 
-  // 🔥 NUEVO: Filtros de reporte VISIBLES + comparativa de años
+  // Ã°Å¸â€Â¥ NUEVO: Filtros de reporte VISIBLES + comparativa de aÃƒÂ±os
   const [reporteDesde, setReporteDesde] = useState('');
   const [reporteHasta, setReporteHasta] = useState('');
   const [analisisSub, setAnalisisSub] = useState('inscripciones'); // inscripciones, operacional, economico, recursos
@@ -261,14 +272,14 @@ const ReportesAvanzadosScreen = () => {
   const [showEventPicker, setShowEventPicker] = useState(false);
   const [todosLosEventos, setTodosLosEventos] = useState([]);
 
-  // 🔥 REPORTES AMPLIADOS
+  // Ã°Å¸â€Â¥ REPORTES AMPLIADOS
   const [repInscripciones, setRepInscripciones] = useState(null);
   const [repOperacionales, setRepOperacionales] = useState(null);
   const [repEconomicos, setRepEconomicos] = useState(null);
   const [repRecursos, setRepRecursos] = useState(null);
   const [repTipos, setRepTipos] = useState([]);
 
-  // 🔥 NUEVO: KPIs filtrados por período + días activos para el calendario
+  // Ã°Å¸â€Â¥ NUEVO: KPIs filtrados por perÃƒÂ­odo + dÃƒÂ­as activos para el calendario
   const [statsFiltrado, setStatsFiltrado] = useState(null);
   const [diasActivos, setDiasActivos] = useState([]);
 
@@ -277,7 +288,7 @@ const ReportesAvanzadosScreen = () => {
 
   const showError = (msg) => Alert.alert('Error', msg, [{ text: 'OK' }]);
 
-  // 🔥 NUEVO: Calcular tendencias
+  // Ã°Å¸â€Â¥ NUEVO: Calcular tendencias
   const calcularTendencia = (actual, anterior) => {
     if (!anterior || anterior === 0) return 0;
     return Math.round(((actual - anterior) / anterior) * 100);
@@ -289,7 +300,7 @@ const ReportesAvanzadosScreen = () => {
       const token = await getTokenAsync();
       if (!token) { router.replace('/'); return; }
 
-      // 🔥 Filtros aplicados a los reportes (backend soporta desde/hasta)
+      // Ã°Å¸â€Â¥ Filtros aplicados a los reportes (backend soporta desde/hasta)
       const paramsReportes = {};
       if (reporteDesde) paramsReportes.desde = reporteDesde;
       if (reporteHasta) paramsReportes.hasta = reporteHasta;
@@ -305,12 +316,12 @@ const ReportesAvanzadosScreen = () => {
         axios.get(`${API_BASE_URL}/eventos`, { headers: { Authorization: `Bearer ${token}` }, params: paramsEventos }),
       ]);
 
-      // 🔥 Reportes ampliados (parallel, tolerantes a fallos)
+      // Ã°Å¸â€Â¥ Reportes ampliados (parallel, tolerantes a fallos)
       const [inscRes, opRes, ecoRes, recRes, tipoRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/reportes/inscripciones`, { headers: { Authorization: `Bearer ${token}` }, params: paramsReportes }).catch(() => null),
         axios.get(`${API_BASE_URL}/reportes/operacionales`, { headers: { Authorization: `Bearer ${token}` }, params: paramsReportes }).catch(() => null),
         axios.get(`${API_BASE_URL}/reportes/economicos`, { headers: { Authorization: `Bearer ${token}` }, params: paramsReportes }).catch(() => null),
-        axios.get(`${API_BASE_URL}/reportes/recursos?periodo=mes`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        axios.get(`${API_BASE_URL}/reportes/recursos`, { params: { periodo: 'mes', ...paramsReportes }, headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
         axios.get(`${API_BASE_URL}/reportes/tipos`, { headers: { Authorization: `Bearer ${token}` }, params: paramsReportes }).catch(() => null),
       ]);
       setRepInscripciones(inscRes?.data || null);
@@ -322,13 +333,13 @@ const ReportesAvanzadosScreen = () => {
       const data = statsRes.data;
       setStats(data);
 
-      // Extraer todas las facultades únicas
+      // Extraer todas las facultades ÃƒÂºnicas
       if (data.eventosPorFacultad) {
         const facs = [...new Set(data.eventosPorFacultad.map(f => f.facultad))].filter(Boolean);
         setTodasFacultades(facs);
       }
 
-      // Pie por estado → usa el reporte operacional (respeta filtro de fechas)
+      // Pie por estado Ã¢â€ â€™ usa el reporte operacional (respeta filtro de fechas)
       const porEstadoOp = Array.isArray(opRes?.data?.porEstado) ? opRes.data.porEstado : [];
       const colorMap = {
         aprobado: COLORS.success, pendiente: COLORS.warning, rechazado: COLORS.accent,
@@ -341,12 +352,12 @@ const ReportesAvanzadosScreen = () => {
           name: cap(x.estado),
           population: x.total,
           color: colorMap[String(x.estado).toLowerCase()] || COLORS.info,
-          legendFontColor: darkMode ? COLORS.darkTextPrimary : COLORS.textPrimary,
+          legendFontColor: darkModeRef.current ? COLORS.darkTextPrimary : COLORS.textPrimary,
           legendFontSize: 12,
         }));
       setEventosPorEstado(pie.length ? pie : null);
 
-      // KPIs del período filtrado por fechas
+      // KPIs del perÃƒÂ­odo filtrado por fechas
       const porEstadoOK = Array.isArray(opRes?.data?.porEstado);
       const totalFiltrado = (porEstadoOK ? porEstadoOp : []).reduce((s, x) => s + (x.total || 0), 0);
       const aprobFiltrado = (porEstadoOK ? porEstadoOp : []).find(x => x.estado === 'aprobado')?.total || 0;
@@ -361,7 +372,7 @@ const ReportesAvanzadosScreen = () => {
         tasa: porEstadoOK ? tAprobFiltrado : (data?.tasaAprobacion || 0),
       });
 
-      // Ranking facultades → derivado de los eventos filtrados (o fallback global)
+      // Ranking facultades Ã¢â€ â€™ derivado de los eventos filtrados (o fallback global)
       const evs = Array.isArray(eventosRes.data) ? eventosRes.data : [];
       const facMap = {};
       evs.forEach(ev => {
@@ -391,7 +402,7 @@ const ReportesAvanzadosScreen = () => {
         : [];
       setReportesMensuales(reportes);
 
-      // 🔥 NUEVO: Tendencia mensual respetando el rango de fechas (si hay filtro)
+      // Ã°Å¸â€Â¥ NUEVO: Tendencia mensual respetando el rango de fechas (si hay filtro)
       const enRango = (mes) => {
         if (!reporteDesde && !reporteHasta) return true;
         const m = mes;
@@ -427,7 +438,7 @@ const ReportesAvanzadosScreen = () => {
       });
       setHeatmapData(heatData);
 
-      // 🔥 Extraer días con actividad para el calendario
+      // Ã°Å¸â€Â¥ Extraer dÃƒÂ­as con actividad para el calendario
       setDiasActivos(Object.entries(heatData).map(([fecha, total]) => ({ fecha, total })).sort((a, b) => b.total - a.total).slice(0, 6));
 
     } catch (err) {
@@ -436,7 +447,7 @@ const ReportesAvanzadosScreen = () => {
     } finally {
       setLoadingMain(false);
     }
-  }, [darkMode, reporteDesde, reporteHasta, selectedFacultad]);
+  }, [reporteDesde, reporteHasta, selectedFacultad]);
 
   const cargarEventos = useCallback(async () => {
     setLoadingEvents(true);
@@ -476,47 +487,7 @@ const ReportesAvanzadosScreen = () => {
   useEffect(() => { cargarDatos(); }, [cargarDatos]);
   useEffect(() => { cargarEventos(); }, [cargarEventos]);
 
-    const exportarCSV = async () => {
-    try {
-      const token = await getTokenAsync();
-      if (!token) return;
-      const res = await axios.get(`${API_BASE_URL}/eventos`, { headers: { Authorization: `Bearer ${token}` } });
-      const eventos = Array.isArray(res.data) ? res.data : [];
-      if (!eventos.length) { showError('No hay eventos para exportar.'); return; }
-
-      const headers = ['ID', 'Nombre', 'Fecha', 'Lugar', 'Estado', 'Responsable'];
-      const rows = eventos.map(e => [
-        e.idevento,
-        `"${e.nombreevento || ''}"`,
-        e.fechaevento?.split('T')[0] || '',
-        `"${e.lugarevento || ''}"`,
-        e.estado || '',
-        `"${e.responsable_evento || ''}"`,
-      ].join(','));
-      const csv = [headers.join(','), ...rows].join('\n');
-
-      if (Platform.OS === 'web') {
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href     = url;
-        a.download = `eventos_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        Alert.alert('Éxito', 'Archivo CSV descargado correctamente.');
-      } else {
-        const path = FileSystem.documentDirectory + `eventos_${Date.now()}.csv`;
-        await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
-        await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'Exportar CSV' });
-      }
-    } catch (err) {
-      console.error(err);
-      showError('Error al exportar: ' + err.message);
-    }
-  };
-
- 
-  const exportarExcel = async () => {
+const exportarExcel = async () => {
   try {
     const token = await getTokenAsync();
     if (!token) return;
@@ -528,17 +499,20 @@ const ReportesAvanzadosScreen = () => {
     
     if (!eventos.length) { showError('No hay eventos para exportar.'); return; }
 
-    // Crear CSV con punto y coma para Excel en español
-    const headers = ['ID', 'Nombre del Evento', 'Fecha', 'Lugar', 'Estado', 'Facultad', 'Responsable', 'Descripción'];
+    // Crear CSV con punto y coma para Excel en espaÃƒÂ±ol
+    const headers = ['ID', 'Nombre del Evento', 'Fecha', 'Lugar', 'Estado', 'Facultad', 'Responsable', 'DescripciÃƒÂ³n'];
     const rows = eventos.map(e => [
       e.idevento || '',
       `"${(e.nombreevento || '').replace(/"/g, '""')}"`,
       e.fechaevento ? e.fechaevento.split('T')[0] : '',
       `"${(e.lugarevento || '').replace(/"/g, '""')}"`,
       e.estado || '',
+      `"${(e.facultad || '').replace(/"/g, '""')}"`,
+      `"${(e.responsable_evento || '').replace(/"/g, '""')}"`,
+      `"${(e.descripcion || '').replace(/"/g, '""')}"`,
     ].join(';'));
     
-    const csv = '\uFEFF' + [headers.join(';'), ...rows].join('\n'); // ✅ PUNTO Y COMA
+    const csv = '\uFEFF' + [headers.join(';'), ...rows].join('\n'); // Ã¢Å“â€¦ PUNTO Y COMA
 
     if (Platform.OS === 'web') {
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -548,7 +522,7 @@ const ReportesAvanzadosScreen = () => {
       a.download = `eventos_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      Alert.alert('Éxito', 'Archivo CSV descargado. Ábrelo con Excel.');
+      Alert.alert('Ãƒâ€°xito', 'Archivo CSV descargado. ÃƒÂbrelo con Excel.');
     } else {
       const path = FileSystem.documentDirectory + `eventos_${Date.now()}.csv`;
       await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
@@ -569,7 +543,7 @@ const ReportesAvanzadosScreen = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const lista = Array.isArray(res.data) ? res.data : [];
-      // Solo eventos en Fase 3 (programación) son seleccionables para ver su detalle
+      // Solo eventos en Fase 3 (programaciÃƒÂ³n) son seleccionables para ver su detalle
       const eventosFase3 = lista.filter(ev => ev.idfase === 3);
       eventosFase3.sort((a, b) => new Date(b.fechaevento || 0) - new Date(a.fechaevento || 0));
       setTodosLosEventos(eventosFase3);
@@ -617,9 +591,9 @@ const ReportesAvanzadosScreen = () => {
       return fechaEvento.getFullYear() === yearNum && (fechaEvento.getMonth() + 1) === monthNum2;
     });
 
-    // Función para formatear hora correctamente
+    // FunciÃƒÂ³n para formatear hora correctamente
     const formatTime = (timeStr) => {
-      if (!timeStr) return '–';
+      if (!timeStr) return 'Ã¢â‚¬â€œ';
       
       // Si ya es un string con formato HH:MM o HH:MM:SS
       if (typeof timeStr === 'string') {
@@ -642,7 +616,7 @@ const ReportesAvanzadosScreen = () => {
         // Ignorar errores
       }
       
-      return '–';
+      return 'Ã¢â‚¬â€œ';
     };
 
     const apMes = eventosDelMes.filter(e => e.estado === 'aprobado').length;
@@ -658,7 +632,7 @@ const ReportesAvanzadosScreen = () => {
             month: '2-digit', 
             year: 'numeric' 
           })
-        : '–';
+        : 'Ã¢â‚¬â€œ';
       
       const horaFormateada = formatTime(ev.horaevento);
       
@@ -675,7 +649,7 @@ const ReportesAvanzadosScreen = () => {
           <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${fecha}</td>
           
           <!-- 2. Lugar -->
-          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${ev.lugarevento || '–'}</td>
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${ev.lugarevento || 'Ã¢â‚¬â€œ'}</td>
           
           <!-- 3. Hora formateada -->
           <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;text-align:center;">
@@ -684,7 +658,7 @@ const ReportesAvanzadosScreen = () => {
           
           <!-- 4. Tema -->
           <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">
-            <strong>${ev.nombreevento || '–'}</strong><br>
+            <strong>${ev.nombreevento || 'Ã¢â‚¬â€œ'}</strong><br>
             <span style="color:#6b7280;font-size:11px;">${ev.tipo_evento || ev.tipoEvento || ''}</span>
           </td>
           
@@ -698,7 +672,7 @@ const ReportesAvanzadosScreen = () => {
       `;
     }).join('');
 
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
       <style>
         @page{size:A4 portrait;margin:14mm 12mm}
         *{margin:0;padding:0;box-sizing:border-box}
@@ -739,15 +713,15 @@ const ReportesAvanzadosScreen = () => {
           <div class="uft-monogram">UFT</div>
           <div>
             <div class="uft-name">Universidad Franz Tamayo</div>
-            <div class="uft-sub">Autoridad de Fiscalización y Transparencia Universitaria</div>
+            <div class="uft-sub">Autoridad de FiscalizaciÃƒÂ³n y Transparencia Universitaria</div>
           </div>
         </div>
-        <div class="reporte-kicker">Informe de Gestión</div>
+        <div class="reporte-kicker">Informe de GestiÃƒÂ³n</div>
         <h1>Reporte Mensual de Eventos</h1>
         <div class="cover-meta">
-          <div class="meta-chip">📅 ${mesNombre} ${year}</div>
-          <div class="meta-chip">🗂 ${totMes} eventos</div>
-          <div class="meta-chip">✅ ${apMes} aprobados</div>
+          <div class="meta-chip">Ã°Å¸â€œâ€¦ ${mesNombre} ${year}</div>
+          <div class="meta-chip">Ã°Å¸â€”â€š ${totMes} eventos</div>
+          <div class="meta-chip">Ã¢Å“â€¦ ${apMes} aprobados</div>
         </div>
         <div class="accent-bar"></div>
       </div>
@@ -767,7 +741,7 @@ const ReportesAvanzadosScreen = () => {
           <div class="stat-value" style="color:#f59e0b">${peMes}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Tasa de Aprobación</div>
+          <div class="stat-label">Tasa de AprobaciÃƒÂ³n</div>
           <div class="stat-value">${tasaMes}%</div>
         </div>
       </div>
@@ -789,7 +763,7 @@ const ReportesAvanzadosScreen = () => {
       </table>
       
       <div class="footer">
-        <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos · ${mesNombre} ${year}
+        <strong>Panel de AdministraciÃƒÂ³n UFT</strong> Ã‚Â· Sistema de GestiÃƒÂ³n de Eventos Ã‚Â· ${mesNombre} ${year}
       </div>
       </div>
       </div></body></html>`;
@@ -822,7 +796,7 @@ const ReportesAvanzadosScreen = () => {
     if (!token) return;
 
     // Rango efectivo: respeta el filtro de fechas (reporteDesde / reporteHasta);
-    // sin filtro, usa el año seleccionado (selectedYear) completo.
+    // sin filtro, usa el aÃƒÂ±o seleccionado (selectedYear) completo.
     const esAnual = !reporteDesde && !reporteHasta;
     const desde = reporteDesde || `${year}-01-01`;
     const hasta = reporteHasta || `${year}-12-31`;
@@ -852,7 +826,7 @@ const ReportesAvanzadosScreen = () => {
     });
 
     const formatTime = (timeStr) => {
-      if (!timeStr) return '–';
+      if (!timeStr) return 'Ã¢â‚¬â€œ';
       if (typeof timeStr === 'string') {
         const parts = timeStr.split(':');
         if (parts.length >= 2) {
@@ -868,7 +842,7 @@ const ReportesAvanzadosScreen = () => {
           return `${hours}:${minutes}`;
         }
       } catch (e) {}
-      return '–';
+      return 'Ã¢â‚¬â€œ';
     };
 
     // Generar filas de la tabla (mismo formato que reporte mensual)
@@ -879,7 +853,7 @@ const ReportesAvanzadosScreen = () => {
             month: '2-digit', 
             year: 'numeric' 
           })
-        : '–';
+        : 'Ã¢â‚¬â€œ';
       
       const horaFormateada = formatTime(ev.horaevento);
       
@@ -897,12 +871,12 @@ const ReportesAvanzadosScreen = () => {
       return `
         <tr>
           <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${fecha}</td>
-          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${ev.lugarevento || '–'}</td>
+          <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">${ev.lugarevento || 'Ã¢â‚¬â€œ'}</td>
           <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;text-align:center;">
             <strong>${horaFormateada}</strong>
           </td>
           <td style="padding:10px;border:1px solid #ddd;vertical-align:top;font-size:12px;">
-            <strong>${ev.nombreevento || '–'}</strong><br>
+            <strong>${ev.nombreevento || 'Ã¢â‚¬â€œ'}</strong><br>
             <span style="color:#6b7280;font-size:11px;">${ev.tipo_evento || ev.tipoEvento || ''}</span>
           </td>
           <td style="padding:10px;border:1px solid #ddd;vertical-align:top;text-align:center;">
@@ -914,7 +888,7 @@ const ReportesAvanzadosScreen = () => {
       `;
     }).join('');
 
-    // Calcular estadísticas (todos los estados cuentan; completado/finalizado = logrados)
+    // Calcular estadÃƒÂ­sticas (todos los estados cuentan; completado/finalizado = logrados)
     const normalizeEstado = (st) => String(st || '').toLowerCase();
     const aprobados = eventosAnuales.filter(e => normalizeEstado(e.estado) === 'aprobado').length;
     const completados = eventosAnuales.filter(e => ['completado', 'finalizado'].includes(normalizeEstado(e.estado))).length;
@@ -926,7 +900,7 @@ const ReportesAvanzadosScreen = () => {
     const logrados = aprobados + completados;
     const tasaAprobacion = total > 0 ? Math.round((logrados / total) * 100) : 0;
 
-    // 🔥 NUEVO: Datos complementarios (inscripciones + ejecución económica)
+    // Ã°Å¸â€Â¥ NUEVO: Datos complementarios (inscripciones + ejecuciÃƒÂ³n econÃƒÂ³mica)
     const headersAuth = { Authorization: `Bearer ${token}` };
     const [inscRes, ecoRes] = await Promise.all([
       axios.get(`${API_BASE_URL}/reportes/inscripciones`, { headers: headersAuth, params: { desde, hasta } }).catch(() => ({ data: null })),
@@ -939,7 +913,7 @@ const ReportesAvanzadosScreen = () => {
     const ecoResumen = ecoAnual?.resumen || null;
     const ecoActivo = ecoResumen && (Number(ecoResumen.real_egresos) + Number(ecoResumen.real_ingresos) + Number(ecoResumen.balance_real)) !== 0;
 
-    // Actividad mensual (eventos y aprobaciones por mes, según el rango efectivo)
+    // Actividad mensual (eventos y aprobaciones por mes, segÃƒÂºn el rango efectivo)
     const esLogrado = (st) => ['aprobado', 'completado', 'finalizado'].includes(normalizeEstado(st));
     const monthlyMap = {};
     eventosAnuales.forEach(ev => {
@@ -953,6 +927,81 @@ const ReportesAvanzadosScreen = () => {
     const maxMes = Math.max(...meses.map(m => m.total), 1);
     const mesTop = [...meses].sort((a, b) => b.total - a.total)[0];
     const facCabeza = facRanking[0];
+// ===== NUEVOS BLOQUES: Desglose por tipo, EjecuciÃ³n presupuestaria y Comparativa =====
+const tipoEventoCont = {};
+eventosAnuales.forEach(ev => {
+  const t = (ev.tipo_evento || ev.tipoEvento || 'Sin clasificar').trim();
+  if (!tipoEventoCont[t]) tipoEventoCont[t] = { total: 0, aprobados: 0 };
+  tipoEventoCont[t].total += 1;
+  if (esLogrado(ev.estado)) tipoEventoCont[t].aprobados += 1;
+});
+const tipoEventoRows = Object.entries(tipoEventoCont)
+  .sort((a, b) => b[1].total - a[1].total)
+  .map(([tipo, d], i) => {
+    const pct = eventosAnuales.length ? Math.round((d.total / eventosAnuales.length) * 100) : 0;
+    const color = ['#8B5CF6', '#0ea5e9', '#10b981', '#f59e0b', '#C44B0A', '#ef4444', '#6366f1'][i % 7];
+    return '<tr>' +
+      '<td style="padding:9px;border:1px solid #ddd;font-size:12px;font-weight:600;color:' + color + '">' + tipo + '</td>' +
+      '<td style="padding:9px;border:1px solid #ddd;font-size:12px;text-align:center;">' + d.total + ' (' + pct + '%)</td>' +
+      '<td style="padding:9px;border:1px solid #ddd;font-size:12px;text-align:center;color:#10b981;">' + d.aprobados + '</td>' +
+      '<td style="padding:9px;border:1px solid #ddd;font-size:12px;"><div style="background:#e5e7eb;border-radius:6px;height:10px;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:6px;"></div></div></td>' +
+    '</tr>';
+  }).join('');
+const htmlTipoEventos = tipoEventoRows ? '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-bottom:22px;background:#fff;">' +
+  '<h2 style="font-size:15px;color:#1f2937;margin:0 0 4px;font-weight:800;">Desglose por Tipo de Evento</h2>' +
+  '<div style="font-size:12px;color:#6b7280;margin-bottom:14px;">DistribuciÃ³n de los ' + eventosAnuales.length + ' eventos del perÃ­odo segÃºn su clasificaciÃ³n.</div>' +
+  '<table class="main-table"><thead><tr><th style="text-align:left;">Tipo de Evento</th><th style="width:16%;text-align:center;">Cantidad (%)</th><th style="width:14%;text-align:center;">Aprobados/Complet.</th><th style="width:32%;">DistribuciÃ³n</th></tr></thead><tbody>' +
+  tipoEventoRows + '</tbody></table></div>' : '';
+
+// EjecuciÃ³n presupuestaria (tasa real vs presupuestado)
+const presIng = Number(ecoResumen?.pres_ingresos) || 0;
+const realIng = Number(ecoResumen?.real_ingresos) || 0;
+const presEgr = Number(ecoResumen?.pres_egresos) || 0;
+const realEgr = Number(ecoResumen?.real_egresos) || 0;
+const ejecIng = presIng > 0 ? Math.round((realIng / presIng) * 100) : null;
+const ejecEgr = presEgr > 0 ? Math.round((realEgr / presEgr) * 100) : null;
+const htmlEjecucion = (ejecIng !== null || ejecEgr !== null) ? '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-bottom:22px;background:#fff;">' +
+  '<h2 style="font-size:15px;color:#1f2937;margin:0 0 4px;font-weight:800;">EjecuciÃ³n Presupuestaria del AÃ±o</h2>' +
+  '<div style="font-size:12px;color:#6b7280;margin-bottom:14px;">Tasa de ejecuciÃ³n: monto ejecutado vs presupuestado del aÃ±o.</div>' +
+  '<div class="grid-3">' +
+    '<div class="stat-card" style="border-left-color:#8B5CF6;"><div class="stat-label">Ingresos ejecutados</div><div class="stat-value" style="color:#8B5CF6;">' + (ejecIng !== null ? ejecIng + '%' : 'â€”') + '</div><div style="font-size:11px;color:#6b7280;">' + fmtBsAnio(realIng) + ' de ' + fmtBsAnio(presIng) + '</div></div>' +
+    '<div class="stat-card" style="border-left-color:#0ea5e9;"><div class="stat-label">Egresos ejecutados</div><div class="stat-value" style="color:#0ea5e9;">' + (ejecEgr !== null ? ejecEgr + '%' : 'â€”') + '</div><div style="font-size:11px;color:#6b7280;">' + fmtBsAnio(realEgr) + ' de ' + fmtBsAnio(presEgr) + '</div></div>' +
+    '<div class="stat-card" style="border-left-color:#C44B0A;"><div class="stat-label">Beneficiario total</div><div class="stat-value" style="color:#C44B0A;">' + fmtBsAnio(realIng - realEgr) + '</div><div style="font-size:11px;color:#6b7280;">Resultado real neto</div></div>' +
+  '</div></div>' : '';
+
+// Comparativa con el aÃ±o anterior (fetch paralelo aÃ±o-1)
+let comparativaAnual = null;
+async function obtenerComparativaAnual() {
+  try {
+    const pd = {};
+    if (esAnual && year) { pd.year = Number(year) - 1; }
+    else if (fechaDesde) { const df = new Date(fechaDesde); pd.desde = (new Date(df.getFullYear() - 1, df.getMonth(), df.getDate())).toISOString(); }
+    if (!pd.year && !pd.desde) return null;
+    const resPr = await axios.get(API_BASE_URL + '/eventos', { headers, params: pd });
+    const arr = Array.isArray(resPr.data) ? resPr.data : [];
+    const cont = (list) => { let t = 0, a = 0; list.forEach(ev => { if (ev.fechaevento) { t += 1; if (esLogrado(ev.estado)) a += 1; } }); return { t, a }; };
+    const cur = cont(eventosAnuales);
+    const prev = cont(arr);
+    const dT = prev.t > 0 ? Math.round(((cur.t - prev.t) / prev.t) * 100) : null;
+    const dA = prev.a > 0 ? Math.round(((cur.a - prev.a) / prev.a) * 100) : null;
+    const mes = (st) => st === 'crecer' ? 'â–² +' : (st === 'bajar' ? 'â–¼ ' : '');
+    const colorD = (d) => d === null ? '#6b7280' : (d >= 0 ? '#10b981' : '#ef4444');
+    const tarea = (lst) => lst.t > 0 ? Math.round((lst.a / lst.t) * 100) + '% (' + lst.a + '/' + lst.t + ')' : 'â€”';
+    return {
+      yearPrev: (esAnual && year) ? (Number(year) - 1) : (fechaDesde ? (new Date(fechaDesde)).getFullYear() - 1 : null),
+      cur, prev, dT, dA,
+      html: '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-bottom:22px;background:#fff;">' +
+        '<h2 style="font-size:15px;color:#1f2937;margin:0 0 4px;font-weight:800;">Comparativa con el AÃ±o Anterior</h2>' +
+        '<div style="font-size:12px;color:#6b7280;margin-bottom:14px;">EvoluciÃ³n de la actividad respecto al periodo previo (' + (esAnual ? (Number(year) - 1) : 'periodo equivalente') + ').</div>' +
+        '<table class="main-table"><thead><tr><th style="text-align:left;">Indicador</th><th style="width:18%;text-align:center;color:#6b7280;">' + (esAnual ? (Number(year) - 1) : 'AÃ±o anterior') + '</th><th style="width:18%;text-align:center;">AÃ±o actual</th><th style="width:16%;text-align:center;">VariaciÃ³n</th></tr></thead><tbody>' +
+        '<tr><td style="padding:9px;font-weight:600;">Total de eventos</td><td style="padding:9px;text-align:center;">' + prev.t + '</td><td style="padding:9px;text-align:center;font-weight:700;">' + cur.t + '</td><td style="padding:9px;text-align:center;font-weight:700;color:' + colorD(dT) + ';">' + (dT !== null ? ((dT >= 0 ? '+' : '') + dT + '% ' + (dT >= 0 ? 'â–²' : 'â–¼')) : 'â€”') + '</td></tr>' +
+        '<tr><td style="padding:9px;font-weight:600;">Aprobados / completados</td><td style="padding:9px;text-align:center;">' + prev.a + '</td><td style="padding:9px;text-align:center;font-weight:700;">' + cur.a + '</td><td style="padding:9px;text-align:center;font-weight:700;color:' + colorD(dA) + ';">' + (dA !== null ? ((dA >= 0 ? '+' : '') + dA + '% ' + (dA >= 0 ? 'â–²' : 'â–¼')) : 'â€”') + '</td></tr>' +
+        '<tr><td style="padding:9px;font-weight:600;">Tasa de aprobaciÃ³n</td><td style="padding:9px;text-align:center;">' + tarea(prev) + '</td><td style="padding:9px;text-align:center;font-weight:700;">' + tarea(cur) + '</td><td style="padding:9px;text-align:center;color:#6b7280;">â€”</td></tr>' +
+        '</tbody></table></div>'
+    };
+  } catch (e) { return null; }
+}
+	comparativaAnual = await obtenerComparativaAnual();
     const generadoEn = new Date().toLocaleDateString('es-BO', { day: '2-digit', month: 'long', year: 'numeric' });
     const fmtBsAnio = (n) => 'Bs ' + Math.round(Number(n) || 0).toLocaleString('es-BO');
 
@@ -1011,15 +1060,15 @@ const ReportesAvanzadosScreen = () => {
           <div class="uft-monogram">UFT</div>
           <div>
             <div class="uft-name">Universidad Franz Tamayo</div>
-            <div class="uft-sub">Autoridad de Fiscalización y Transparencia Universitaria</div>
+            <div class="uft-sub">Autoridad de FiscalizaciÃƒÂ³n y Transparencia Universitaria</div>
           </div>
         </div>
-        <div class="reporte-kicker">Informe de Gestión</div>
+        <div class="reporte-kicker">Informe de GestiÃƒÂ³n</div>
         <h1>${esAnual ? `Reporte Anual de Eventos ${year}` : `Reporte de Eventos ${rangoTxt}`}</h1>
         <div class="cover-meta">
-          <div class="meta-chip">📅 Periodo: ${rangoTxt}</div>
-          <div class="meta-chip">🗂 ${total} eventos registrados</div>
-          <div class="meta-chip">👥 ${inscritosAnio} inscritos</div>
+          <div class="meta-chip">Ã°Å¸â€œâ€¦ Periodo: ${rangoTxt}</div>
+          <div class="meta-chip">Ã°Å¸â€”â€š ${total} eventos registrados</div>
+          <div class="meta-chip">Ã°Å¸â€˜Â¥ ${inscritosAnio} inscritos</div>
         </div>
         <div class="accent-bar"></div>
       </div>
@@ -1027,15 +1076,15 @@ const ReportesAvanzadosScreen = () => {
       <div class="content">
       <!-- Resumen ejecutivo -->
       <div class="exec-grid">
-        <div class="exec-item"><div class="k">Tasa de Aprobación</div><div class="v" style="color:#16a34a">${tasaAprobacion}%</div><div class="s">${logrados} de ${total} eventos (aprobados + completados)</div></div>
-        <div class="exec-item green"><div class="k">Inscritos / Participantes</div><div class="v" style="color:#3b82f6">${inscritosAnio}</div><div class="s">En eventos del año</div></div>
-        <div class="exec-item blue"><div class="k">Mes más activo</div><div class="v" style="color:#C44B0A">${mesTop?.nombre || '—'}</div><div class="s">${mesTop?.total || 0} eventos</div></div>
+        <div class="exec-item"><div class="k">Tasa de AprobaciÃƒÂ³n</div><div class="v" style="color:#16a34a">${tasaAprobacion}%</div><div class="s">${logrados} de ${total} eventos (aprobados + completados)</div></div>
+        <div class="exec-item green"><div class="k">Inscritos / Participantes</div><div class="v" style="color:#3b82f6">${inscritosAnio}</div><div class="s">En eventos del aÃƒÂ±o</div></div>
+        <div class="exec-item blue"><div class="k">Mes mÃƒÂ¡s activo</div><div class="v" style="color:#C44B0A">${mesTop?.nombre || 'Ã¢â‚¬â€'}</div><div class="s">${mesTop?.total || 0} eventos</div></div>
       </div>
 
-      ${facCabeza ? `<div class="note"><strong>Dato destacado:</strong> la facultad con más inscritos del año fue <strong>${facCabeza.facultad}</strong> con <strong>${facCabeza.inscritos}</strong> participantes.</div>` : ''}
+      ${facCabeza ? `<div class="note"><strong>Dato destacado:</strong> la facultad con mÃƒÂ¡s inscritos del aÃƒÂ±o fue <strong>${facCabeza.facultad}</strong> con <strong>${facCabeza.inscritos}</strong> participantes.</div>` : ''}
 
-      <!-- Estadísticas del año -->
-      <div class="section-h">Indicadores del Año</div>
+      <!-- EstadÃƒÂ­sticas del aÃƒÂ±o -->
+      <div class="section-h">Indicadores del AÃƒÂ±o</div>
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Total Eventos</div>
@@ -1066,7 +1115,7 @@ const ReportesAvanzadosScreen = () => {
           <div class="stat-value" style="color:#6b7280">${cancelados}</div>
         </div>
         <div class="stat-card" style="border-left-color:#3B82F6">
-          <div class="stat-label">Tasa Aprobación</div>
+          <div class="stat-label">Tasa AprobaciÃƒÂ³n</div>
           <div class="stat-value" style="color:#3B82F6">${tasaAprobacion}%</div>
         </div>
         <div class="stat-card" style="border-left-color:#8B5CF6">
@@ -1092,7 +1141,7 @@ const ReportesAvanzadosScreen = () => {
             <th style="width:20%">Mes</th>
             <th style="width:15%">Eventos</th>
             <th style="width:15%">Aprob./Compl.</th>
-            <th style="width:50%">Distribución</th>
+            <th style="width:50%">DistribuciÃƒÂ³n</th>
           </tr>
         </thead>
         <tbody>
@@ -1130,8 +1179,8 @@ const ReportesAvanzadosScreen = () => {
       </table>` : ''}
 
       ${ecoActivo ? `
-      <!-- Resumen económico -->
-      <div class="section-h">Resumen Económico del Año</div>
+      <!-- Resumen econÃƒÂ³mico -->
+      <div class="section-h">Resumen EconÃƒÂ³mico del AÃƒÂ±o</div>
       <table class="main-table">
         <thead>
           <tr>
@@ -1153,14 +1202,14 @@ const ReportesAvanzadosScreen = () => {
           </tr>
           <tr>
             <td><strong>Balance</strong></td>
-            <td>–</td>
+            <td>Ã¢â‚¬â€œ</td>
             <td><strong>${fmtBsAnio(ecoResumen.balance_real)}</strong></td>
           </tr>
         </tbody>
       </table>` : ''}
 
       <!-- Listado de eventos -->
-      <div class="section-h">Listado de Eventos del Año</div>
+      <div class="section-h">Listado de Eventos del AÃƒÂ±o</div>
       <table class="main-table">
         <thead>
           <tr>
@@ -1176,9 +1225,12 @@ const ReportesAvanzadosScreen = () => {
         </tbody>
       </table>
       
-      <div class="footer">
-        <strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos · ${esAnual ? `Año ${year}` : `Periodo ${rangoTxt}`}<br>
-        Generado el ${generadoEn} · Documento confidencial de uso institucional
+      ${htmlTipoEventos}
+      ${htmlEjecucion}
+      ${(comparativaAnual && comparativaAnual.html) || ''}
+<div class="footer">
+        <strong>Panel de AdministraciÃƒÂ³n UFT</strong> Ã‚Â· Sistema de GestiÃƒÂ³n de Eventos Ã‚Â· ${esAnual ? `AÃƒÂ±o ${year}` : `Periodo ${rangoTxt}`}<br>
+        Generado el ${generadoEn} Ã‚Â· Documento confidencial de uso institucional
       </div>
       </div>
       </div></body></html>`;
@@ -1205,7 +1257,7 @@ const ReportesAvanzadosScreen = () => {
 
   const chartW = windowWidth - 48;
 
-  // 🔥 NUEVO: Tendencias reales (mes actual vs mes anterior) en vez de valores hardcodeados
+  // Ã°Å¸â€Â¥ NUEVO: Tendencias reales (mes actual vs mes anterior) en vez de valores hardcodeados
   const tendReal = (key) => {
     if (!reportesMensuales || reportesMensuales.length < 2) return undefined;
     const c = reportesMensuales[0]?.[key] || 0;
@@ -1222,10 +1274,10 @@ const ReportesAvanzadosScreen = () => {
     return Math.round(((c - p) / p) * 100);
   })();
   const fmtBs = (n) => `Bs ${(Math.round(Number(n) || 0)).toLocaleString('es-BO')}`;
-  const faseLabel = (f) => ({ 1: 'Creación', 2: 'Aprobación', 3: 'Programación', 4: 'Cierre' })[Number(f)] || `Fase ${f}`;
+  const faseLabel = (f) => ({ 1: 'CreaciÃƒÂ³n', 2: 'AprobaciÃƒÂ³n', 3: 'ProgramaciÃƒÂ³n', 4: 'Cierre' })[Number(f)] || `Fase ${f}`;
   const capStr = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
 
-  // 🔥 NUEVO: Datos del Resumen Ejecutivo (insights + alertas + comparativa anual)
+  // Ã°Å¸â€Â¥ NUEVO: Datos del Resumen Ejecutivo (insights + alertas + comparativa anual)
   const resumenData = useMemo(() => {
     const mesesPeriodo = reportesMensuales
       .filter(r => {
@@ -1274,27 +1326,27 @@ const ReportesAvanzadosScreen = () => {
     const anioB = anual(selectedYear - 1);
     const delta = (a, b) => b > 0 ? Math.round(((a - b) / b) * 100) : undefined;
 
-    // Alertas automáticas
+    // Alertas automÃƒÂ¡ticas
     const alertas = [];
     if (tasaPeriodo < 50 && totals.eventos > 0) {
-      alertas.push({ icon: 'warning-outline', type: 'alert', title: 'Baja tasa de aprobación', subtitle: `Solo ${tasaPeriodo}% de los eventos del período fueron aprobados.` });
+      alertas.push({ icon: 'warning-outline', type: 'alert', title: 'Baja tasa de aprobaciÃƒÂ³n', subtitle: `Solo ${tasaPeriodo}% de los eventos del perÃƒÂ­odo fueron aprobados.` });
     }
     if (totals.rechazados > totals.aprobados && totals.eventos > 0) {
-      alertas.push({ icon: 'close-circle-outline', type: 'alert', title: 'Rechazos dominan', subtitle: `Hay ${totals.rechazados} rechazados frente a ${totals.aprobados} aprobados en el período.` });
+      alertas.push({ icon: 'close-circle-outline', type: 'alert', title: 'Rechazos dominan', subtitle: `Hay ${totals.rechazados} rechazados frente a ${totals.aprobados} aprobados en el perÃƒÂ­odo.` });
     }
     if (balancePeriodo !== null && balancePeriodo < 0) {
-      alertas.push({ icon: 'trending-down-outline', type: 'alert', title: 'Balance económico negativo', subtitle: `El balance real del período es ${fmtBs(balancePeriodo)}.` });
+      alertas.push({ icon: 'trending-down-outline', type: 'alert', title: 'Balance econÃƒÂ³mico negativo', subtitle: `El balance real del perÃƒÂ­odo es ${fmtBs(balancePeriodo)}.` });
     }
     const conCero = mesesPeriodo.find(r => (r.totalEvents || 0) === 0);
     if (conCero && mesesPeriodo.length >= 3) {
-      alertas.push({ icon: 'moon-outline', type: 'info', title: 'Meses sin actividad', subtitle: `${capStr(MONTH_NAMES_FULL[parseInt(conCero.mes.split('-')[1]) - 1])} no registró eventos en el período.` });
+      alertas.push({ icon: 'moon-outline', type: 'info', title: 'Meses sin actividad', subtitle: `${capStr(MONTH_NAMES_FULL[parseInt(conCero.mes.split('-')[1]) - 1])} no registrÃƒÂ³ eventos en el perÃƒÂ­odo.` });
     }
     const ultUltimo = mesesPeriodo.slice(-2);
     if (ultUltimo.length === 2 && ultUltimo[1].pendiente > ultUltimo[0].pendiente) {
       alertas.push({ icon: 'hourglass-outline', type: 'info', title: 'Pendientes en aumento', subtitle: `Pasaron de ${ultUltimo[0].pendiente} a ${ultUltimo[1].pendiente} solicitudes pendientes.` });
     }
     if (mejorMes) {
-      alertas.push({ icon: 'trophy-outline', type: 'win', title: 'Mes más activo', subtitle: `${capStr(MONTH_NAMES_FULL[parseInt(mejorMes.mes.split('-')[1]) - 1])} con ${mejorMes.totalEvents} eventos.` });
+      alertas.push({ icon: 'trophy-outline', type: 'win', title: 'Mes mÃƒÂ¡s activo', subtitle: `${capStr(MONTH_NAMES_FULL[parseInt(mejorMes.mes.split('-')[1]) - 1])} con ${mejorMes.totalEvents} eventos.` });
     }
 
     return {
@@ -1305,7 +1357,7 @@ const ReportesAvanzadosScreen = () => {
     };
   }, [reportesMensuales, repOperacionales, repInscripciones, repRecursos, repTipos, repEconomicos, reporteDesde, reporteHasta, selectedYear]);
 
-  // 🔥 NUEVO: Datos para la tendencia con comparativa interanual
+  // Ã°Å¸â€Â¥ NUEVO: Datos para la tendencia con comparativa interanual
   const tendenciaAnual = useMemo(() => {
     const cur = (reporteDesde || reporteHasta)
       ? reportesMensuales.filter(r => (reporteDesde ? r.mes >= reporteDesde : true) && (reporteHasta ? r.mes <= reporteHasta : true)).sort((a, b) => a.mes.localeCompare(b.mes))
@@ -1323,7 +1375,7 @@ const ReportesAvanzadosScreen = () => {
     };
   }, [reportesMensuales, reporteDesde, reporteHasta, selectedYear, anioComparar]);
 
-  // 🔥 NUEVO: Colores dinámicos según dark mode
+  // Ã°Å¸â€Â¥ NUEVO: Colores dinÃƒÂ¡micos segÃƒÂºn dark mode
   const theme = {
     background: darkMode ? COLORS.darkBackground : COLORS.background,
     surface: darkMode ? COLORS.darkSurface : COLORS.surface,
@@ -1344,11 +1396,11 @@ const ReportesAvanzadosScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* 🔥 NUEVO: Header con tabs y dark mode toggle */}
+      {/* Ã°Å¸â€Â¥ NUEVO: Header con tabs y dark mode toggle */}
       <View style={[styles.topHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <AdminHeader
           title="Reportes Avanzados"
-          subtitle="Análisis completo del sistema"
+          subtitle="AnÃƒÂ¡lisis completo del sistema"
           eyebrow="Reportes"
           rightActions={(
             <TouchableOpacity
@@ -1368,7 +1420,7 @@ const ReportesAvanzadosScreen = () => {
             { id: 'resumen', label: 'Resumen', icon: 'flash-outline' },
             { id: 'dashboard', label: 'Dashboard', icon: 'speedometer' },
             { id: 'calendario', label: 'Calendario', icon: 'calendar' },
-            { id: 'analisis', label: 'Análisis', icon: 'analytics' },
+            { id: 'analisis', label: 'AnÃƒÂ¡lisis', icon: 'analytics' },
           ].map(tab => (
             <TouchableOpacity
               key={tab.id}
@@ -1386,7 +1438,7 @@ const ReportesAvanzadosScreen = () => {
         </View>
       </View>
 
-      {/* 🔥 NUEVO: Barra de filtros visibles */}
+      {/* Ã°Å¸â€Â¥ NUEVO: Barra de filtros visibles */}
       <View style={[styles.filterBar, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <TouchableOpacity
           style={[styles.filterChipX, { backgroundColor: theme.divider }]}
@@ -1396,7 +1448,7 @@ const ReportesAvanzadosScreen = () => {
         >
           <Ionicons name="calendar-outline" size={14} color={(reporteDesde || reporteHasta) ? COLORS.primary : theme.textSecondary} />
           <Text style={[styles.filterChipTextX, { color: (reporteDesde || reporteHasta) ? COLORS.primary : theme.textSecondary }]}>
-            {reporteDesde ? `${reporteDesde.slice(5)} → ${(reporteHasta || 'hoy').slice(5)}` : 'Fechas'}
+            {reporteDesde ? `${reporteDesde.slice(5)} Ã¢â€ â€™ ${(reporteHasta || 'hoy').slice(5)}` : 'Fechas'}
           </Text>
           {(reporteDesde || reporteHasta) ? (
             <Ionicons name="close-circle" size={14} color={COLORS.primary} onPress={() => { setReporteDesde(''); setReporteHasta(''); }} />
@@ -1432,7 +1484,7 @@ const ReportesAvanzadosScreen = () => {
         {loadingMain ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Cargando datos…</Text>
+            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Cargando datosÃ¢â‚¬Â¦</Text>
           </View>
         ) : (
           <>
@@ -1442,7 +1494,7 @@ const ReportesAvanzadosScreen = () => {
                 {/* Comparativa interanual */}
                 <View style={styles.section}>
                   <SectionHeader icon="swap-horizontal-outline" title="Comparativa Anual" subtitle={`${selectedYear} vs ${selectedYear - 1}`} />
-                  {/* Selector de años */}
+                  {/* Selector de aÃƒÂ±os */}
                   <View style={styles.kpiGrid}>
                     {years.slice(0, 4).map(y => (
                       <TouchableOpacity
@@ -1450,7 +1502,7 @@ const ReportesAvanzadosScreen = () => {
                         style={[styles.yearChip, selectedYear === y && styles.yearChipActive, { backgroundColor: theme.divider, borderColor: selectedYear === y ? COLORS.primary : theme.border }]}
                         onPress={() => setSelectedYear(y)}
                         accessibilityRole="button"
-                        accessibilityLabel={`Comparar año ${y}`}
+                        accessibilityLabel={`Comparar aÃƒÂ±o ${y}`}
                       >
                         <Text style={[styles.yearChipText, { color: selectedYear === y ? COLORS.primary : theme.textSecondary }]}>{y}</Text>
                       </TouchableOpacity>
@@ -1460,72 +1512,72 @@ const ReportesAvanzadosScreen = () => {
                   <View style={styles.kpiGrid}>
                     <KpiCard label={`Eventos ${selectedYear}`} value={resumenData.anioA.eventos} icon="calendar-outline" color={COLORS.info} trend={resumenData.deltaEventos} sub={`vs ${selectedYear - 1}`} />
                     <KpiCard label={`Aprobados ${selectedYear}`} value={resumenData.anioA.aprobados} icon="checkmark-done-outline" color={COLORS.success} trend={resumenData.deltaAprob} sub={`vs ${selectedYear - 1}`} />
-                    <KpiCard label={`Tasa ${selectedYear}`} value={`${resumenData.anioA.tasa}%`} icon="analytics-outline" color={COLORS.primary} sub={`Año ${selectedYear - 1}: ${resumenData.anioB.tasa}%`} />
+                    <KpiCard label={`Tasa ${selectedYear}`} value={`${resumenData.anioA.tasa}%`} icon="analytics-outline" color={COLORS.primary} sub={`AÃƒÂ±o ${selectedYear - 1}: ${resumenData.anioB.tasa}%`} />
                     <KpiCard label={`Pendientes ${selectedYear}`} value={resumenData.anioA.pendientes} icon="hourglass-outline" color={COLORS.warning} sub={`Total acumulado`} />
                   </View>
                 </View>
 
-                {/* Highlights del período */}
+                {/* Highlights del perÃƒÂ­odo */}
                 <View style={styles.section}>
-                  <SectionHeader icon="star-outline" title="Highlights del Período" subtitle={reporteDesde || reporteHasta ? 'Con filtro activo' : 'Todos los datos'} />
+                  <SectionHeader icon="star-outline" title="Highlights del PerÃƒÂ­odo" subtitle={reporteDesde || reporteHasta ? 'Con filtro activo' : 'Todos los datos'} />
                   <View style={styles.kpiGrid}>
                     <InsightCard
                       icon="trophy-outline"
-                      title="Mes más activo"
-                      value={resumenData.mejorMes ? `${MONTH_NAMES_FULL[parseInt(resumenData.mejorMes.mes.split('-')[1]) - 1]} · ${resumenData.mejorMes.totalEvents}` : '–'}
+                      title="Mes mÃƒÂ¡s activo"
+                      value={resumenData.mejorMes ? `${MONTH_NAMES_FULL[parseInt(resumenData.mejorMes.mes.split('-')[1]) - 1]} Ã‚Â· ${resumenData.mejorMes.totalEvents}` : 'Ã¢â‚¬â€œ'}
                       subtitle={`${resumenData.mejorMes ? resumenData.mejorMes.aprobado + ' aprobados' : ''}`}
                       type="win"
                     />
                     <InsightCard
                       icon="school-outline"
-                      title="Facultad con más inscritos"
-                      value={resumenData.facTop ? resumenData.facTop.facultad : '–'}
+                      title="Facultad con mÃƒÂ¡s inscritos"
+                      value={resumenData.facTop ? resumenData.facTop.facultad : 'Ã¢â‚¬â€œ'}
                       subtitle={resumenData.facTop ? `${resumenData.facTop.inscritos} inscritos` : ''}
                       color={COLORS.info}
                     />
                     <InsightCard
                       icon="cube-outline"
-                      title="Recurso más solicitado"
-                      value={resumenData.recTop ? resumenData.recTop.nombre : '–'}
+                      title="Recurso mÃƒÂ¡s solicitado"
+                      value={resumenData.recTop ? resumenData.recTop.nombre : 'Ã¢â‚¬â€œ'}
                       subtitle={resumenData.recTop ? `${resumenData.recTop.usos} solicitudes` : ''}
                       color={COLORS.purple}
                     />
                     <InsightCard
                       icon="pricetags-outline"
-                      title="Tipo de evento más común"
-                      value={resumenData.tipoTop ? resumenData.tipoTop.tipo : '–'}
+                      title="Tipo de evento mÃƒÂ¡s comÃƒÂºn"
+                      value={resumenData.tipoTop ? resumenData.tipoTop.tipo : 'Ã¢â‚¬â€œ'}
                       subtitle={resumenData.tipoTop ? `${resumenData.tipoTop.total} eventos` : ''}
                       color={COLORS.warning}
                     />
                   </View>
                 </View>
 
-                {/* Alertas automáticas */}
+                {/* Alertas automÃƒÂ¡ticas */}
                 <View style={styles.section}>
-                  <SectionHeader icon="notifications-outline" title="Alertas y Observaciones" subtitle="Detectadas automáticamente" />
+                  <SectionHeader icon="notifications-outline" title="Alertas y Observaciones" subtitle="Detectadas automÃƒÂ¡ticamente" />
                   <View style={styles.kpiGrid}>
                     {resumenData.alertas.length ? (
                       resumenData.alertas.slice(0, 6).map((a, i) => (
                         <InsightCard key={i} icon={a.icon} title={a.title} value={a.subtitle} type={a.type} />
                       ))
                     ) : (
-                      <InsightCard icon="checkmark-circle-outline" title="Todo en orden" value="No se detectaron alertas en el período" type="win" />
+                      <InsightCard icon="checkmark-circle-outline" title="Todo en orden" value="No se detectaron alertas en el perÃƒÂ­odo" type="win" />
                     )}
                   </View>
                 </View>
 
-                {/* KPIs rápidos */}
+                {/* KPIs rÃƒÂ¡pidos */}
                 <View style={styles.section}>
-                  <SectionHeader icon="pulse-outline" title="Métricas del Período" />
+                  <SectionHeader icon="pulse-outline" title="MÃƒÂ©tricas del PerÃƒÂ­odo" />
                   <View style={styles.kpiGrid}>
                     <KpiCard label="Eventos" value={resumenData.totals.eventos} icon="calendar-outline" color={COLORS.info} sub={`Tasa ${resumenData.tasaPeriodo}%`} />
-                    <KpiCard label="Inscritos" value={resumenData.inscritos} icon="person-add-outline" color={COLORS.success} sub="En el período" />
-                    <KpiCard label="Balance Real" value={resumenData.balancePeriodo !== null ? fmtBs(resumenData.balancePeriodo) : '–'} icon="wallet-outline" color={resumenData.balancePeriodo >= 0 ? COLORS.success : COLORS.accent} />
-                    <KpiCard label="Tiempo Prom." value={resumenData.tiempoPromedio !== null ? `${resumenData.tiempoPromedio}h` : '–'} icon="time-outline" color={COLORS.warning} sub="Para aprobar" />
+                    <KpiCard label="Inscritos" value={resumenData.inscritos} icon="person-add-outline" color={COLORS.success} sub="En el perÃƒÂ­odo" />
+                    <KpiCard label="Balance Real" value={resumenData.balancePeriodo !== null ? fmtBs(resumenData.balancePeriodo) : 'Ã¢â‚¬â€œ'} icon="wallet-outline" color={resumenData.balancePeriodo >= 0 ? COLORS.success : COLORS.accent} />
+                    <KpiCard label="Tiempo Prom." value={resumenData.tiempoPromedio !== null ? `${resumenData.tiempoPromedio}h` : 'Ã¢â‚¬â€œ'} icon="time-outline" color={COLORS.warning} sub="Para aprobar" />
                   </View>
                 </View>
 
-                {/* Actividad mensual del período */}
+                {/* Actividad mensual del perÃƒÂ­odo */}
                 <View style={styles.section}>
                   <SectionHeader icon="bar-chart-outline" title={`Actividad ${selectedYear}`} subtitle="Eventos por mes" />
                   <View style={[styles.card, { backgroundColor: theme.surface }]}>
@@ -1537,7 +1589,7 @@ const ReportesAvanzadosScreen = () => {
                         return (
                           <View style={styles.emptyChart}>
                             <Ionicons name="bar-chart-outline" size={40} color={COLORS.textTertiary} />
-                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Sin datos para este período</Text>
+                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Sin datos para este perÃƒÂ­odo</Text>
                           </View>
                         );
                       }
@@ -1565,25 +1617,25 @@ const ReportesAvanzadosScreen = () => {
               <>
                 {/* KPIs con tendencias */}
                 <View style={styles.section}>
-                  <SectionHeader icon="pulse-outline" title="Indicadores Clave" subtitle={reporteDesde || reporteHasta ? 'Período filtrado' : 'Métricas principales'} />
+                  <SectionHeader icon="pulse-outline" title="Indicadores Clave" subtitle={reporteDesde || reporteHasta ? 'PerÃƒÂ­odo filtrado' : 'MÃƒÂ©tricas principales'} />
                   <View style={styles.kpiGrid}>
                     <KpiCard 
                     label="Usuarios Activos" 
-                    value={stats?.activeUsers ?? '–'} 
+                    value={stats?.activeUsers ?? 'Ã¢â‚¬â€œ'} 
                     icon="people-outline" 
                     color={COLORS.primary}
                     sub="Cuentas habilitadas"
                   />
                     <KpiCard 
                       label="Eventos Totales" 
-                      value={statsFiltrado?.total ?? stats?.totalEvents ?? '–'} 
+                      value={statsFiltrado?.total ?? stats?.totalEvents ?? 'Ã¢â‚¬â€œ'} 
                       icon="calendar-outline" 
                       color={COLORS.info}
                       trend={tendReal('totalEvents')}
                       sub="vs mes anterior"
                     />
                     <KpiCard 
-                      label="Tasa Aprobación" 
+                      label="Tasa AprobaciÃƒÂ³n" 
                       value={`${statsFiltrado?.tasa ?? stats?.tasaAprobacion ?? 0}%`} 
                       icon="checkmark-done-outline" 
                       color={COLORS.success}
@@ -1615,12 +1667,12 @@ const ReportesAvanzadosScreen = () => {
                   </View>
                 </View>
 
-                {/* Gráfico de tendencia con comparativa */}
+                {/* GrÃƒÂ¡fico de tendencia con comparativa */}
                 {tendenciaAnual.labels.length > 0 && (
                   <View style={styles.section}>
                     <SectionHeader
                       icon="trending-up-outline"
-                      title={reporteDesde || reporteHasta ? 'Tendencia del Período' : `Tendencia ${selectedYear}`}
+                      title={reporteDesde || reporteHasta ? 'Tendencia del PerÃƒÂ­odo' : `Tendencia ${selectedYear}`}
                       subtitle={mostrarComparacion && tendenciaAnual.hasPrev ? `vs ${anioComparar}` : 'Mensual'}
                       action={(
                         <View style={styles.compareRow}>
@@ -1686,9 +1738,9 @@ const ReportesAvanzadosScreen = () => {
                   </View>
                 )}
 
-                {/* Distribución por estado */}
+                {/* DistribuciÃƒÂ³n por estado */}
                 <View style={styles.section}>
-                  <SectionHeader icon="pie-chart-outline" title="Distribución por Estado" />
+                  <SectionHeader icon="pie-chart-outline" title="DistribuciÃƒÂ³n por Estado" />
                   <View style={[styles.card, { backgroundColor: theme.surface }]}>
                     {eventosPorEstado ? (
                       <PieChart
@@ -1725,13 +1777,13 @@ const ReportesAvanzadosScreen = () => {
                   </View>
                 </View>
 
-                {/* Histórico mensual */}
+                {/* HistÃƒÂ³rico mensual */}
                 {reportesMensuales.length > 0 && (
                   <View style={styles.section}>
-                    <SectionHeader icon="bar-chart-outline" title="Histórico Mensual" subtitle="Últimos períodos" />
+                    <SectionHeader icon="bar-chart-outline" title="HistÃƒÂ³rico Mensual" subtitle="ÃƒÅ¡ltimos perÃƒÂ­odos" />
                     <View style={[styles.card, { backgroundColor: theme.surface }]}>
                       <View style={[styles.tableRow, styles.tableHead]}>
-                        {['Mes', 'Eventos', 'Aprob.', 'Tasa', 'Acción'].map((h, i) => (
+                        {['Mes', 'Eventos', 'Aprob.', 'Tasa', 'AcciÃƒÂ³n'].map((h, i) => (
                           <Text key={i} style={[styles.tableHeadText, { color: theme.textSecondary }, i === 0 ? { flex: 2 } : { flex: 1, textAlign: 'center' }]}>{h}</Text>
                         ))}
                       </View>
@@ -1766,7 +1818,7 @@ const ReportesAvanzadosScreen = () => {
             {activeTab === 'calendario' && (
               <>
                 <View style={styles.section}>
-                  <SectionHeader icon="calendar-outline" title="Calendario de Actividad" subtitle={`${reporteDesde || reporteHasta ? 'Período filtrado' : 'Últimas 52 semanas'}`} />
+                  <SectionHeader icon="calendar-outline" title="Calendario de Actividad" subtitle={`${reporteDesde || reporteHasta ? 'PerÃƒÂ­odo filtrado' : 'ÃƒÅ¡ltimas 52 semanas'}`} />
                   <View style={[styles.card, { backgroundColor: theme.surface }]}>
                     <CalendarHeatmap data={heatmapData} width={chartW} />
                     <View style={styles.heatmapLegend}>
@@ -1778,14 +1830,14 @@ const ReportesAvanzadosScreen = () => {
                         <View style={[styles.heatmapLegendBox, { backgroundColor: '#22C55E' }]} />
                         <View style={[styles.heatmapLegendBox, { backgroundColor: '#16A34A' }]} />
                       </View>
-                      <Text style={[styles.heatmapLegendText, { color: theme.textSecondary }]}>Más</Text>
+                      <Text style={[styles.heatmapLegendText, { color: theme.textSecondary }]}>MÃƒÂ¡s</Text>
                     </View>
                   </View>
                 </View>
 
                 {/* Resumen mensual */}
                 <View style={styles.section}>
-                  <SectionHeader icon="bar-chart-outline" title="Resumen Mensual" subtitle="Eventos por mes del período" />
+                  <SectionHeader icon="bar-chart-outline" title="Resumen Mensual" subtitle="Eventos por mes del perÃƒÂ­odo" />
                   <View style={[styles.card, { backgroundColor: theme.surface }]}>
                     {(() => {
                       const mesesC = (reporteDesde || reporteHasta)
@@ -1795,7 +1847,7 @@ const ReportesAvanzadosScreen = () => {
                         return (
                           <View style={styles.emptyChart}>
                             <Ionicons name="bar-chart-outline" size={40} color={COLORS.textTertiary} />
-                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Sin datos para este período</Text>
+                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Sin datos para este perÃƒÂ­odo</Text>
                           </View>
                         );
                       }
@@ -1809,7 +1861,7 @@ const ReportesAvanzadosScreen = () => {
                           <View key={i} style={{ marginBottom: 12 }}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                               <Text style={{ fontSize: 13, fontWeight: '700', color: theme.textPrimary, flex: 1 }}>{MONTH_NAMES_FULL[parseInt(mm) - 1]}</Text>
-                              <Text style={{ fontSize: 12, color: theme.textSecondary }}>{pe} pend · </Text>
+                              <Text style={{ fontSize: 12, color: theme.textSecondary }}>{pe} pend Ã‚Â· </Text>
                               <Text style={{ fontSize: 12, color: COLORS.success, fontWeight: '600' }}>{ap} ap.</Text>
                               <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary, marginLeft: 10, width: 32, textAlign: 'right' }}>{t}</Text>
                             </View>
@@ -1825,9 +1877,9 @@ const ReportesAvanzadosScreen = () => {
                   </View>
                 </View>
 
-                {/* Patrón por trimestre */}
+                {/* PatrÃƒÂ³n por trimestre */}
                 <View style={styles.section}>
-                  <SectionHeader icon="git-network-outline" title="Patrón por Trimestre" subtitle="Concentración de actividad" />
+                  <SectionHeader icon="git-network-outline" title="PatrÃƒÂ³n por Trimestre" subtitle="ConcentraciÃƒÂ³n de actividad" />
                   <View style={[styles.card, { backgroundColor: theme.surface }]}>
                     {(() => {
                       const trimestre = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
@@ -1849,9 +1901,9 @@ const ReportesAvanzadosScreen = () => {
                   </View>
                 </View>
 
-                {/* Días más activos */}
+                {/* DÃƒÂ­as mÃƒÂ¡s activos */}
                 <View style={styles.section}>
-                  <SectionHeader icon="flash-outline" title="Días Más Activos" subtitle="Top 5 fechas con más eventos" />
+                  <SectionHeader icon="flash-outline" title="DÃƒÂ­as MÃƒÂ¡s Activos" subtitle="Top 5 fechas con mÃƒÂ¡s eventos" />
                   <View style={[styles.card, { backgroundColor: theme.surface }]}>
                     {diasActivos.length ? (
                       diasActivos.map((d, i) => (
@@ -1874,25 +1926,25 @@ const ReportesAvanzadosScreen = () => {
               </>
             )}
 
-            {/* TAB: ANÁLISIS */}
+            {/* TAB: ANÃƒÂLISIS */}
             {activeTab === 'analisis' && (
               <View style={styles.section}>
-                <SectionHeader icon="analytics-outline" title="Análisis Detallado" subtitle="Métricas consolidadas" />
+                <SectionHeader icon="analytics-outline" title="AnÃƒÂ¡lisis Detallado" subtitle="MÃƒÂ©tricas consolidadas" />
 
                 {/* KPIs ampliados */}
                 <View style={styles.kpiGrid}>
-                  <KpiCard label="Inscritos Totales" value={repInscripciones?.total ?? '–'} icon="person-add-outline" color={COLORS.info} sub="En todos los eventos" />
-                  <KpiCard label="Balance Real" value={repEconomicos?.resumen ? fmtBs(repEconomicos.resumen.balance_real) : '–'} icon="wallet-outline" color={COLORS.success} sub="Informes de cierre" />
-                  <KpiCard label="Tiempo Prom. Aprobación" value={repOperacionales?.tiempoAprobacionPorMes?.length ? `${repOperacionales.tiempoAprobacionPorMes.slice(-1)[0].horas}h` : '–'} icon="time-outline" color={COLORS.warning} sub="Último mes" />
-                  <KpiCard label="Recursos Solicitados" value={repRecursos?.totalSolicitudes ?? '–'} icon="cube-outline" color={COLORS.purple} sub="Este mes" />
+                  <KpiCard label="Inscritos Totales" value={repInscripciones?.total ?? 'Ã¢â‚¬â€œ'} icon="person-add-outline" color={COLORS.info} sub="En todos los eventos" />
+                  <KpiCard label="Balance Real" value={repEconomicos?.resumen ? fmtBs(repEconomicos.resumen.balance_real) : 'Ã¢â‚¬â€œ'} icon="wallet-outline" color={COLORS.success} sub="Informes de cierre" />
+                  <KpiCard label="Tiempo Prom. AprobaciÃƒÂ³n" value={repOperacionales?.tiempoAprobacionPorMes?.length ? `${repOperacionales.tiempoAprobacionPorMes.slice(-1)[0].horas}h` : 'Ã¢â‚¬â€œ'} icon="time-outline" color={COLORS.warning} sub="ÃƒÅ¡ltimo mes" />
+                  <KpiCard label="Recursos Solicitados" value={repRecursos?.totalSolicitudes ?? 'Ã¢â‚¬â€œ'} icon="cube-outline" color={COLORS.purple} sub="Este mes" />
                 </View>
 
-                {/* Sub-tabs de análisis */}
+                {/* Sub-tabs de anÃƒÂ¡lisis */}
                 <View style={styles.analisisSubTabs}>
                   {[
                     { id: 'inscripciones', label: 'Inscripciones', icon: 'person-add-outline' },
                     { id: 'operacional', label: 'Operacional', icon: 'git-branch-outline' },
-                    { id: 'economico', label: 'Económico', icon: 'wallet-outline' },
+                    { id: 'economico', label: 'EconÃƒÂ³mico', icon: 'wallet-outline' },
                     { id: 'recursos', label: 'Recursos', icon: 'cube-outline' },
                   ].map(st => (
                     <TouchableOpacity
@@ -1908,14 +1960,14 @@ const ReportesAvanzadosScreen = () => {
                   ))}
                 </View>
 
-                {/* Distribución por tipo de evento */}
+                {/* DistribuciÃƒÂ³n por tipo de evento */}
                 {analisisSub === 'inscripciones' && repTipos.length > 0 && (
                   <View style={styles.section}>
-                    <SectionHeader icon="pricetags-outline" title="Eventos por Tipo" subtitle="Distribución" />
+                    <SectionHeader icon="pricetags-outline" title="Eventos por Tipo" subtitle="DistribuciÃƒÂ³n" />
                     <View style={[styles.card, { backgroundColor: theme.surface }]}>
                       <PieChart
                         data={repTipos.map((t, i) => ({
-                          name: String(t.tipo).length > 16 ? String(t.tipo).slice(0, 16) + '…' : t.tipo,
+                          name: String(t.tipo).length > 16 ? String(t.tipo).slice(0, 16) + 'Ã¢â‚¬Â¦' : t.tipo,
                           population: t.total,
                           color: ['#C44B0A', '#3B82F6', '#16A34A', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#EC4899'][i % 8],
                           legendFontColor: theme.textSecondary,
@@ -1959,10 +2011,10 @@ const ReportesAvanzadosScreen = () => {
                   </View>
                 )}
 
-                {/* Top eventos con más inscritos */}
+                {/* Top eventos con mÃƒÂ¡s inscritos */}
                 {analisisSub === 'inscripciones' && repInscripciones?.topEventos?.length > 0 && (
                   <View style={styles.section}>
-                    <SectionHeader icon="ribbon-outline" title="Eventos con más Inscritos" subtitle="Top 10" />
+                    <SectionHeader icon="ribbon-outline" title="Eventos con mÃƒÂ¡s Inscritos" subtitle="Top 10" />
                     <View style={[styles.card, { backgroundColor: theme.surface }]}>
                       <HorizontalBarChart
                         data={repInscripciones.topEventos.map(e => ({ label: e.nombreevento, value: e.inscritos }))}
@@ -1993,10 +2045,10 @@ const ReportesAvanzadosScreen = () => {
                   </View>
                 )}
 
-                {/* Tiempo de aprobación por mes */}
+                {/* Tiempo de aprobaciÃƒÂ³n por mes */}
                 {analisisSub === 'operacional' && repOperacionales?.tiempoAprobacionPorMes?.length > 0 && (
                   <View style={styles.section}>
-                    <SectionHeader icon="timer-outline" title="Tiempo de Aprobación" subtitle="Horas promedio por mes" />
+                    <SectionHeader icon="timer-outline" title="Tiempo de AprobaciÃƒÂ³n" subtitle="Horas promedio por mes" />
                     <View style={[styles.card, { backgroundColor: theme.surface }]}>
                       <BarChart
                         data={{
@@ -2009,15 +2061,15 @@ const ReportesAvanzadosScreen = () => {
                         style={{ borderRadius: 16 }}
                         fromZero
                       />
-                      <Text style={[styles.chartHint, { color: theme.textSecondary }]}>Desde la creación del evento hasta su aprobación</Text>
+                      <Text style={[styles.chartHint, { color: theme.textSecondary }]}>Desde la creaciÃƒÂ³n del evento hasta su aprobaciÃƒÂ³n</Text>
                     </View>
                   </View>
                 )}
 
-                {/* Balance económico por mes */}
+                {/* Balance econÃƒÂ³mico por mes */}
                 {analisisSub === 'economico' && repEconomicos?.porMes?.length > 0 && (
                   <View style={styles.section}>
-                    <SectionHeader icon="trending-down-outline" title="Balance Económico por Mes" subtitle="Egresos vs Ingresos reales" />
+                    <SectionHeader icon="trending-down-outline" title="Balance EconÃƒÂ³mico por Mes" subtitle="Egresos vs Ingresos reales" />
                     <View style={[styles.card, { backgroundColor: theme.surface }]}>
                       <BarChart
                         data={{
@@ -2064,7 +2116,7 @@ const ReportesAvanzadosScreen = () => {
                 {/* Presupuesto vs Real */}
                 {analisisSub === 'economico' && repEconomicos?.porEvento?.length > 0 && (
                   <View style={styles.section}>
-                    <SectionHeader icon="swap-horizontal-outline" title="Presupuesto vs Real" subtitle="Últimos eventos con informe" />
+                    <SectionHeader icon="swap-horizontal-outline" title="Presupuesto vs Real" subtitle="ÃƒÅ¡ltimos eventos con informe" />
                     <View style={[styles.card, { backgroundColor: theme.surface }]}>
                       <View style={[styles.tableRow, styles.tableHead]}>
                         {['Evento', 'Pres. Egr.', 'Real Egr.', 'Balance'].map((h, i) => (
@@ -2083,10 +2135,10 @@ const ReportesAvanzadosScreen = () => {
                   </View>
                 )}
 
-                {/* Recursos más usados */}
+                {/* Recursos mÃƒÂ¡s usados */}
                 {analisisSub === 'recursos' && repRecursos?.recursosMasUsados?.length > 0 && (
                   <View style={styles.section}>
-                    <SectionHeader icon="cube-outline" title="Recursos Más Solicitados" subtitle="Este mes" />
+                    <SectionHeader icon="cube-outline" title="Recursos MÃƒÂ¡s Solicitados" subtitle="Este mes" />
                     <View style={[styles.card, { backgroundColor: theme.surface }]}>
                       <HorizontalBarChart
                         data={repRecursos.recursosMasUsados.map(r => ({ label: r.nombre, value: r.usos }))}
@@ -2110,7 +2162,7 @@ const ReportesAvanzadosScreen = () => {
                 <Ionicons name="document-lock-outline" size={22} color="#F59E0B" />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[styles.actionTitle, { color: '#F59E0B' }]}>Reporte Anual Completo {selectedYear}</Text>
-                  <Text style={styles.actionSub}>PDF con TODOS los eventos y facultades · {reporteDesde || reporteHasta ? 'respeta el filtro de fechas' : `año ${selectedYear}`}</Text>
+                  <Text style={styles.actionSub}>PDF con TODOS los eventos y facultades Ã‚Â· {reporteDesde || reporteHasta ? 'respeta el filtro de fechas' : `aÃƒÂ±o ${selectedYear}`}</Text>
                 </View>
                 {loading && <ActivityIndicator size="small" color="#F59E0B" />}
                 <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
@@ -2123,7 +2175,7 @@ const ReportesAvanzadosScreen = () => {
                 <Ionicons name="list-circle-outline" size={22} color={COLORS.purple} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[styles.actionTitle, { color: COLORS.purple }]}>Ver Detalle de Evento</Text>
-                  <Text style={styles.actionSub}>Solo eventos en Fase 3 (programación) · selecciona 1 para ver su información</Text>
+                  <Text style={styles.actionSub}>Solo eventos en Fase 3 (programaciÃƒÂ³n) Ã‚Â· selecciona 1 para ver su informaciÃƒÂ³n</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={COLORS.purple} />
               </TouchableOpacity>
@@ -2132,7 +2184,7 @@ const ReportesAvanzadosScreen = () => {
                 <Ionicons name="document-text-outline" size={22} color={COLORS.primary} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[styles.actionTitle, { color: COLORS.primary }]}>Reporte Mensual PDF</Text>
-                  <Text style={styles.actionSub}>Selecciona mes y año para generar</Text>
+                  <Text style={styles.actionSub}>Selecciona mes y aÃƒÂ±o para generar</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
               </TouchableOpacity>
@@ -2141,7 +2193,7 @@ const ReportesAvanzadosScreen = () => {
                 <Ionicons name="file-tray-full-outline" size={22} color={COLORS.info} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[styles.actionTitle, { color: COLORS.info }]}>Exportar a Excel (CSV)</Text>
-                  <Text style={styles.actionSub}>CSV con separador «;» compatible con Excel</Text>
+                  <Text style={styles.actionSub}>CSV con separador Ã‚Â«;Ã‚Â» compatible con Excel</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={COLORS.info} />
               </TouchableOpacity>
@@ -2157,9 +2209,9 @@ const ReportesAvanzadosScreen = () => {
       {showSelector && (
         <View style={styles.overlay}>
           <View style={styles.modal}>
-            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Seleccionar Mes y Año</Text>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Seleccionar Mes y AÃƒÂ±o</Text>
             
-            <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>Año</Text>
+            <Text style={[styles.pickerLabel, { color: theme.textSecondary }]}>AÃƒÂ±o</Text>
             <TouchableOpacity style={[styles.pickerBtn, { borderColor: theme.border, backgroundColor: theme.divider }]} onPress={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false); }}>
               <Text style={[styles.pickerBtnText, { color: theme.textPrimary }]}>{selectedYear}</Text>
               <Ionicons name={showYearPicker ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textPrimary} />
@@ -2213,7 +2265,7 @@ const ReportesAvanzadosScreen = () => {
           <View style={[styles.modal, { width: '90%', maxWidth: 420, maxHeight: '80%' }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Seleccionar Evento</Text>
             <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 12, textAlign: 'center' }}>
-              Toca un evento en Fase 3 (programación) para ver todos sus detalles completos
+              Toca un evento en Fase 3 (programaciÃƒÂ³n) para ver todos sus detalles completos
             </Text>
             
             <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
@@ -2235,7 +2287,7 @@ const ReportesAvanzadosScreen = () => {
                           {ev.nombreevento || 'Sin nombre'}
                         </Text>
                         <Text style={{ fontSize: 11, color: theme.textSecondary }} numberOfLines={1}>
-                          {ev.fechaevento ? new Date(ev.fechaevento).toLocaleDateString('es-ES') : 'Sin fecha'} · {ev.lugarevento || 'Sin lugar'}
+                          {ev.fechaevento ? new Date(ev.fechaevento).toLocaleDateString('es-ES') : 'Sin fecha'} Ã‚Â· {ev.lugarevento || 'Sin lugar'}
                         </Text>
                       </View>
                       <View style={[styles.badge, ev.estado === 'aprobado' ? styles.badgeaprobado : ev.estado === 'pendiente' ? styles.badgependiente : styles.badgerechazado]}>
@@ -2262,13 +2314,13 @@ const ReportesAvanzadosScreen = () => {
           <View style={styles.modal}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Filtrar por Fechas</Text>
 
-            {/* Atajos rápidos */}
+            {/* Atajos rÃƒÂ¡pidos */}
             <View style={styles.quickRanges}>
               {[
-                { label: 'Este año', calc: () => [new Date().getFullYear() + '-01-01', ''] },
-                { label: 'Año anterior', calc: () => [(new Date().getFullYear() - 1) + '-01-01', (new Date().getFullYear() - 1) + '-12-31'] },
+                { label: 'Este aÃƒÂ±o', calc: () => [new Date().getFullYear() + '-01-01', ''] },
+                { label: 'AÃƒÂ±o anterior', calc: () => [(new Date().getFullYear() - 1) + '-01-01', (new Date().getFullYear() - 1) + '-12-31'] },
                 { label: 'Este mes', calc: () => { const d = new Date(); return [d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01', '']; } },
-                { label: 'Últimos 6 meses', calc: () => { const d = new Date(); d.setMonth(d.getMonth() - 5); d.setDate(1); return [d.toISOString().split('T')[0], '']; } },
+                { label: 'ÃƒÅ¡ltimos 6 meses', calc: () => { const d = new Date(); d.setMonth(d.getMonth() - 5); d.setDate(1); return [d.toISOString().split('T')[0], '']; } },
               ].map(p => (
                 <TouchableOpacity
                   key={p.label}
@@ -2379,7 +2431,7 @@ const styles = StyleSheet.create({
   searchContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, marginBottom: 12 },
   searchInput: { flex: 1, fontSize: 14 },
 
-  // 🔥 NUEVO: Barra de filtros
+  // Ã°Å¸â€Â¥ NUEVO: Barra de filtros
   filterBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, flexWrap: 'wrap' },
   filterChipX: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, maxWidth: 170 },
   filterChipTextX: { fontSize: 12, fontWeight: '600' },
@@ -2390,28 +2442,28 @@ const styles = StyleSheet.create({
   rangeChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1 },
   rangeChipText: { fontSize: 12, fontWeight: '600' },
 
-  // 🔥 NUEVO: Chips de comparativa anual
+  // Ã°Å¸â€Â¥ NUEVO: Chips de comparativa anual
   yearChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, minWidth: 56, alignItems: 'center' },
   yearChipActive: { borderWidth: 1.5 },
   yearChipText: { fontSize: 14, fontWeight: '700' },
 
-  // 🔥 NUEVO: Insights del resumen
+  // Ã°Å¸â€Â¥ NUEVO: Insights del resumen
   insightIconWrap: { width: 42, height: 42, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   insightValue: { fontSize: 15, fontWeight: '800', marginBottom: 1 },
   insightTitle: { fontSize: 13, fontWeight: '600' },
   insightSub: { fontSize: 11, marginTop: 2 },
 
-  // 🔥 NUEVO: Toggle comparativa
+  // Ã°Å¸â€Â¥ NUEVO: Toggle comparativa
   compareRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   compareLabel: { fontSize: 11, fontWeight: '600' },
 
-  // 🔥 NUEVO: Sub-tabs de análisis
+  // Ã°Å¸â€Â¥ NUEVO: Sub-tabs de anÃƒÂ¡lisis
   analisisSubTabs: { flexDirection: 'row', gap: 8, marginTop: 16, flexWrap: 'wrap' },
   analisisSubTab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
   analisisSubTabActive: { backgroundColor: COLORS.primary },
   analisisSubTabText: { fontSize: 12, fontWeight: '700' },
 
-  // Ranking de días
+  // Ranking de dÃƒÂ­as
   diasRank: { fontSize: 13, fontWeight: '800', width: 30 },
   quickFilters: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F3F4F6' },
@@ -2434,7 +2486,7 @@ const styles = StyleSheet.create({
   kpiLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
   kpiSub: { fontSize: 11, color: COLORS.textTertiary, marginTop: 2 },
 
-  // Gráficos
+  // GrÃƒÂ¡ficos
   card: { borderRadius: 14, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3 },
   cardTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
   legend: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 12 },
@@ -2457,7 +2509,7 @@ const styles = StyleSheet.create({
   funnelFill: { height: '100%', borderRadius: 5 },
   chartHint: { fontSize: 11, marginTop: 8, textAlign: 'center' },
 
-  // Estadísticas
+  // EstadÃƒÂ­sticas
   statsGrid: { flexDirection: 'row', gap: 16 },
   statItem: { flex: 1, padding: 12, backgroundColor: COLORS.divider, borderRadius: 8 },
   statLabel: { fontSize: 12, marginBottom: 4 },
@@ -2481,7 +2533,7 @@ const styles = StyleSheet.create({
   filterText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
   filterTextActive: { color: COLORS.white, fontWeight: '700' },
 
-  // Filtros avanzados (búsqueda, fechas, facultad)
+  // Filtros avanzados (bÃƒÂºsqueda, fechas, facultad)
   filterAdvancedRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
   searchBox: { flex: 1, minWidth: 160, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   searchInput: { flex: 1, fontSize: 13, padding: 0 },

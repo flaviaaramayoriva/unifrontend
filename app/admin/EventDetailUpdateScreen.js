@@ -154,6 +154,18 @@ const formatTime = (timeString) => {
   return timeString.includes(':') ? timeString : timeString;
 };
 
+const SectionHeader = ({ icon, title, color = COLORS.primary, subtitle }) => (
+  <View style={styles.sectionHeaderRow}>
+    <View style={[styles.sectionHeaderIconWrap, { backgroundColor: color + '1A' }]}>
+      <Ionicons name={icon} size={19} color={color} />
+    </View>
+    <View style={styles.sectionHeaderTextWrap}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {subtitle ? <Text style={styles.sectionHeaderSubtitle}>{subtitle}</Text> : null}
+    </View>
+  </View>
+);
+
 const EventDetailScreen = () => {
   const { eventId } = useLocalSearchParams();
   const router = useRouter();
@@ -408,6 +420,7 @@ const EventDetailScreen = () => {
         {event.imageUrl && <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />}
 
         <View style={styles.card}>
+          <View style={styles.accentBar} />
           <Text style={styles.eventTitle}>{event.title}</Text>
           {event && (() => {
             const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
@@ -434,7 +447,7 @@ const EventDetailScreen = () => {
 
         {/* 1. Datos Generales */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Datos Generales</Text>
+            <SectionHeader icon="document-text-outline" title="Datos Generales" />
           <View style={styles.detailRow}><Ionicons name="calendar-outline" size={20} color={COLORS.primary} style={styles.detailIcon} /><Text style={styles.detailText}>Fecha: {event.date}</Text></View>
           <View style={styles.detailRow}><Ionicons name="time-outline" size={20} color={COLORS.primary} style={styles.detailIcon} /><Text style={styles.detailText}>Hora: {event.time}</Text></View>
           <View style={styles.detailRow}><Ionicons name="location-outline" size={20} color={COLORS.primary} style={styles.detailIcon} /><Text style={styles.detailText}>Ubicación: {event.location}</Text></View>
@@ -443,7 +456,7 @@ const EventDetailScreen = () => {
         {/* 2. Responsable del Evento */}
         {event.idfase >= 2 && event.responsable && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Responsable del Evento</Text>
+            <SectionHeader icon="person-outline" title="Responsable del Evento" />
             <View style={styles.detailRow}><Ionicons name="person-outline" size={20} color={COLORS.primary} style={styles.detailIcon} /><Text style={styles.detailText}>{event.responsable}</Text></View>
           </View>
         )}
@@ -451,7 +464,7 @@ const EventDetailScreen = () => {
         {/* 3. Clasificación Estratégica */}
         {event.Clasificacion && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Clasificación Estratégica</Text>
+            <SectionHeader icon="layers-outline" title="Clasificación Estratégica" />
             <Text style={styles.detailText}>• {event.Clasificacion.nombreClasificacion} - {event.Clasificacion.nombresubcategoria}</Text>
           </View>
         )}
@@ -459,7 +472,7 @@ const EventDetailScreen = () => {
         {/* 4. Tipos de Evento */}
         {event.tiposEvento && event.tiposEvento.length > 0 && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Tipos de Evento</Text>
+            <SectionHeader icon="pricetag-outline" title="Tipos de Evento" />
             {event.tiposEvento.map((tipo, index) => (
               <View key={index} style={styles.listItem}>
                 <Ionicons name="pricetag-outline" size={16} color={COLORS.grayText} style={styles.listIcon} />
@@ -472,7 +485,7 @@ const EventDetailScreen = () => {
         {/* 5. Resultados Esperados */}
         {event.resultados && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Resultados Esperados</Text>
+            <SectionHeader icon="flag-outline" title="Resultados Esperados" />
             {event.resultados.participacion_esperada && (
               <View style={styles.listItem}><Ionicons name="people-circle-outline" size={16} color={COLORS.grayText} style={styles.listIcon} /><Text style={styles.listText}>Participación: {event.resultados.participacion_esperada}</Text></View>
             )}
@@ -488,7 +501,7 @@ const EventDetailScreen = () => {
         {/* 6. Recursos Solicitados */}
         {event.recursos && event.recursos.length > 0 && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Recursos Solicitados</Text>
+            <SectionHeader icon="cube-outline" title="Recursos Solicitados" />
             {event.recursos.filter(r => r.recurso_tipo === 'tecnologico').length > 0 && (
               <View style={styles.resourceCategory}>
                 <Text style={styles.resourceCategoryTitle}>Tecnológicos</Text>
@@ -519,7 +532,7 @@ const EventDetailScreen = () => {
         {/* 7. Comité del Evento */}
         {event.comite && event.comite.length > 0 && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Comité del Evento</Text>
+            <SectionHeader icon="people-outline" title="Comité del Evento" />
             {event.comite.map((miembro, index) => (
               <View key={index} style={styles.committeeMember}>
                 <Text style={styles.committeeName}>{[miembro.nombre, miembro.apellidopat, miembro.apellidomat].filter(Boolean).join(' ') || 'Miembro sin nombre'}</Text>
@@ -533,7 +546,7 @@ const EventDetailScreen = () => {
         {/* 8. Actividades Previas */}
         {event.idfase >= 2 && event.actividadesPrevias && event.actividadesPrevias.length > 0 && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Actividades Previas</Text>
+            <SectionHeader icon="calendar-outline" title="Actividades Previas" />
             {event.actividadesPrevias.map((act, index) => (
               <View key={index} style={styles.activityItem}>
                 <View style={styles.activityHeader}><Ionicons name="list-circle-outline" size={20} color={COLORS.primary} /><Text style={styles.activityTitle}>{act.nombre || `Actividad ${index + 1}`}</Text></View>
@@ -550,7 +563,7 @@ const EventDetailScreen = () => {
         {/* 9. Actividades Durante el Evento */}
         {event.idfase >= 2 && event.actividadesDurante && event.actividadesDurante.length > 0 && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Actividades Durante el Evento</Text>
+            <SectionHeader icon="play-circle-outline" title="Actividades Durante el Evento" />
             {event.actividadesDurante.map((act, index) => (
               <View key={index} style={styles.activityItem}>
                 <View style={styles.activityHeader}><Ionicons name="play-circle-outline" size={20} color={COLORS.success} /><Text style={styles.activityTitle}>{act.nombre || `Actividad ${index + 1}`}</Text></View>
@@ -567,7 +580,7 @@ const EventDetailScreen = () => {
         {/* 10. Actividades Después del Evento */}
         {event.idfase >= 2 && event.actividadesPost && event.actividadesPost.length > 0 && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Actividades Después del Evento</Text>
+            <SectionHeader icon="checkmark-done-outline" title="Actividades Después del Evento" />
             {event.actividadesPost.map((act, index) => (
               <View key={index} style={styles.activityItem}>
                 <View style={styles.activityHeader}><Ionicons name="checkmark-done-outline" size={20} color={COLORS.info} /><Text style={styles.activityTitle}>{act.nombre || `Actividad ${index + 1}`}</Text></View>
@@ -584,7 +597,7 @@ const EventDetailScreen = () => {
         {/* 11. Servicios Contratados */}
         {event.idfase >= 2 && event.serviciosContratados && event.serviciosContratados.length > 0 && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Servicios Contratados</Text>
+            <SectionHeader icon="construct-outline" title="Servicios Contratados" />
             {event.serviciosContratados.map((serv, index) => (
               <View key={index} style={styles.serviceItem}>
                 <View style={styles.serviceHeader}><Ionicons name="build-outline" size={20} color={COLORS.purple} /><Text style={styles.serviceTitle}>{serv.nombreServicio || `Servicio ${index + 1}`}</Text></View>
@@ -601,7 +614,7 @@ const EventDetailScreen = () => {
         {/* 12. Layout */}
         {event.idfase >= 2 && event.layout && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Layout del Evento</Text>
+            <SectionHeader icon="grid-outline" title="Layout del Evento" />
             {event.layout.url_imagen ? (
               <Image source={{ uri: `${API_BASE_URL}/uploads/${event.layout.url_imagen}` }} style={styles.layoutImage} resizeMode="contain" />
             ) : (
@@ -617,7 +630,7 @@ const EventDetailScreen = () => {
         {/* Creador */}
         {event.creador && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Propuesto por</Text>
+            <SectionHeader icon="megaphone-outline" title="Propuesto por" />
             <Text style={styles.creatorName}>{event.creador.nombre}</Text>
             <Text style={styles.creatorRole}>Rol: {event.creador.role}</Text>
             <Text style={styles.creatorEmail}>Email: {event.creador.email}</Text>
@@ -627,7 +640,7 @@ const EventDetailScreen = () => {
         {/* Segmentos Objetivo */}
         {event.objetivos && event.objetivos.some(obj => obj.segmentos && obj.segmentos.length > 0) && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Segmentos Objetivo</Text>
+            <SectionHeader icon="people-circle-outline" title="Segmentos Objetivo" />
             {(() => {
               const allSegments = event.objetivos.filter(obj => obj.segmentos && Array.isArray(obj.segmentos)).flatMap(obj => obj.segmentos);
               const uniqueSegmentsMap = new Map();
@@ -648,7 +661,7 @@ const EventDetailScreen = () => {
         {/* Objetivos PDI Institucional */}
         {event.objetivosPDI && event.objetivosPDI.length > 0 && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Objetivos del PDI Institucional</Text>
+            <SectionHeader icon="school-outline" title="Objetivos del PDI Institucional" />
             {event.objetivosPDI.map((pdi, index) => (
               <View key={index} style={styles.listItem}>
                 <Text style={[styles.listText, { fontWeight: 'bold', color: COLORS.primary }]}>{index + 1}.</Text>
@@ -661,7 +674,7 @@ const EventDetailScreen = () => {
         {/* Presupuesto */}
         {event.presupuesto && (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Presupuesto del Evento</Text>
+            <SectionHeader icon="wallet-outline" title="Presupuesto del Evento" />
             {event.egresos && event.egresos.length > 0 && (
               <View style={styles.budgetSubsection}>
                 <View style={styles.budgetHeader}><Ionicons name="arrow-down-circle" size={20} color={COLORS.logout} /><Text style={styles.budgetSubtitle}>Egresos</Text></View>
