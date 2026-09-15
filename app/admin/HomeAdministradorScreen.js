@@ -1258,7 +1258,7 @@ const HomeAdministradorScreen = () => {
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
 <UltimoEventoCard
   evento={ultimoEvento}
-  onPress={() => router.push(`/admin/EventDetailScreen?eventId=${ultimoEvento.idevento}&mode=view`)}
+  onPress={() => router.push(`/admin/EventoVistaScreen?eventId=\$\{ultimoEvento.idevento}`)}
 />
           </View>
         )}
@@ -2261,3 +2261,4 @@ const styles = StyleSheet.create({
 });
 
 export default HomeAdministradorScreen;
+
