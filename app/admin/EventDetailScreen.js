@@ -13,7 +13,6 @@ import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
 import AdminHeader from '../../components/admin/AdminHeader';
-import jwt from 'jsonwebtoken';
 const API_BASE_URL =  process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
@@ -906,13 +905,22 @@ const EditEventScreen = () => {
   const [comiteLoading, setComiteLoading] = useState(true);
   const [comiteError, setComiteError] = useState(false);
   const [comiteSeleccionado, setComiteSeleccionado] = useState([]);
-  const [horaSeleccionada, setHoraSeleccionada] = useState(new Date());
+const [horaSeleccionada, setHoraSeleccionada] = useState(new Date());
   const [idevento, setIdevento] = useState(null);
   const [estadoEvento, setEstadoEvento] = useState('pendiente');
   const [esCreador, setEsCreador] = useState(false);
 
-  const token = await getTokenAsync();
-  const userId = token ? (jwt.decode(token).idusuario || null) : null;
+  const [token, setToken] = useState(null);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const init = async () => {
+      const tok = await getTokenAsync();
+      setToken(tok);
+      setUserId(tok ? (jwt.decode(tok).idusuario || null) : null);
+    };
+    init();
+  }, []);
 
   const isReadOnly = mode === 'view' || !esCreador;
 
@@ -1159,15 +1167,17 @@ const EditEventScreen = () => {
         const token = await getTokenAsync();
         if (!token) return;
         
-        // Decodificar token para obtener userId
-        const decoded = jwt.decode(token);
-        const currentUserId = decoded.idusuario || null;
-        
-        // Obtener datos del evento para verificar creador
-        const response = await axios.get(`${API_BASE_URL}/eventos/${idevento}`, {
+        // Obtener información del usuario actual desde la API
+        const res = await axios.get(`${API_BASE_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const apiData = response.data;
+        const currentUserId = res.data.idusuario || null;
+        
+        // Obtener datos del evento para verificar creador
+        const eventoRes = await axios.get(`${API_BASE_URL}/eventos/${idevento}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const apiData = eventoRes.data;
         
         // El evento tiene creador en diferentes campos dependiendo del backend
         const creatorId = apiData.idacademico || apiData.idadministrador || 
