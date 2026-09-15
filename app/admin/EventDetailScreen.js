@@ -912,17 +912,14 @@ const [horaSeleccionada, setHoraSeleccionada] = useState(new Date());
 
   const [token, setToken] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [screenMode, setScreenMode] = useState('view');
 
   useEffect(() => {
-    const init = async () => {
-      const tok = await getTokenAsync();
-      setToken(tok);
-      setUserId(tok ? (jwt.decode(tok).idusuario || null) : null);
-    };
-    init();
+    const { mode: routeMode } = useLocalSearchParams();
+    setScreenMode(routeMode || 'view');
   }, []);
 
-  const isReadOnly = mode === 'view' || !esCreador;
+  const isReadOnly = screenMode === 'view' || !esCreador;
 
   const addRecursoTecnologico = () => setRecursosTecnologicos(prev => [...prev, { nombre: '', cantidad: '' }]);
   const removeRecursoTecnologico = (index) => setRecursosTecnologicos(prev => prev.filter((_, i) => i !== index));
