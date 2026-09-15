@@ -280,9 +280,15 @@ const UltimoEventoCard = ({ evento, onPress }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '–';
     try {
+      let dateStrLocal = String(dateStr).split('T')[0];
+      const parts = dateStrLocal.split('-');
+      if (parts.length === 3) {
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return dayjs(d).format('DD [de] MMMM, YYYY');
+      }
       const date = dayjs(dateStr);
       if (!date.isValid()) return '–';
-      return date.format('DD [de] MMMM, YYYY'); // Ej: "18 de septiembre, 2026"
+      return date.format('DD [de] MMMM, YYYY');
     } catch {
       return '–';
     }
@@ -291,9 +297,10 @@ const UltimoEventoCard = ({ evento, onPress }) => {
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     try {
-      const date = dayjs(timeStr, 'HH:mm:ss');
-      if (!date.isValid()) return '';
-      return date.format('HH:mm'); // Ej: "14:30"
+      const s = String(timeStr).split('+')[0].trim();
+      const match = /^(\d{1,2}):(\d{2})(?::\d{1,2})?$/.exec(s);
+      if (!match) return '';
+      return `${String(match[1]).padStart(2, '0')}:${match[2]}`;
     } catch {
       return '';
     }
