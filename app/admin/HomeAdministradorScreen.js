@@ -1256,10 +1256,10 @@ const HomeAdministradorScreen = () => {
         {/* ── ÚLTIMO EVENTO ── */}
         {ultimoEvento && (
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-            <UltimoEventoCard
-              evento={ultimoEvento}
-              onPress={() => router.push(`/admin/EventDetailScreen?eventId=${ultimoEvento.idevento}`)}
-            />
+<UltimoEventoCard
+  evento={ultimoEvento}
+  onPress={() => router.push(`/admin/EventDetailScreen?eventId=${ultimoEvento.idevento}&mode=view`)}
+/>
           </View>
         )}
 
