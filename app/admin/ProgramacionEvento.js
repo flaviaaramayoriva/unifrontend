@@ -119,6 +119,15 @@ const getTokenAsync = async () => {
   }
 };
 
+const showAlert = (title, message, onOk) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+    if (typeof onOk === 'function') onOk();
+    return;
+  }
+  Alert.alert(title, message, onOk ? [{ text: 'OK', onPress: onOk }] : undefined);
+};
+
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
   monthNamesShort: ['Ene.','Feb.','Mar.','Abr.','May.','Jun.','Jul.','Ago.','Sep.','Oct.','Nov.','Dic.'],
@@ -332,9 +341,26 @@ const programacionEvento = () => {
   const [layoutsDisponibles, setLayoutsDisponibles] = useState([]);
   const [layoutSeleccionado, setLayoutSeleccionado] = useState(null);
   const [cargandoLayouts, setCargandoLayouts] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const { idevento } = params;
   const isEditing = !!idevento;
+
+  const handleCalendarDayPress = (day) => {
+    setFechaHoraSeleccionada(prev => {
+      const next = new Date(prev);
+      next.setFullYear(day.year, day.month - 1, day.day);
+      return next;
+    });
+  };
+
+  const calendarMarkedDates = {
+    [formatToISODate(fechaHoraSeleccionada)]: {
+      selected: true,
+      selectedColor: '#C44B0A',
+      selectedTextColor: '#fff',
+    },
+  };
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -437,7 +463,7 @@ const programacionEvento = () => {
       return data;
     } catch (error) {
       console.error('Error al cargar layouts:', error.response?.data || error.message);
-      Alert.alert('Error', 'No se pudieron cargar los layouts disponibles.');
+      showAlert('Error', 'No se pudieron cargar los layouts disponibles.');
       setLayoutsDisponibles([]);
       return [];
     } finally {
@@ -452,7 +478,7 @@ const programacionEvento = () => {
       setAuthToken(token);
 
       if (!token) {
-        Alert.alert('Error', 'No autenticado');
+        showAlert('Error', 'No autenticado');
         router.navigate('/admin/EventosAprobados');
         return;
       }
@@ -552,7 +578,7 @@ const programacionEvento = () => {
           }
         } catch (error) {
           console.error("Error al cargar el evento:", error);
-          Alert.alert("Error", "No se pudo cargar el evento.");
+          showAlert("Error", "No se pudo cargar el evento.");
           router.back();
         } finally {
           if (isMountedRef.current) setIsLoadingEventos(false);
@@ -575,12 +601,12 @@ const programacionEvento = () => {
     if (!isMountedRef.current) return;
 
     if (!validateForm()) {
-      Alert.alert("Formulario Incompleto", "Por favor, revisa los campos marcados en rojo.");
+      showAlert("Formulario Incompleto", "Por favor, revisa los campos marcados en rojo.");
       return;
     }
 
     if (!authToken) {
-      Alert.alert("Error de Autenticación", "No estás autenticado.");
+      showAlert("Error de Autenticación", "No estás autenticado.");
       return;
     }
 
@@ -620,14 +646,9 @@ const programacionEvento = () => {
             'Content-Type': 'application/json',
           },
         });
-        Alert.alert('Éxito', 'Evento actualizado correctamente.', [
-          {
-            text: 'OK',
-            onPress: () => {
-              router.back(); // 👈 Vuelve a la pantalla anterior
-            }
-          }
-        ]);
+        showAlert('Éxito', 'Evento actualizado correctamente.', () => {
+          router.back(); // 👈 Vuelve a la pantalla anterior
+        });
       } else {
         await axios.post(`${API_BASE_URL}/eventos`, payload, {
           headers: {
@@ -635,15 +656,10 @@ const programacionEvento = () => {
             'Content-Type': 'application/json',
           },
         });
-        
-        Alert.alert('Éxito', 'Evento creado correctamente.', [
-          {
-            text: 'OK',
-            onPress: () => {
-              router.back(); // 👈 Vuelve a la pantalla anterior
-            }
-          }
-        ]);
+
+        showAlert('Éxito', 'Evento creado correctamente.', () => {
+          router.back(); // 👈 Vuelve a la pantalla anterior
+        });
       }
     } catch (error) {
       console.error("Error al guardar evento:", error.response?.data || error.message);
@@ -651,7 +667,7 @@ const programacionEvento = () => {
         || error.response?.data?.error
         || (typeof error.response?.data === 'string' ? error.response.data : '')
         || 'Ocurrió un error al guardar el evento.';
-      Alert.alert('Error', errorMessage);
+      showAlert('Error', errorMessage);
     } finally {
       if (isMountedRef.current) setIsLoading(false);
     }
@@ -727,6 +743,64 @@ const programacionEvento = () => {
               </View>
             ) : null}
           </View>
+
+        <View style={styles.calendarCard}>
+          <SectionHeader icon="calendar-outline" title="Fecha y Hora del Evento" color="#C44B0A" />
+          <Calendar
+            current={formatToISODate(fechaHoraSeleccionada)}
+            onDayPress={handleCalendarDayPress}
+            markedDates={calendarMarkedDates}
+            firstDay={1}
+            theme={{
+              todayTextColor: '#C44B0A',
+              arrowColor: '#C44B0A',
+              selectedDayBackgroundColor: '#C44B0A',
+              selectedDayTextColor: '#ffffff',
+              textDayFontSize: 15,
+              textMonthFontSize: 17,
+              textDayHeaderFontSize: 13,
+              monthTextColor: '#1e293b',
+              textSectionTitleColor: '#64748b',
+              calendarBackground: 'transparent',
+            }}
+            style={{ marginBottom: 16, borderRadius: 12 }}
+          />
+          <View style={styles.timeRow}>
+            <Ionicons name="time-outline" size={20} color="#C44B0A" />
+            <Text style={styles.timeLabel}>Hora:</Text>
+            {Platform.OS === 'web' ? (
+              <input
+                type="time"
+                value={formatToISOTime(fechaHoraSeleccionada)}
+                onChange={(e) => {
+                  const [h, m] = e.target.value.split(':').map(Number);
+                  setFechaHoraSeleccionada(prev => {
+                    const next = new Date(prev);
+                    next.setHours(h || 0, m || 0, 0, 0);
+                    return next;
+                  });
+                }}
+                style={styles.webTimeInput}
+              />
+            ) : (
+              <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.timePickerButton}>
+                <Text style={styles.timePickerText}>{formatToISOTime(fechaHoraSeleccionada)}</Text>
+                <Ionicons name="chevron-down-outline" size={18} color="#64748b" />
+              </TouchableOpacity>
+            )}
+          </View>
+          {showTimePicker && (
+            <DateTimePicker
+              value={fechaHoraSeleccionada}
+              mode="time"
+              display="default"
+              onChange={(event, date) => {
+                setShowTimePicker(false);
+                if (event.type === 'set' && date) setFechaHoraSeleccionada(date);
+              }}
+            />
+          )}
+        </View>
 
         <SeccionActividades
           titulo="Programación de Actividades Previas"
@@ -991,6 +1065,12 @@ const styles = StyleSheet.create({
   keyboardAvoidingContainer: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContentContainer: { padding: 20, paddingBottom: 60 },
+  calendarCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4 },
+  timeRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
+  timeLabel: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginLeft: 10, marginRight: 12 },
+  timePickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', paddingVertical: 10, paddingHorizontal: 14 },
+  timePickerText: { fontSize: 16, color: '#1e293b', fontWeight: '600', marginRight: 6 },
+  webTimeInput: { width: 120, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8F9FA', color: '#1e293b', fontSize: 15, fontWeight: '600', outlineStyle: 'none' },
   pageHeader: { backgroundColor: '#C44B0A', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 18, paddingTop: Platform.OS === 'ios' ? 50 : 18, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }, android: { elevation: 6 } }) },
   backBtn: { padding: 6, marginRight: 4 },
   pageHeaderText: { flex: 1, marginHorizontal: 8 },
