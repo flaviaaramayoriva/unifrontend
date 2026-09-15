@@ -10,7 +10,6 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import dayjs from 'dayjs';
 import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
@@ -24,10 +23,18 @@ const parseDateLocal = (dateInput) => {
   
   const dateStr = String(dateInput).trim();
   
-  // Si es solo fecha (YYYY-MM-DD), crear en hora LOCAL
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day, 12, 0, 0);
+  // Extraer YYYY-MM-DD de cualquier formato (incluye ISO con hora: 2026-09-30T00:00:00.000Z)
+  const isoMatch = dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
+  }
+  
+  // Formato DD/MM/YYYY
+  const dmyMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (dmyMatch) {
+    const [, day, month, year] = dmyMatch;
+    return new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
   }
   
   // Si tiene hora completa
@@ -121,6 +128,19 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
+const SectionHeader = ({ icon, title, color = '#C44B0A' }) => (
+  <View style={styles.sectionHeaderRow}>
+    <Ionicons name={icon} size={20} color={color} />
+    <Text style={styles.sectionTitle}>{title}</Text>
+  </View>
+);
+
+const ACTIVIDAD_ICONS = {
+  'Programación de Actividades Previas': 'calendar-outline',
+  'Programación de Actividades Durante el Evento': 'play-circle-outline',
+  'Programación de Actividades Después del Evento': 'checkmark-done-outline',
+};
+
 const SeccionActividades = ({ titulo, actividades, setActividades, handleActividadDateChange, errors, fechaBase }) => {
   const baseDate = fechaBase instanceof Date && !isNaN(fechaBase.getTime()) ? fechaBase : new Date();
 
@@ -142,7 +162,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
 
   return (
     <View style={styles.formSection}>
-      <Text style={styles.sectionTitle}>{titulo}</Text>
+      <SectionHeader icon={ACTIVIDAD_ICONS[titulo] || 'calendar-outline'} title={titulo} />
       {actividades.map((actividad, index) => (
         <View key={actividad.key} style={styles.actividadPreviaItemContainer}>
           <View style={styles.actividadItemHeader}>
@@ -284,11 +304,12 @@ const programacionEvento = () => {
 
   const getInitialDate = () => {
     if (params.selectedDate) {
-      let initialDate = dayjs(params.selectedDate);
+      let initialDate = parseDateLocal(params.selectedDate);
       if (params.selectedHour) {
-        initialDate = initialDate.hour(parseInt(params.selectedHour, 10)).minute(0).second(0);
+        const [hour, minute] = String(params.selectedHour).split(':').map(Number);
+        initialDate.setHours(hour || 0, minute || 0, 0, 0);
       }
-      return initialDate.toDate();
+      return initialDate;
     }
     return new Date();
   };
@@ -637,32 +658,75 @@ const programacionEvento = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.keyboardAvoidingContainer}
-    >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContentContainer}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Stack.Screen options={{ title: isEditing ? 'Programar Evento' : 'Crear Nuevo Evento' }} />
-
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Información Principal</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Nombre del Evento</Text>
-            <Text style={styles.infoValue}>{nombreevento || 'No especificado'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Lugar del Evento</Text>
-            <Text style={styles.infoValue}>{lugarevento || 'No especificado'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Fecha</Text>
-            <Text style={styles.infoValue}>{formatToISODate(fechaHoraSeleccionada).split('-').reverse().join('/')}</Text>
-          </View>
+    <View style={styles.screen}>
+      <View style={styles.pageHeader}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <View style={styles.pageHeaderText}>
+          <Text style={styles.pageHeaderTitle}>{isEditing ? 'Programación del Evento' : 'Nuevo Evento'}</Text>
+          <Text style={styles.pageHeaderSubtitle}>{isEditing ? 'Organiza actividades, servicios y ambientes' : 'Completa los datos de programación'}</Text>
         </View>
+        <View style={styles.pageHeaderBadge}>
+          <Ionicons name="calendar-clear-outline" size={22} color="#C44B0A" />
+        </View>
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingContainer}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContentContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Stack.Screen options={{ title: isEditing ? 'Programar Evento' : 'Crear Nuevo Evento', headerShown: false }} />
+
+          <View style={styles.eventSummaryCard}>
+            <View style={styles.eventSummaryHeader}>
+              <Ionicons name="information-circle" size={22} color="#C44B0A" />
+              <Text style={styles.eventSummaryHeaderText}>Información Principal</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconBadge}>
+                <Ionicons name="pricetag-outline" size={17} color="#C44B0A" />
+              </View>
+              <View style={styles.infoTextWrap}>
+                <Text style={styles.infoLabel}>Nombre del Evento</Text>
+                <Text style={styles.infoValue}>{nombreevento || 'No especificado'}</Text>
+              </View>
+            </View>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconBadge}>
+                <Ionicons name="location-outline" size={17} color="#C44B0A" />
+              </View>
+              <View style={styles.infoTextWrap}>
+                <Text style={styles.infoLabel}>Lugar del Evento</Text>
+                <Text style={styles.infoValue}>{lugarevento || 'No especificado'}</Text>
+              </View>
+            </View>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconBadge}>
+                <Ionicons name="calendar-clear-outline" size={17} color="#C44B0A" />
+              </View>
+              <View style={styles.infoTextWrap}>
+                <Text style={styles.infoLabel}>Fecha</Text>
+                <Text style={styles.infoValue}>{formatToISODate(fechaHoraSeleccionada).split('-').reverse().join('/')}</Text>
+              </View>
+            </View>
+            {responsable ? (
+              <View style={[styles.infoRow, { borderBottomWidth: 0, paddingBottom: 4 }]}>
+                <View style={styles.infoIconBadge}>
+                  <Ionicons name="person-outline" size={17} color="#C44B0A" />
+                </View>
+                <View style={styles.infoTextWrap}>
+                  <Text style={styles.infoLabel}>Responsable</Text>
+                  <Text style={styles.infoValue}>{responsable}</Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
 
         <SeccionActividades
           titulo="Programación de Actividades Previas"
@@ -691,7 +755,7 @@ const programacionEvento = () => {
 
         {/* Servicios */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Servicios Contratados</Text>
+          <SectionHeader icon="build-outline" title="Servicios Contratados" color="#2980b9" />
           {serviciosContratados.map((servicio, index) => (
             <View key={servicio.key} style={styles.servicioItemContainer}>
               <View style={styles.servicioItemHeader}>
@@ -784,7 +848,7 @@ const programacionEvento = () => {
 
         {/* Ambientes */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Ambientes</Text>
+          <SectionHeader icon="business-outline" title="Ambientes" color="#047857" />
           {ambientes.map((ambiente, index) => (
             <View key={ambiente.key} style={styles.ambienteItemContainer}>
               <View style={styles.ambienteItemHeader}>
@@ -841,7 +905,7 @@ const programacionEvento = () => {
 
         {/* Layouts */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Layouts Disponibles</Text>
+          <SectionHeader icon="grid-outline" title="Layouts Disponibles" color="#9b59b6" />
           {cargandoLayouts ? (
             <View style={styles.centered}>
               <ActivityIndicator size="small" color="#C44B0A" />
@@ -904,72 +968,89 @@ const programacionEvento = () => {
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>
-              {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
-            </Text>
+            <>
+              <Ionicons name={isEditing ? 'save-outline' : 'checkmark-circle-outline'} size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.buttonText}>
+                {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
+              </Text>
+            </>
           )}
         </TouchableOpacity>
 
         <View style={{ height: 30 }} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  retryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 15, borderWidth: 1, borderColor: '#C44B0A', borderRadius: 8, alignSelf: 'center', marginTop: 10 },
+  retryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 15, borderWidth: 1, borderColor: '#C44B0A', borderRadius: 8, alignSelf: 'center', marginTop: 10, backgroundColor: '#fff3ec' },
   retryButtonText: { marginLeft: 8, color: '#C44B0A', fontSize: 16, fontWeight: '500' },
-  keyboardAvoidingContainer: { flex: 1, backgroundColor: '#F4F7F9' },
+  screen: { flex: 1, backgroundColor: '#F4F7F9' },
+  keyboardAvoidingContainer: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContentContainer: { padding: 20, paddingBottom: 60 },
-  formSection: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 5 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 20, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 10 },
-  label: { fontSize: 14, color: '#555', marginBottom: 8, fontWeight: '500' },
-  inputGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, marginBottom: 15 },
-  inputIcon: { paddingHorizontal: 12, color: '#888' },
-  input: { flex: 1, paddingVertical: Platform.OS === 'ios' ? 14 : 10, paddingRight: 15, fontSize: 16, color: '#333' },
+  pageHeader: { backgroundColor: '#C44B0A', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 18, paddingTop: Platform.OS === 'ios' ? 50 : 18, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }, android: { elevation: 6 } }) },
+  backBtn: { padding: 6, marginRight: 4 },
+  pageHeaderText: { flex: 1, marginHorizontal: 8 },
+  pageHeaderTitle: { color: '#fff', fontSize: 19, fontWeight: '700' },
+  pageHeaderSubtitle: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 },
+  pageHeaderBadge: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  eventSummaryCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 18, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4 },
+  eventSummaryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  eventSummaryHeaderText: { fontSize: 17, fontWeight: '700', color: '#333', marginLeft: 8 },
+  formSection: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4 },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#333', marginLeft: 10, flex: 1 },
+  label: { fontSize: 13, color: '#64748b', marginBottom: 6, fontWeight: '600', letterSpacing: 0.2, textTransform: 'uppercase' },
+  inputGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, marginBottom: 16 },
+  inputIcon: { paddingHorizontal: 12, color: '#94A3B8' },
+  input: { flex: 1, paddingVertical: Platform.OS === 'ios' ? 14 : 11, paddingRight: 15, fontSize: 15, color: '#1e293b' },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 10 },
   inputError: { borderColor: '#D32F2F', backgroundColor: '#FEF2F2' },
   errorText: { color: '#D32F2F', fontSize: 12, marginBottom: 10, marginLeft: 5, marginTop: -10 },
-  datePickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, paddingVertical: Platform.OS === 'ios' ? 14 : 12, marginBottom: 15 },
-  datePickerText: { fontSize: 16, color: '#333', flex: 1, marginLeft: 5 },
+  datePickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingVertical: Platform.OS === 'ios' ? 14 : 12, marginBottom: 16 },
+  datePickerText: { fontSize: 15, color: '#1e293b', flex: 1, marginLeft: 5, fontWeight: '500' },
   webDateInput: {
     width: '100%',
-    paddingVertical: 12,
+    paddingVertical: 11,
     paddingHorizontal: 15,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#E2E8F0',
     backgroundColor: '#F8F9FA',
-    color: '#333',
-    fontSize: 16,
-    marginBottom: 15,
+    color: '#1e293b',
+    fontSize: 15,
+    marginBottom: 16,
     outlineStyle: 'none',
   },
-  button: { backgroundColor: '#C44B0A', paddingVertical: 15, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 10, flexDirection: 'row', shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.23, shadowRadius: 2.62, elevation: 4 },
+  button: { backgroundColor: '#C44B0A', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 10, flexDirection: 'row', shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 5 },
   buttonDisabled: { backgroundColor: '#f9bda3' },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
-  actividadPreviaItemContainer: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, padding: 15, marginBottom: 15, backgroundColor: '#fdfdfd' },
-  actividadItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  actividadPreviaTitle: { fontSize: 16, fontWeight: '600', color: '#333' },
-  deleteButton: { padding: 6 },
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: '#fff3ec', borderRadius: 8, borderWidth: 1, borderColor: '#C44B0A', marginTop: 10 },
-  addButtonText: { marginLeft: 8, color: '#C44B0A', fontSize: 16, fontWeight: '500' },
-  ambienteItemContainer: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, padding: 15, marginBottom: 15, backgroundColor: '#fdfdfd' },
-  ambienteItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  servicioItemContainer: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, padding: 15, marginBottom: 15, backgroundColor: '#fdfdfd' },
-  servicioItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  actividadPreviaItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
+  actividadItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  actividadPreviaTitle: { fontSize: 15, fontWeight: '700', color: '#C44B0A' },
+  deleteButton: { padding: 6, backgroundColor: '#FEF2F2', borderRadius: 8 },
+  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, backgroundColor: '#fff3ec', borderRadius: 10, borderWidth: 1.5, borderColor: '#C44B0A', borderStyle: 'dashed', marginTop: 6 },
+  addButtonText: { marginLeft: 8, color: '#C44B0A', fontSize: 15, fontWeight: '600' },
+  ambienteItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
+  ambienteItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  servicioItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
+  servicioItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 20 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  infoLabel: { fontSize: 14, color: '#64748b', fontWeight: '500', flex: 1, flexWrap: 'wrap' },
-  infoValue: { fontSize: 15, color: '#1e293b', fontWeight: '600', textAlign: 'right', flex: 1.2, flexWrap: 'wrap' },
+  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  infoIconBadge: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#FFF3EC', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  infoTextWrap: { flex: 1 },
+  infoLabel: { fontSize: 12, color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.3 },
+  infoValue: { fontSize: 15, color: '#1e293b', fontWeight: '600', marginTop: 3, flexWrap: 'wrap' },
   layoutsGrid: { flexDirection: 'row', paddingVertical: 10 },
   layoutItem: {
     width: 150,
     marginRight: 15,
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 10,
     borderWidth: 2,
     borderColor: 'transparent',
@@ -986,7 +1067,7 @@ const styles = StyleSheet.create({
   layoutImage: {
     width: 130,
     height: 130,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: '#f0f0f0',
   },
   layoutName: {
