@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
 import AdminHeader from '../../components/admin/AdminHeader';
+import jwt from 'jsonwebtoken';
 const API_BASE_URL =  process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
@@ -908,8 +909,12 @@ const EditEventScreen = () => {
   const [horaSeleccionada, setHoraSeleccionada] = useState(new Date());
   const [idevento, setIdevento] = useState(null);
   const [estadoEvento, setEstadoEvento] = useState('pendiente');
+  const [esCreador, setEsCreador] = useState(false);
 
-  const isReadOnly = mode === 'view';
+  const token = await getTokenAsync();
+  const userId = token ? (jwt.decode(token).idusuario || null) : null;
+
+  const isReadOnly = mode === 'view' || !esCreador;
 
   const addRecursoTecnologico = () => setRecursosTecnologicos(prev => [...prev, { nombre: '', cantidad: '' }]);
   const removeRecursoTecnologico = (index) => setRecursosTecnologicos(prev => prev.filter((_, i) => i !== index));
@@ -1145,6 +1150,38 @@ const EditEventScreen = () => {
     };
     initialize();
   }, []);
+
+  useEffect(() => {
+    const verificarEsCreador = async () => {
+      if (!idevento) return;
+      
+      try {
+        const token = await getTokenAsync();
+        if (!token) return;
+        
+        // Decodificar token para obtener userId
+        const decoded = jwt.decode(token);
+        const currentUserId = decoded.idusuario || null;
+        
+        // Obtener datos del evento para verificar creador
+        const response = await axios.get(`${API_BASE_URL}/eventos/${idevento}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const apiData = response.data;
+        
+        // El evento tiene creador en diferentes campos dependiendo del backend
+        const creatorId = apiData.idacademico || apiData.idadministrador || 
+                         (apiData.creador ? apiData.creador.id : null);
+        
+        setEsCreador(String(currentUserId) === String(creatorId));
+      } catch (error) {
+        console.error('Error verificando creador:', error);
+        setEsCreador(false);
+      }
+    };
+    
+    verificarEsCreador();
+  }, [idevento]);
 
 
 const OBJETIVOS_ID_TO_KEY = {
