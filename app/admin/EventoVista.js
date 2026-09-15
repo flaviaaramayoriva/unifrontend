@@ -11,7 +11,26 @@ import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
-const { width } = Dimensions.get('window');
+
+const COLORS = {
+  primary: '#C44B0A',
+  primaryLight: '#FFEDD5',
+  secondary: '#4B5563',
+  accent: '#EF4444',
+  success: '#047857',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+  background: '#F9FAFB',
+  surface: '#FFFFFF',
+  textPrimary: '#1F2937',
+  textSecondary: '#6B7280',
+  textTertiary: '#9CA3AF',
+  border: '#E5E7EB',
+  divider: '#D1D5DB',
+  shadow: 'rgba(0, 0, 0, 0.05)',
+  white: '#FFFFFF',
+  black: '#000000',
+};
 
 const parseHoraEvento = (h) => {
   const s = String(h || '').split('+')[0].trim();
