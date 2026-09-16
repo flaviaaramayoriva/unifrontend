@@ -53,6 +53,7 @@ const LayoutsScreen = () => {
   const [imagenUri, setImagenUri] = useState(null);
   const [promptIA, setPromptIA] = useState('');
   const [generandoIA, setGenerandoIA] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [layouts, setLayouts] = useState([]);
   const [loadingLayouts, setLoadingLayouts] = useState(true);
   const [layoutSeleccionado, setLayoutSeleccionado] = useState(null);
