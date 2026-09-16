@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reportes UFT · Vista Nueva</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --primary:#1E293B; --secondary:#334155; --accent:#22C55E; --bg:#0F172A;
+    --fg:#F8FAFC; --card:#1B2336; --card-2:#1E293B; --muted:#94A3B8; --border:#475569;
+    --destructive:#EF4444; --warn:#F59E0B; --info:#3B82F6; --purple:#8B5CF6; --cyan:#06B6D4;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    font-family:'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    background:
+      radial-gradient(1200px 500px at 85% -10%, rgba(34,197,94,.10), transparent 60%),
+      radial-gradient(900px 400px at -10% 20%, rgba(59,130,246,.08), transparent 60%),
+      var(--bg);
+    color:var(--fg); min-height:100vh; line-height:1.55; font-size:16px;
+  }
+  button { font-family:inherit; cursor:pointer; }
+  input, select { font-family:inherit; }
+
+  /* ── Login ─────────────────────────────── */
+  .login-wrap { min-height:100vh; display:grid; place-items:center; padding:16px; }
+  .login-wrap[hidden] { display:none !important; }
+  .login-card {
+    width:340px; max-width:100%; background:rgba(27,35,54,.7);
+    border:1px solid rgba(255,255,255,.14); border-radius:18px; padding:32px 28px;
+    backdrop-filter:blur(14px); box-shadow:0 24px 60px rgba(0,0,0,.45); text-align:center;
+  }
+  .login-logo {
+    width:56px; height:56px; margin:0 auto 14px; border-radius:14px; display:grid; place-items:center;
+    background:linear-gradient(135deg, var(--accent), #16a34a);
+    box-shadow:0 10px 24px rgba(34,197,94,.35);
+  }
+  .login-logo svg { width:30px; height:30px; stroke:#0F172A; }
+  .login-card h1 { font-size:22px; letter-spacing:.3px; }
+  .login-card p { color:var(--muted); font-size:14px; margin:6px 0 22px; }
+  .field { text-align:left; margin-bottom:14px; }
+  .field label { display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px; }
+  .field input {
+    width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--border);
+    background:rgba(255,255,255,.06); color:var(--fg); font-size:15px; outline:none;
+  }
+  .field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(34,197,94,.18); }
+  .field input::placeholder { color:#64748B; }
+  .login-hint { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); text-align:left; background:rgba(148,163,184,.08); border-radius:10px; padding:10px 12px; margin-bottom:16px; }
+  .login-hint svg { width:15px; height:15px; flex:none; stroke:var(--accent); }
+  .btn { 
+    border:none; border-radius:11px; font-weight:700; font-size:15px; padding:12px 16px;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .btn:active { transform:scale(.97); }
+  .btn-primary { width:100%; background:var(--accent); color:#0F172A; box-shadow:0 10px 22px rgba(34,197,94,.28); }
+  .btn-primary:hover { background:#2ec963; }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { color:var(--fg); border-color:var(--muted); }
+  .msg { font-size:13px; margin-top:12px; min-height:18px; }
+  .msg.err { color:var(--destructive); }
+  .msg.ok  { color:var(--accent); }
+  .token-alt { margin-top:16px; border-top:1px solid rgba(255,255,255,.1); padding-top:14px; font-size:12px; color:var(--muted); }
+  .token-alt summary { cursor:pointer; font-weight:600; }
+  .token-alt textarea { width:100%; margin-top:8px; padding:8px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:var(--fg); font-size:11px; font-family:Consolas, monospace; resize:vertical; }
+
+  /* ── Layout app ────────────────────────── */
+  .topbar {
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:12px 20px;
+    background:rgba(15,23,42,.82); backdrop-filter:blur(12px);
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:800; font-size:17px; margin-right:auto; }
+  .brand .dot { width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg,var(--accent),#16a34a); display:grid; place-items:center; }
+  .brand .dot svg { width:18px; height:18px; stroke:#0F172A; }
+  .filters { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .filters label { font-size:12px; color:var(--muted); font-weight:600; }
+  .filters input[type=date] {
+    padding:8px 10px; border-radius:9px; border:1px solid var(--border);
+    background:rgba(255,255,255,.06); color-scheme:dark; color:var(--fg); font-size:13px; outline:none;
+  }
+  .filters input[type=date]:focus { border-color:var(--accent); }
+  .btn-sm { padding:8px 14px; font-size:13px; border-radius:9px; }
+  .logout { display:flex; align-items:center; gap:7px; background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:8px 12px; font-size:13px; }
+  .logout:hover { color:var(--destructive); border-color:var(--destructive); }
+  .logout svg { width:16px; height:16px; }
+
+  main { max-width:1280px; margin:0 auto; padding:22px 20px 60px; }
+  .updated { font-size:12px; color:var(--muted); margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+  .updated svg { width:13px; height:13px; }
+  .spinning { animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* KPI grid */
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:22px; }
+  .kpi {
+    background:linear-gradient(160deg, rgba(30,41,59,.9), rgba(27,35,54,.9));
+    border:1px solid rgba(255,255,255,.09); border-radius:14px; padding:14px 16px;
+    position:relative; overflow:hidden; transition:transform .18s ease;
+  }
+  .kpi:hover { transform:translateY(-2px); }
+  .kpi .k-icon { position:absolute; right:10px; top:10px; width:30px; height:30px; opacity:.5; }
+  .kpi .k-label { font-size:12px; color:var(--muted); font-weight:600; }
+  .kpi .k-value { font-size:26px; font-weight:800; margin-top:2px; letter-spacing:-.4px; }
+  .kpi .k-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+  .kpi.green .k-value { color:var(--accent); } .kpi.red .k-value { color:var(--destructive); }
+  .kpi.amber .k-value { color:var(--warn); } .kpi.info .k-value { color:var(--info); }
+  .kpi.purple .k-value { color:var(--purple); } .kpi.cyan .k-value { color:var(--cyan); }
+
+  /* Sections */
+  .sections { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
+  .card {
+    background:rgba(27,35,54,.6); border:1px solid rgba(255,255,255,.09);
+    border-radius:16px; padding:18px 18px 16px; position:relative;
+    backdrop-filter:blur(8px);
+  }
+  .card h2 { font-size:14px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:14px; color:var(--fg); }
+  .card h2 svg { width:17px; height:17px; stroke:var(--accent); flex:none; }
+  .card h2 .tag { margin-left:auto; font-size:11px; font-weight:600; color:var(--muted); background:rgba(255,255,255,.06); padding:3px 8px; border-radius:99px; }
+  .span-4 { grid-column:span 4; } .span-5 { grid-column:span 5; } .span-6 { grid-column:span 6; }
+  .span-7 { grid-column:span 7; } .span-8 { grid-column:span 8; } .span-12 { grid-column:span 12; }
+  .chart-box { position:relative; height:260px; }
+  .empty-note { color:var(--muted); font-size:13px; padding:22px 8px; text-align:center; }
+
+  /* Ranking rows */
+  .rank-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .rank-row .r-name { width:34%; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rank-row .r-track { flex:1; height:10px; border-radius:6px; background:rgba(255,255,255,.07); overflow:hidden; }
+  .rank-row .r-fill { height:100%; border-radius:6px; min-width:2px; transition:width .6s ease; }
+  .rank-row .r-val { width:52px; text-align:right; font-size:13px; font-weight:800; }
+
+  /* Table */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  thead th {
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted);
+    padding:8px 10px; border-bottom:1px solid rgba(255,255,255,.12); white-space:nowrap;
+  }
+  tbody td { padding:9px 10px; border-bottom:1px solid rgba(255,255,255,.05); vertical-align:middle; }
+  tbody tr:hover { background:rgba(255,255,255,.03); }
+  tbody td:first-child { font-weight:700; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; }
+  .badge { display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; white-space:nowrap; }
+  .b-ok { background:rgba(34,197,94,.16); color:#4ade80; }
+  .b-warn { background:rgba(245,158,11,.16); color:#fbbf24; }
+  .b-err { background:rgba(239,68,68,.16); color:#f87171; }
+  .b-info { background:rgba(59,130,246,.16); color:#60a5fa; }
+  .txt-muted { color:var(--muted); }
+
+  .table-actions { display:flex; gap:8px; margin-bottom:10px; justify-content:flex-end; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:7px 12px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:6px; }
+  .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-outline svg { width:14px; height:14px; }
+
+  .loading-shade { position:fixed; inset:0; background:rgba(15,23,42,.65); backdrop-filter:blur(3px); z-index:50; display:grid; place-items:center; }
+  .loading-shade[hidden] { display:none !important; }
+  .spinner-box { text-align:center; color:var(--muted); font-size:14px; }
+  .spinner { width:42px; height:42px; margin:0 auto 12px; border:3px solid rgba(255,255,255,.15); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+
+  @media (max-width:900px) {
+    .span-4,.span-5,.span-6,.span-7,.span-8,.span-12 { grid-column:span 12; }
+    .topbar { align-items:flex-start; }
+    .brand { width:100%; }
+  }
+  @media print {
+    .topbar, .table-actions, .updated { display:none !important; }
+    body { background:#fff; color:#111; }
+    .card { border-color:#ddd; background:#fff; break-inside:avoid; }
+    .kpi { border-color:#ddd; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    * { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 4 4-8"/></svg>
+    </div>
+    <h1>Reportes UFT</h1>
+    <p>Vista nueva · panel de análisis</p>
+    <form id="loginForm">
+      <div class="field">
+        <label for="email">Correo institucional</label>
+        <input id="email" name="email" type="email" autocomplete="username" required placeholder="usuario@uft.edu.bo">
+      </div>
+      <div class="field">
+        <label for="password">Contraseña</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" id="loginBtn" type="submit">Ingresar</button>
+    </form>
+    <div class="msg" id="loginMsg" role="status" aria-live="polite"></div>
+    <div class="login-hint" id="diagBar" style="margin-top:12px;display:none"></div>
+    <button class="btn btn-sm btn-ghost" id="testBtn" type="button" style="width:100%;margin-top:10px">Probar conexión</button>
+    <details class="token-alt">
+      <summary>O pegar un token manualmente</summary>
+      <textarea id="tokenText" rows="3" placeholder="eyJhbGciOiJIUzI1NiIs..."></textarea>
+      <button class="btn btn-sm" id="tokenBtn" type="button" style="margin-top:8px;background:rgba(255,255,255,.08);color:var(--fg);border:1px solid var(--border);">Usar token</button>
+    </details>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="appView" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 4 4-8"/></svg></span>
+      Reportes · Vista nueva
+    </div>
+    <div class="filters">
+      <label for="desde">Desde</label>
+      <input type="date" id="desde">
+      <label for="hasta">Hasta</label>
+      <input type="date" id="hasta">
+      <button class="btn btn-sm btn-outline" id="applyBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        Aplicar filtro
+      </button>
+    </div>
+    <button class="logout" id="logoutBtn" title="Cerrar sesión">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Salir
+    </button>
+  </header>
+
+  <main>
+    <div class="updated" id="updatedBar"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="updatedText">Cargando…</span></div>
+
+    <div class="kpis" id="kpiGrid"></div>
+
+    <div class="sections">
+      <div class="card span-7">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 4 4-8"/></svg>
+          Tendencia mensual <span class="tag">eventos / asistencias</span>
+        </h2>
+        <div class="chart-box"><canvas id="chartTrend"></canvas></div>
+      </div>
+
+      <div class="card span-5">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+          Distribución por estado
+        </h2>
+        <div class="chart-box"><canvas id="chartEstados"></canvas></div>
+      </div>
+
+      <div class="card span-6">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Recursos más solicitados
+        </h2>
+        <div id="rankRecursos"></div>
+      </div>
+
+      <div class="card span-6">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v11H3z"/><path d="M3 9l4 3 5-4 5 4 4-3"/></svg>
+          Asistencias por mes
+        </h2>
+        <div class="chart-box"><canvas id="chartInscritos"></canvas></div>
+      </div>
+
+      <div class="card span-6">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Inscritos por facultad
+        </h2>
+        <div id="rankFacultades"></div>
+      </div>
+
+      <div class="card span-6">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+          Tipos de evento más usados
+        </h2>
+        <div id="rankTipos"></div>
+      </div>
+
+      <div class="card span-12">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+          Eventos recientes <span class="tag">exportable</span>
+        </h2>
+        <div class="table-actions">
+          <button class="btn-outline" id="csvBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            Exportar CSV
+          </button>
+          <button class="btn-outline" id="printBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+            Imprimir
+          </button>
+        </div>
+        <div class="table-wrap" id="tablaEventos"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="loading-shade" id="loading" hidden>
+  <div class="spinner-box">
+    <div class="spinner" role="status" aria-label="Cargando"></div>
+    <div>Cargando reportes…</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var BASE = 'https://unibackend-production-a0f8.up.railway.app';
+  var TOKEN_KEY = 'reportesNuevoToken';
+  var dates = { desde: null, hasta: null };
+  var data = null;
+  var charts = {};
+
+  // ── Referencias DOM ──────────────────────
+  var $ = function (id) { return document.getElementById(id); };
+  var loginView = $('loginView'), appView = $('appView'), loading = $('loading');
+  var stores = { desde: $('desde'), hasta: $('hasta') };
+  var diag = $('diagBar');
+
+  function showDiag(text, isErr) {
+    if (!diag) return;
+    diag.style.display = 'flex';
+    diag.style.color = isErr ? '#f87171' : '#4ade80';
+    diag.textContent = text;
+  }
+
+  window.addEventListener('error', function (ev) { showDiag('Error JS: ' + (ev.message || 'desconocido'), true); });
+
+  var origen = window.location.origin || (window.location.protocol + '//' + window.location.host);
+  if (origen && origen.indexOf('http') !== 0) {
+    showDiag('Estás abriendo el archivo directo (file://). El navegador bloquea la API. Ábrelo por http://localhost:8080/reportes_nuevo.html', true);
+  }
+
+  $('testBtn').addEventListener('click', function () {
+    showDiag('Probando conexión con ' + BASE + ' …', false);
+    fetch(BASE + '/eventos')
+      .then(function (r) { showDiag('Servidor respondió HTTP ' + r.status + ' (401 = OK, solo falta el login).', false); })
+      .catch(function (e) { showDiag('Bloqueo: ' + (e.name || e.message) + ' — revisa CORS / file://', true); });
+  });
+
+  // ── Utilidades ───────────────────────────
+  function fmtBs(n) {
+    if (n === null || n === undefined || isNaN(n)) return '–';
+    return 'Bs ' + Number(n).toLocaleString('es-BO', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  }
+  function fmtNum(n) {
+    if (n === null || n === undefined) return '–';
+    return Number(n).toLocaleString('es-BO');
+  }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function monthLabel(m) {
+    if (!m || m.length < 7) return m || '';
+    var n = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(m.slice(5,7), 10) - 1] || m.slice(5,7);
+    return n + (m.slice(0,4) !== String(new Date().getFullYear()) ? " '" + m.slice(2,4) : '');
+  }
+  function estadoBadge(estado) {
+    var e = String(estado || '').toLowerCase();
+    var cls = 'b-info', label = esc(estado || 'Sin estado');
+    if (e === 'aprobado' || e === 'completado' || e === 'finalizado') { cls = 'b-ok'; }
+    else if (e === 'pendiente') { cls = 'b-warn'; }
+    else if (e === 'rechazado' || e === 'cancelado') { cls = 'b-err'; }
+    else if (e === 'vencido') { cls = 'b-warn'; }
+    return '<span class="badge ' + cls + '">' + label + '</span>';
+  }
+  function fechaTxt(v) {
+    if (!v) return '–';
+    var d = new Date(String(v).slice(0, 10) + 'T00:00:00');
+    return isNaN(d) ? String(v).slice(0,10) : d.toLocaleDateString('es-BO');
+  }
+
+  function fetchT(url, opts, ms) {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = null;
+    if (opts && opts.signal && controller) {
+      opts = Object.assign({}, opts);
+    }
+    var init = controller ? Object.assign({}, opts || {}, { signal: controller.signal }) : (opts || {});
+    if (controller) {
+      timer = setTimeout(function () {
+        try { controller.abort(); } catch (e) { /* noop */ }
+      }, ms);
+    }
+    return fetch(url, init).catch(function (err) {
+      if (err && (err.name === 'AbortError' || err.code === 20)) {
+        throw new Error('El servidor tardó demasiado en responder (timeout). Reintenta en unos segundos.');
+      }
+      throw err;
+    }).finally(function () { if (timer) clearTimeout(timer); });
+  }
+
+  function api(path) {
+    var token = localStorage.getItem(TOKEN_KEY);
+    var qs = '';
+    if (dates.desde) qs += (qs ? '&' : '?') + 'desde=' + encodeURIComponent(dates.desde);
+    if (dates.hasta) qs += (qs ? '&' : '?') + 'hasta=' + encodeURIComponent(dates.hasta);
+    return fetchT(BASE + path + qs, {
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+    }, 30000).then(function (r) {
+      if (r.status === 401 || r.status === 403) { setTimeout(logout, 0); throw new Error('Sesión expirada. Vuelve a ingresar.'); }
+      if (!r.ok) return r.json().catch(function () { return {}; }).then(function (b) {
+        throw new Error((b && (b.message || b.error)) || ('HTTP ' + r.status));
+      });
+      return r.json();
+    });
+  }
+
+  // ── Login ────────────────────────────────
+  function doLogin(email, password) {
+    showDiag('Enviando login a ' + BASE + '/auth/login …', false);
+    return fetchT(BASE + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+    }, 30000).then(function (r) {
+      showDiag('Login respondió HTTP ' + r.status, false);
+      return r.json().then(function (b) {
+        if (!r.ok) throw new Error(b.message || 'Credenciales inválidas.');
+        if (!b.token) throw new Error('Respuesta sin token.');
+        return b;
+      });
+    }).catch(function (e) {
+      showDiag('Login error: ' + (e && e.message ? e.message : e), true);
+      throw e;
+    });
+  }
+
+  $('loginForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var msg = $('loginMsg'), btn = $('loginBtn');
+    msg.className = 'msg'; msg.textContent = 'Ingresando…';
+    btn.disabled = true;
+    doLogin($('email').value.trim(), $('password').value).then(function (b) {
+      localStorage.setItem(TOKEN_KEY, b.token);
+      msg.className = 'msg ok'; msg.textContent = 'Sesión iniciada.';
+      showApp();
+    }).catch(function (err) {
+      msg.className = 'msg err';
+      msg.textContent = err.message || 'Error al iniciar sesión.';
+      showDiag('Login falló: ' + (err && err.message ? err.message : String(err)), true);
+    }).finally(function () { btn.disabled = false; });
+  });
+
+  $('tokenBtn').addEventListener('click', function () {
+    var tk = $('tokenText').value.trim();
+    var msg = $('loginMsg');
+    if (!tk) { msg.className = 'msg err'; msg.textContent = 'Pega primero un token válido.'; return; }
+    localStorage.setItem(TOKEN_KEY, tk);
+    msg.className = 'msg ok'; msg.textContent = 'Token guardado.';
+    showApp();
+  });
+
+  // ── Sesión ───────────────────────────────
+  function logout() {
+    localStorage.removeItem(TOKEN_KEY);
+    loginView.hidden = false;
+    appView.hidden = true;
+  }
+  function showApp() {
+    loginView.hidden = true;
+    appView.hidden = false;
+    loadAll();
+  }
+  $('logoutBtn').addEventListener('click', logout);
+  $('applyBtn').addEventListener('click', function () {
+    dates.desde = stores.desde.value || null;
+    dates.hasta = stores.hasta.value || null;
+    loadAll();
+  });
+
+  // ── Carga de datos ───────────────────────
+  var loadAbort = false;
+  function loadAll() {
+    loading.hidden = false;
+    loadAbort = false;
+    $('updatedText').textContent = 'Cargando…';
+    var params = { desde: dates.desde, hasta: dates.hasta };
+    var failsafe = setTimeout(function () { loading.hidden = true; }, 40000);
+    function done() { clearTimeout(failsafe); loading.hidden = true; }
+
+    Promise.all([
+      api('/reportes/recursos'),
+      api('/reportes/inscripciones'),
+      api('/reportes/operacionales'),
+      api('/reportes/economicos'),
+      api('/reportes/tipos'),
+      api('/dashboard/mensual')
+    ]).then(function (res) {
+      data = {
+        recursos: res[0] || {}, inscripciones: res[1] || {},
+        operacionales: res[2] || {}, economicos: res[3] || {},
+        tipos: res[4] || {}, mensual: Array.isArray(res[5]) ? res[5] : []
+      };
+      render();
+      $('updatedText').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-BO') +
+        (params.desde || params.hasta ? ' · con filtro de fechas' : ' · rango completo');
+    }).catch(function (err) {
+      $('updatedText').textContent = '✕ ' + (err && err.message ? err.message : 'Error de conexión.');
+      if (err && err.message && err.message.indexOf('Sesión') !== -1) setTimeout(logout, 0);
+    }).finally(done);
+  }
+
+  // ── Render ───────────────────────────────
+  function safe(fn) { try { fn(); } catch (e) { /* sección opcional */ } }
+  function render() {
+    safe(renderKpis);
+    safe(renderTrend);
+    safe(renderEstados);
+    safe(function () {
+      renderRank('rankRecursos', (data.recursos.recursosMasUsados || []).map(function (r) {
+        return { name: r.nombre, value: r.usos };
+      }), 'usos');
+    });
+    safe(function () {
+      renderRank('rankFacultades', (data.inscripciones.porFacultad || []).map(function (r) {
+        return { name: r.facultad, value: r.inscritos };
+      }), 'inscritos');
+    });
+    safe(function () {
+      renderRank('rankTipos', (data.tipos.porTipo || []).map(function (r) {
+        return { name: r.tipo, value: r.total };
+      }), 'eventos');
+    });
+    safe(renderInscritos);
+    safe(renderTabla);
+  }
+
+  var KPI_COLORS = ['#22C55E', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#22C55E'];
+  function renderKpis() {
+    var r = data.recursos, i = data.inscripciones, e = data.economicos;
+    var bal = e && e.resumen ? e.resumen.balance_real : null;
+    var kpis = [
+      { label: 'Solicitudes', value: fmtNum(r.totalSolicitudes), sub: 'total de recursos', cls: 'cyan' },
+      { label: 'Aprobados', value: fmtNum(r.aprobadas), sub: 'eventos aprobados', cls: 'green' },
+      { label: 'Pendientes', value: fmtNum(r.pendientes), sub: 'en revisión', cls: 'amber' },
+      { label: 'Rechazados', value: fmtNum((r.rechazadas || 0) + (r.canceladas || 0)), sub: 'rechazados + cancelados', cls: 'red' },
+      { label: 'Inscritos', value: fmtNum(i.total), sub: 'participantes', cls: 'purple' },
+      { label: 'Balance real', value: bal === null || bal === undefined ? '–' : fmtBs(bal), sub: 'informes de cierre', cls: (bal || 0) >= 0 ? 'green' : 'red' },
+      { label: 'Tasa aprobación', value: r.totalSolicitudes ? Math.round((r.aprobadas / r.totalSolicitudes) * 100) + '%' : '–', sub: 'sobre solicitudes', cls: 'info' }
+    ];
+    var html = kpis.map(function (k, idx) {
+      return '<div class="kpi ' + k.cls + '">' +
+        '<svg class="k-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>' +
+        '<div class="k-label">' + esc(k.label) + '</div>' +
+        '<div class="k-value">' + k.value + '</div>' +
+        '<div class="k-sub">' + esc(k.sub) + '</div></div>';
+    }).join('');
+    $('kpiGrid').innerHTML = html;
+  }
+
+  function chartDestroy(name) {
+    if (charts[name]) { try { charts[name].destroy(); } catch (e) {} charts[name] = null; }
+  }
+  function mkChart(name, canvas, cfg) {
+    chartDestroy(name);
+    charts[name] = new Chart(canvas, cfg);
+  }
+  function palette(n) {
+    var base = ['#22C55E','#3B82F6','#F59E0B','#06B6D4','#8B5CF6','#EC4899','#F97316','#14B8A6'];
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(base[i % base.length]);
+    return out;
+  }
+
+  function renderTrend() {
+    var mes = data.mensual || [];
+    var labels = mes.map(function (m) { return monthLabel(m.mes); });
+    var total = mes.map(function (m) { return m.totalEvents; });
+    var aprob = mes.map(function (m) { return m.aprobado; });
+    var chart = document.getElementById('chartTrend');
+    if (!labels.length) {
+      chartDestroy('trend');
+      // fallback: mostrar nada
+      return;
+    }
+    mkChart('trend', chart, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Eventos', data: total, borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,.15)', fill: true, tension: .35, pointRadius: 3, borderWidth: 2.5 },
+          { label: 'Aprobados', data: aprob, borderColor: '#22C55E', borderDash: [6,4], backgroundColor: 'rgba(34,197,94,.08)', fill: false, tension: .35, pointRadius: 3, borderWidth: 2.5 }
+        ]
+      },
+      options: chartOpts()
+    });
+  }
+
+  function chartOpts() {
+    return {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#94A3B8', boxWidth: 14, font: { size: 12 } } },
+        tooltip: { backgroundColor: '#1E293B', borderColor: 'rgba(255,255,255,.15)', borderWidth: 1, titleColor: '#F8FAFC', bodyColor: '#CBD5E1' }
+      },
+      scales: {
+        x: { ticks: { color: '#64748B', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: { beginAtZero: true, ticks: { color: '#64748B', font: { size: 11 }, precision: 0 }, grid: { color: 'rgba(255,255,255,.05)' } }
+      }
+    };
+  }
+
+  function renderEstados() {
+    var estados = (data.operacionales.porEstado || []);
+    var labels = [], vals = [], colors = [];
+    var colorMap = { aprobado: '#22C55E', completado: '#16a34a', finalizado: '#16a34a', pendiente: '#F59E0B', rechazado: '#EF4444', cancelado: '#F87171', vencido: '#F59E0B' };
+    estados.forEach(function (st) {
+      labels.push(String(st.estado).charAt(0).toUpperCase() + String(st.estado).slice(1));
+      vals.push(st.total);
+      colors.push(colorMap[String(st.estado).toLowerCase()] || '#3B82F6');
+    });
+    var canvas = document.getElementById('chartEstados');
+    if (!labels.length) { chartDestroy('estados'); return; }
+    mkChart('estados', canvas, {
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: vals, backgroundColor: colors, borderColor: '#0F172A', borderWidth: 3, hoverOffset: 6 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '62%',
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94A3B8', boxWidth: 12, padding: 10, font: { size: 12 } } },
+          tooltip: { backgroundColor: '#1E293B', bodyColor: '#CBD5E1', titleColor: '#F8FAFC' }
+        }
+      }
+    });
+  }
+
+  function renderInscritos() {
+    var porMes = (data.inscripciones.porMes || []);
+    var labels = porMes.map(function (r) { return monthLabel(r.mes); });
+    var vals = porMes.map(function (r) { return r.inscritos; });
+    var canvas = document.getElementById('chartInscritos');
+    if (!labels.length) { chartDestroy('insc'); return; }
+    mkChart('insc', canvas, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{ label: 'Inscritos', data: vals, backgroundColor: 'rgba(139,92,246,.75)', borderRadius: 5, maxBarThickness: 34 }]
+      },
+      options: chartOpts()
+    });
+  }
+
+  function renderRank(elId, rows, unit) {
+    var el = document.getElementById(elId);
+    if (!rows.length) { el.innerHTML = '<div class="empty-note">Sin datos para este rango.</div>'; return; }
+    var max = Math.max.apply(null, rows.map(function (r) { return r.value || 0; }));
+    var colors = palette(Math.max(rows.length, 1));
+    el.innerHTML = rows.map(function (r, i) {
+      var pct = max > 0 ? Math.round(((r.value || 0) / max) * 100) : 0;
+      return '<div class="rank-row">' +
+        '<span class="r-name" title="' + esc(r.name) + '">' + esc(r.name) + '</span>' +
+        '<span class="r-track"><span class="r-fill" style="width:' + pct + '%;background:' + colors[i % colors.length] + '"></span></span>' +
+        '<span class="r-val">' + fmtNum(r.value) + '</span></div>';
+    }).join('');
+  }
+
+  function renderTabla() {
+    var recientes = (data.recursos.eventoRecientes || []);
+    var económicosPorEvento = (data.economicos.porEvento || []);
+    var econMap = {};
+    económicosPorEvento.forEach(function (ev) { econMap[String(ev.idevento)] = ev; });
+    var rows = recientes.map(function (ev) {
+      var ec = econMap[String(ev.id)];
+      return {
+        id: ev.id, nombre: ev.nombreEvento, fecha: ev.fecha || ev.fechaevento,
+        lugar: ev.lugarevento, estado: ev.estado, solicitante: ev.solicitante,
+        recursos: ev.totalRecursos, balance: ec ? ec.balance_real : null
+      };
+    });
+    var el = document.getElementById('tablaEventos');
+    if (!rows.length) { el.innerHTML = '<div class="empty-note">No hay eventos recientes en este rango.</div>'; return; }
+    el.innerHTML =
+      '<table>' +
+      '<thead><tr><th>Evento</th><th>Fecha</th><th>Lugar</th><th>Solicitante</th><th class="num">Recursos</th><th>Estado</th><th class="num">Balance</th></tr></thead>' +
+      '<tbody>' + rows.map(function (r) {
+        return '<tr>' +
+          '<td>' + esc(r.nombre || 'Sin nombre') + '</td>' +
+          '<td>' + esc(fechaTxt(r.fecha)) + '</td>' +
+          '<td class="txt-muted">' + esc(r.lugar || '–') + '</td>' +
+          '<td class="txt-muted">' + esc(r.solicitante || '–') + '</td>' +
+          '<td class="num">' + fmtNum(r.recursos) + '</td>' +
+          '<td>' + estadoBadge(r.estado) + '</td>' +
+          '<td class="num">' + (r.balance === null || r.balance === undefined ? '–' : fmtBs(r.balance)) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  // ── Export ───────────────────────────────
+  function csvRows() {
+    var recientes = (data.recursos.eventoRecientes || []);
+    var econMap = {};
+    (data.economicos.porEvento || []).forEach(function (ev) { econMap[String(ev.idevento)] = ev; });
+    var head = ['ID', 'Evento', 'Fecha', 'Lugar', 'Solicitante', 'Recursos', 'Estado', 'Balance'];
+    var rows = recientes.map(function (ev) {
+      var ec = econMap[String(ev.id)];
+      return [
+        ev.id, '"' + (ev.nombreEvento || '').replace(/"/g, '""') + '"',
+        ev.fecha || ev.fechaevento || '',
+        '"' + (ev.lugarevento || '').replace(/"/g, '""') + '"',
+        '"' + (ev.solicitante || '').replace(/"/g, '""') + '"',
+        ev.totalRecursos, ev.estado,
+        ec && ec.balance_real !== null ? ec.balance_real : ''
+      ];
+    });
+    return '\uFEFF' + [head.join(';')].concat(rows.map(function (r) { return r.join(';'); })).join('\n');
+  }
+  $('csvBtn').addEventListener('click', function () {
+    var blob = new Blob([csvRows()], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'reportes-eventos.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 200);
+  });
+  $('printBtn').addEventListener('click', function () { window.print(); });
+
+  // ── Init ─────────────────────────────────
+  if (localStorage.getItem(TOKEN_KEY)) { showApp(); }
+})();
+</script>
+</body>
+</html>
