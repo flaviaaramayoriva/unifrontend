@@ -250,7 +250,7 @@ const TimePicker = ({ value, onChange }) => {
           style={styles.timePickerTrigger}
           activeOpacity={0.7}
         >
-          <Ionicons name="time-outline" size={20} color="#C44B0A" />
+          <Ionicons name="time-outline" size={20} color="#C44200" />
           <Text style={styles.timePickerTriggerText}>
             {pad(confirmedH)}:{pad(confirmedM)}
           </Text>
@@ -268,7 +268,7 @@ const TimePicker = ({ value, onChange }) => {
             <View style={styles.customTimePickerModal}>
               <View style={styles.customTimePickerHeader}>
                 <View style={styles.headerIcon}>
-                  <Ionicons name="alarm" size={24} color="#C44B0A" />
+                  <Ionicons name="alarm" size={24} color="#C44200" />
                 </View>
                 <Text style={styles.customTimePickerTitle}>Hora de Inicio</Text>
                 <TouchableOpacity onPress={() => setShowModal(false)} accessibilityLabel="Cerrar" accessibilityRole="button">
@@ -392,7 +392,7 @@ const TimePicker = ({ value, onChange }) => {
         style={styles.timePickerTrigger}
         activeOpacity={0.7}
       >
-        <Ionicons name="time-outline" size={20} color="#C44B0A" />
+        <Ionicons name="time-outline" size={20} color="#C44200" />
         <Text style={styles.timePickerTriggerText}>
           {pad(confirmedH)}:{pad(confirmedM)}
         </Text>
@@ -492,7 +492,7 @@ const NotificationsModal = ({ visible, onClose, notifications, markAsRead }) => 
                   <Ionicons
                     name={getNotificationIcon(notification.type || notification.tipo)}
                     size={20}
-                    color="#C44B0A"
+                    color="#C44200"
                     style={styles.notificationIcon}
                   />
                   {(!notification.read && notification.estado !== 'leido') && (
@@ -585,7 +585,7 @@ const TablaPresupuesto = ({
             />
             <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
             <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={[styles.deleteButtonSmall, { flex: 0.5 }]}>
-              <Ionicons name="close-circle" size={20} color="#e74c3c" />
+              <Ionicons name="close-circle" size={20} color="#EF4444" />
             </TouchableOpacity>
           </View>
         );
@@ -673,13 +673,13 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
       )}
       <View style={styles.calendarHeader}>
         <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navButton}>
-          <Ionicons name="chevron-back" size={24} color="#C44B0A" />
+          <Ionicons name="chevron-back" size={24} color="#C44200" />
         </TouchableOpacity>
         <Text style={styles.monthYearText}>
           {dayjs(fechaHoraSeleccionada).format('MMMM YYYY').toUpperCase()}
         </Text>
         <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navButton}>
-          <Ionicons name="chevron-forward" size={24} color="#C44B0A" />
+          <Ionicons name="chevron-forward" size={24} color="#C44200" />
         </TouchableOpacity>
       </View>
       <View style={styles.weekDaysHeader}>
@@ -750,7 +750,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada,
                 </Text>
                 {dayEvents.length > 0 && (
                   <View style={styles.eventIndicators}>
-                    <View style={[styles.eventDot, { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44B0A' }]} />
+                    <View style={[styles.eventDot, { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44200' }]} />
                     {dayEvents.length > 1 && <Text style={styles.eventCount}>+{dayEvents.length - 1}</Text>}
                   </View>
                 )}
@@ -822,7 +822,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
     return (
       <View style={styles.eventosDelDiaContainer}>
         <View style={styles.eventosDelDiaHeader}>
-          <Ionicons name="calendar-outline" size={20} color="#C44B0A" />
+          <Ionicons name="calendar-outline" size={20} color="#C44200" />
           <Text style={styles.eventosDelDiaTitle}>Eventos en {dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')}</Text>
         </View>
         <View style={styles.eventosDelDiaEmpty}>
@@ -834,7 +834,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
   return (
     <View style={styles.eventosDelDiaContainer}>
       <View style={styles.eventosDelDiaHeader}>
-        <Ionicons name="calendar-outline" size={20} color="#C44B0A" />
+        <Ionicons name="calendar-outline" size={20} color="#C44200" />
         <Text style={styles.eventosDelDiaTitle}>Eventos en {dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')}</Text>
         <View style={styles.eventCountBadge}>
           <Text style={styles.eventCountText}>{eventosDelDia.length}</Text>
@@ -850,7 +850,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
             <View key={index} style={[styles.eventoCard, isConflict && styles.eventoCardConflict]}>
               <View style={styles.eventoCardHeader}>
                 <View style={styles.eventoTimeContainer}>
-                  <Ionicons name="time-outline" size={16} color={isConflict ? "#ff6b6b" : "#C44B0A"} />
+                  <Ionicons name="time-outline" size={16} color={isConflict ? "#ff6b6b" : "#C44200"} />
                   <Text style={[styles.eventoTime, isConflict && styles.eventoTimeConflict]}>
                     {isHoraValida ? formatHoraEvento(evento.horaevento) : 'Hora no disponible'}
                   </Text>
@@ -1878,7 +1878,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
         </View>
         <View style={styles.timePickerSection}>
         <View style={styles.timePickerHeader}>
-          <Ionicons name="alarm" size={24} color="#C44B0A" />
+          <Ionicons name="alarm" size={24} color="#C44200" />
           <Text style={styles.timePickerSectionTitle}>Hora de Inicio del Evento <Text style={styles.requiredAsterisk}>*</Text>
           </Text>
         </View>
@@ -1905,7 +1905,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                   {idx < proximosEventosTimeline.length - 1 && <View style={styles.timelineConnector} />}
                 </View>
                 <View style={[styles.timelineEventCard, idx === 0 && styles.timelineEventCardFirst]}>
-                  <Ionicons name="calendar-outline" size={14} color="#C44B0A" />
+                  <Ionicons name="calendar-outline" size={14} color="#C44200" />
                   <Text style={styles.timelineDate}>{e.fecha}</Text>
                   <Text style={styles.timelineNombre} numberOfLines={2}>{e.nombre}</Text>
                 </View>
@@ -2091,7 +2091,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               <View style={styles.checkboxColumn}>
                 {TIPOS_DE_EVENTO.slice(0, 3).map((item) => (
                   <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)}>
-                    <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
+                    <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44200" : "#888"} />
                     <Text style={styles.checkboxLabel}>{item.label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -2099,7 +2099,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
               <View style={styles.checkboxColumn}>
                 {TIPOS_DE_EVENTO.slice(3).map((item) => (
                   <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)}>
-                    <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
+                    <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44200" : "#888"} />
                     <Text style={styles.checkboxLabel}>{item.label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -2135,7 +2135,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     { key: 'internacionalizacion', label: 'Internacionalización' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}>
-                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
+                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44200" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -2147,7 +2147,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     { key: 'otro', label: 'Otro' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}>
-                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
+                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44200" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -2195,7 +2195,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                       }
                     }
                     }>
-                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44B0A" : "#888"} />
+                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44200" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -2216,7 +2216,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                     { key: 'otro', label: 'Otro' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setSegmentoObjetivo, item.key)}>
-                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44B0A" : "#888"} />
+                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44200" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -2281,7 +2281,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                 
                 {comiteLoading ? (
                   <View style={styles.comiteLoadingContainer}>
-                    <ActivityIndicator size="large" color="#C44B0A" />
+                    <ActivityIndicator size="large" color="#C44200" />
                     <Text style={styles.comiteLoadingText}>Cargando miembros del comité...</Text>
                   </View>
                 ) : comiteError ? (
@@ -2317,7 +2317,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                           }
                         }}
                       >
-                        <Ionicons name={comiteSeleccionado.includes(usuario.id) ? "checkbox" : "square-outline"} size={24} color={comiteSeleccionado.includes(usuario.id) ? "#C44B0A" : "#888"} />
+                        <Ionicons name={comiteSeleccionado.includes(usuario.id) ? "checkbox" : "square-outline"} size={24} color={comiteSeleccionado.includes(usuario.id) ? "#C44200" : "#888"} />
                         <View style={styles.comiteUserText}>
                           <Text style={styles.checkboxLabel}>{usuario.nombreCompleto}</Text>
                          <Text style={[styles.comiteUserRole, { fontSize: 12, color: '#666', fontStyle: 'italic' }]}>
@@ -2380,7 +2380,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                             <Ionicons
                               name={isSelected ? "checkbox" : "square-outline"}
                               size={24}
-                              color={isSelected ? "#C44B0A" : !canSelect ? "#ccc" : "#888"}
+                              color={isSelected ? "#C44200" : !canSelect ? "#ccc" : "#888"}
                             />
                           </View>
                           <View style={styles.recursoInfo}>
@@ -2391,7 +2391,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                             </Text>
                             <Text style={[
                               styles.recursoCantidad,
-                              { color: cantidadDisponible <= 2 ? '#e74c3c' : '#27ae60' }
+                              { color: cantidadDisponible <= 2 ? '#EF4444' : '#27ae60' }
                             ]}>
                               Disponibles: {cantidadDisponible}
                             </Text>
@@ -2404,7 +2404,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                               onPress={() => decrementarRecurso(recurso.idrecurso)}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
-                              <Ionicons name="remove" size={18} color="#C44B0A" />
+                              <Ionicons name="remove" size={18} color="#C44200" />
                             </TouchableOpacity>
                             <Text style={styles.recursoStepperCount}>{cantidadSeleccionada}</Text>
                             <TouchableOpacity
@@ -2413,7 +2413,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                               disabled={cantidadSeleccionada >= (recurso.cantidad || recurso.disponibles || 0)}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
-                              <Ionicons name="add" size={18} color="#C44B0A" />
+                              <Ionicons name="add" size={18} color="#C44200" />
                             </TouchableOpacity>
                           </View>
                         )}
@@ -2518,7 +2518,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Ionicons name="school" size={28} color="#C44B0A" />
+                  <Ionicons name="school" size={28} color="#C44200" />
                   <Text style={styles.modalTitle}>Selecciona la Facultad</Text>
                 </View>
                 <Text style={{ fontSize: 13, color: '#666', marginBottom: 15 }}>
@@ -2538,7 +2538,7 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                           facultadSeleccionada === fac.facultad_id && { 
                             backgroundColor: '#fff5f0', 
                             borderLeftWidth: 4, 
-                            borderLeftColor: '#C44B0A' 
+                            borderLeftColor: '#C44200' 
                           }
                         ]}
                         onPress={() => {
@@ -2550,11 +2550,11 @@ console.log("Recursos existentes seleccionados:", recursosExistentes);
                           <Ionicons 
                             name={facultadSeleccionada === fac.facultad_id ? "radio-button-on" : "radio-button-off"} 
                             size={20} 
-                            color={facultadSeleccionada === fac.facultad_id ? "#C44B0A" : "#888"} 
+                            color={facultadSeleccionada === fac.facultad_id ? "#C44200" : "#888"} 
                           />
                           <Text style={[
                             styles.modalOptionText,
-                            facultadSeleccionada === fac.facultad_id && { color: '#C44B0A', fontWeight: '600' }
+                            facultadSeleccionada === fac.facultad_id && { color: '#C44200', fontWeight: '600' }
                           ]}>
                             {fac.nombre_facultad}
                           </Text>
@@ -2625,12 +2625,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff5f0',
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     borderRadius: 25,
     paddingHorizontal: 18,
     paddingVertical: 12,
     gap: 8,
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -2640,7 +2640,7 @@ const styles = StyleSheet.create({
   timePickerTriggerText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     letterSpacing: 1,
     marginHorizontal: 4,
   },
@@ -2701,7 +2701,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     color: '#fff',
     textAlign: 'center',
     lineHeight: 22,
@@ -2760,7 +2760,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     overflow: 'hidden',
     width: 90,
   },
@@ -2776,7 +2776,7 @@ const styles = StyleSheet.create({
   drumInput: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     paddingVertical: 8,
     textAlign: 'center',
     width: '100%',
@@ -2789,7 +2789,7 @@ const styles = StyleSheet.create({
   drumColon: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     marginTop: 28,
   },
   quickTimesContainer: {
@@ -2814,12 +2814,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#e0e0e0',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     marginRight: 8,
   },
   quickTimeBtnActive: {
-    backgroundColor: '#C44B0A',
-    borderColor: '#C44B0A',
+    backgroundColor: '#C44200',
+    borderColor: '#C44200',
   },
   quickTimeBtnText: {
     fontSize: 14,
@@ -2831,14 +2831,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   timePickerApply: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -2859,7 +2859,7 @@ const styles = StyleSheet.create({
   comiteLoadingContainer: {
     alignItems: 'center',
     padding: 30,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 10,
     marginTop: 10,
   },
@@ -2895,7 +2895,7 @@ const styles = StyleSheet.create({
   comiteRetryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -2909,7 +2909,7 @@ const styles = StyleSheet.create({
   comiteEmptyContainer: {
     alignItems: 'center',
     padding: 30,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 10,
     marginTop: 10,
   },
@@ -2961,7 +2961,7 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'ios' ? 180 : 'auto',
   },
   doneButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -2973,7 +2973,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   gotoButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2982,7 +2982,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 6,
     alignSelf: 'stretch',
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -3009,13 +3009,13 @@ visibilidadOption: {
   borderRadius: 10,
   borderWidth: 2,
   borderColor: '#e0e0e0',
-  backgroundColor: '#f8f9fa',
+  backgroundColor: '#F6F7F9',
   gap: 8,
 },
 visibilidadOptionActive: {
-  backgroundColor: '#C44B0A',
-  borderColor: '#C44B0A',
-  shadowColor: '#C44B0A',
+  backgroundColor: '#C44200',
+  borderColor: '#C44200',
+  shadowColor: '#C44200',
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.3,
   shadowRadius: 4,
@@ -3048,8 +3048,8 @@ facultadSelectorContainer: {
   backgroundColor: '#fff5f0',
   borderRadius: 12,
   borderLeftWidth: 4,
-  borderLeftColor: '#C44B0A',
-  shadowColor: '#C44B0A',
+  borderLeftColor: '#C44200',
+  shadowColor: '#C44200',
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.1,
   shadowRadius: 4,
@@ -3159,9 +3159,9 @@ facultadSelectedHint: {
   checkboxContainer: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
   formSectionHighlighted: {
     backgroundColor: '#fff5f0',
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     borderWidth: 2,
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -3189,10 +3189,10 @@ facultadSelectedHint: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
@@ -3219,7 +3219,7 @@ facultadSelectedHint: {
   checkboxColumn: { flex: 1, marginRight: 10 },
   recursosDisponiblesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 },
   recursoDisponibleCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
@@ -3235,7 +3235,7 @@ facultadSelectedHint: {
     elevation: 2,
   },
   recursoDisponibleCardMobile: { width: '100%' },
-  recursoDisponibleCardSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2 },
+  recursoDisponibleCardSelected: { backgroundColor: '#fff5f0', borderColor: '#C44200', borderWidth: 2 },
   recursoCheckboxContainer: { marginRight: 10 },
   recursoInfo: { flex: 1 },
   recursoNombre: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4 },
@@ -3245,7 +3245,7 @@ facultadSelectedHint: {
   recursoStepper: { flexDirection: 'row', alignItems: 'center', marginLeft: 6 },
   recursoStepperBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#fff0e6', alignItems: 'center', justifyContent: 'center' },
   recursoStepperBtnDisabled: { opacity: 0.35 },
-  recursoStepperCount: { minWidth: 26, textAlign: 'center', fontSize: 15, fontWeight: '700', color: '#C44B0A' },
+  recursoStepperCount: { minWidth: 26, textAlign: 'center', fontSize: 15, fontWeight: '700', color: '#C44200' },
   noRecursosText: { fontStyle: 'italic', color: '#999', textAlign: 'center', marginTop: 10, fontSize: 14, paddingVertical: 15 },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, minHeight: 40 },
   checkboxLabel: { marginLeft: 8, fontSize: 15, color: '#333' },
@@ -3266,7 +3266,7 @@ facultadSelectedHint: {
     elevation: 3,
   },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  notificationBell: { position: 'relative', padding: 8, borderRadius: 20, backgroundColor: '#f8f9fa' },
+  notificationBell: { position: 'relative', padding: 8, borderRadius: 20, backgroundColor: '#F6F7F9' },
   bellOnHero: { backgroundColor: 'rgba(255,255,255,0.16)' },
   notificationBadge: {
     position: 'absolute', top: 0, right: 0,
@@ -3276,8 +3276,8 @@ facultadSelectedHint: {
     borderWidth: 2, borderColor: '#ffffff',
   },
   notificationBadgeText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
-  calendarTitleContainer: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
-  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#C44B0A', textAlign: 'left' },
+  calendarTitleContainer: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#F6F7F9', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#C44200', textAlign: 'left' },
   notificationsModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   notificationsModalContent: {
     backgroundColor: 'white', borderRadius: 16, padding: 20,
@@ -3299,8 +3299,8 @@ facultadSelectedHint: {
     borderRadius: 8, marginBottom: 5, backgroundColor: '#ffffff',
   },
   notificationItemUnread: {
-    backgroundColor: '#f8f9ff', borderLeftWidth: 4, borderLeftColor: '#C44B0A',
-    shadowColor: '#C44B0A', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+    backgroundColor: '#f8f9ff', borderLeftWidth: 4, borderLeftColor: '#C44200',
+    shadowColor: '#C44200', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
   },
   objetivoPDIRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   objetivoPDINumber: { fontSize: 16, color: '#333', marginRight: 10, marginTop: 12, fontWeight: '500' },
@@ -3323,14 +3323,14 @@ facultadSelectedHint: {
   objetivoPDIColumn: { width: '48%', marginBottom: 10 },
   confirmModalTitle: { fontSize: 20, fontWeight: 'bold', color: '#2d3748', marginLeft: 12 },
   confirmModalMessage: { fontSize: 16, color: '#4a5568', marginBottom: 20, lineHeight: 22, textAlign: 'center' },
-  confirmModalDetails: { backgroundColor: '#f8f9fa', borderRadius: 12, padding: 16, marginBottom: 24 },
+  confirmModalDetails: { backgroundColor: '#F6F7F9', borderRadius: 12, padding: 16, marginBottom: 24 },
   confirmModalDetailTitle: { fontSize: 16, fontWeight: '600', color: '#2d3748', marginBottom: 12 },
   confirmModalDetail: { fontSize: 14, color: '#4a5568', marginBottom: 8, lineHeight: 20 },
   detailLabel: { fontWeight: '600', color: '#2d3748' },
   confirmModalButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   confirmModalButton: { flex: 1, paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  confirmModalButtonCancel: { backgroundColor: '#f8f9fa', borderWidth: 1, borderColor: '#e0e0e0' },
-  confirmModalButtonConfirm: { backgroundColor: '#C44B0A' },
+  confirmModalButtonCancel: { backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#e0e0e0' },
+  confirmModalButtonConfirm: { backgroundColor: '#C44200' },
   confirmModalButtonTextCancel: { fontSize: 16, fontWeight: '600', color: '#4a5568' },
   confirmModalButtonTextConfirm: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
   keyboardAvoidingContainer: { flex: 1, backgroundColor: '#F4F7F9' },
@@ -3339,16 +3339,16 @@ facultadSelectedHint: {
     shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
   },
   sectionTitle: {
-    fontSize: 17, fontWeight: '700', color: '#C44B0A',
+    fontSize: 17, fontWeight: '700', color: '#C44200',
     textAlign: 'left', marginBottom: 16,
     paddingVertical: 11, paddingHorizontal: 14,
     backgroundColor: '#fff5f0', borderRadius: 10,
-    borderLeftWidth: 4, borderLeftColor: '#C44B0A',
+    borderLeftWidth: 4, borderLeftColor: '#C44200',
   },
   label: { fontSize: 14, color: '#444', marginBottom: 8, fontWeight: '600', flex: 1 },
   inputGroup: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E0E0E0',
+    backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#E0E0E0',
     borderRadius: 10, marginBottom: 18, minHeight: 46,
   },
   inputError: { borderColor: 'red' },
@@ -3358,7 +3358,7 @@ facultadSelectedHint: {
   textArea: { height: 100, textAlignVertical: 'top' },
   datePickerButton: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, backgroundColor: '#fff', marginBottom: 15 },
   datePickerText: { fontSize: 16, color: '#333' },
-  otroInputContainer: { marginTop: -6, marginBottom: 16, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 10, backgroundColor: '#F8F9FA', paddingHorizontal: 12 },
+  otroInputContainer: { marginTop: -6, marginBottom: 16, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 10, backgroundColor: '#F6F7F9', paddingHorizontal: 12 },
   resultadoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   resultadoLabel: { fontSize: 16, color: '#333', flex: 1 },
   resultadoInput: { flex: 2, backgroundColor: '#F4F7F9', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16, fontSize: 16, color: '#333' },
@@ -3380,13 +3380,13 @@ facultadSelectedHint: {
   balanceText: { fontWeight: 'bold', fontSize: 16 },
   balanceAmount: { fontWeight: 'bold', fontSize: 16 },
   floatingActionButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     height: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'stretch',
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -3417,7 +3417,7 @@ facultadSelectedHint: {
     backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 16,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2, overflow: 'hidden',
   },
-  calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#F6F7F9', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   navButton: { padding: 8, borderRadius: 20, backgroundColor: '#ffffff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   monthYearText: { fontSize: 18, fontWeight: 'bold', color: '#333', letterSpacing: 1 },
   weekDaysHeader: { flexDirection: 'row', backgroundColor: '#f0f0f0', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
@@ -3425,15 +3425,15 @@ facultadSelectedHint: {
   weekDayText: { fontSize: 11, fontWeight: '600', color: '#666' },
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: '#ffffff' },
   dayCell: { width: '14.28%', minHeight: 50, minWidth: 0, borderRightWidth: 0.5, borderBottomWidth: 0.5, borderColor: '#e8e8e8', paddingTop: 5, paddingHorizontal: 3 },
-  dayCellInactive: { backgroundColor: '#f8f9fa' },
-  dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2, borderRadius: 6, margin: -1 },
+  dayCellInactive: { backgroundColor: '#F6F7F9' },
+  dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#C44200', borderWidth: 2, borderRadius: 6, margin: -1 },
   dayCellToday: { backgroundColor: '#e8f4fd' },
   dayCellFull: { opacity: 0.35, backgroundColor: '#f2f2f2', borderStyle: 'dashed', borderWidth: 1, borderColor: '#bdbdbd' },
   dayCellDisabled: { opacity: 0.45, backgroundColor: '#f5f5f5' },
   dayCellContent: { flex: 1, alignItems: 'center' },
   dayNumber: { fontSize: 14, fontWeight: '500', color: '#333', marginBottom: 2 },
   dayNumberInactive: { color: '#999' },
-  dayNumberSelected: { color: '#C44B0A', fontWeight: 'bold', fontSize: 15 },
+  dayNumberSelected: { color: '#C44200', fontWeight: 'bold', fontSize: 15 },
   dayNumberToday: { backgroundColor: '#2196f3', color: 'white', borderRadius: 10, paddingHorizontal: 5, paddingVertical: 1, overflow: 'hidden' },
   dayNumberDisabled: { color: '#b0b0b0', backgroundColor: 'transparent', borderRadius: 10, paddingHorizontal: 0, paddingVertical: 0 },
   eventIndicators: { flexDirection: 'row', alignItems: 'center', marginTop: 1, flexWrap: 'nowrap' },
@@ -3441,19 +3441,19 @@ facultadSelectedHint: {
   eventCount: { fontSize: 10, color: '#666', fontWeight: '500' },
   eventPreview: { marginTop: 4, width: '100%' },
   eventPreviewText: { fontSize: 8, color: '#333', marginBottom: 1, textAlign: 'center' },
-  eventPreviewMore: { fontSize: 8, color: '#C44B0A', fontWeight: 'bold', textAlign: 'center' },
+  eventPreviewMore: { fontSize: 8, color: '#C44200', fontWeight: 'bold', textAlign: 'center' },
   eventPreviewFull: { fontSize: 8, color: '#c0392b', fontWeight: 'bold', textAlign: 'center', marginTop: 2 },
   eventosDelDiaContainer: { backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2, overflow: 'hidden' },
-  eventosDelDiaHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  eventosDelDiaHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#F6F7F9', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   eventosDelDiaTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginLeft: 8, flex: 1 },
-  eventCountBadge: { backgroundColor: '#C44B0A', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  eventCountBadge: { backgroundColor: '#C44200', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   eventCountText: { fontSize: 12, color: '#ffffff', fontWeight: 'bold' },
   eventsList: { maxHeight: 200, paddingHorizontal: 16 },
   eventoCard: { backgroundColor: '#ffffff', borderRadius: 8, padding: 12, marginVertical: 8, borderWidth: 1, borderColor: '#e0e0e0', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   eventoCardConflict: { borderColor: '#ff6b6b', backgroundColor: '#fff5f5' },
   eventoCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   eventoTimeContainer: { flexDirection: 'row', alignItems: 'center' },
-  eventoTime: { fontSize: 14, fontWeight: '600', color: '#C44B0A', marginLeft: 4 },
+  eventoTime: { fontSize: 14, fontWeight: '600', color: '#C44200', marginLeft: 4 },
   eventoTimeConflict: { color: '#ff6b6b' },
   conflictBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ff6b6b', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   conflictBadgeText: { fontSize: 10, color: '#ffffff', marginLeft: 4, fontWeight: '600' },
@@ -3461,11 +3461,11 @@ facultadSelectedHint: {
   eventoDetails: { marginLeft: 4 },
   eventoDetailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   eventoDetailText: { fontSize: 12, color: '#666', marginLeft: 4 },
-  eventosDelDiaFooter: { padding: 16, borderTopWidth: 1, borderTopColor: '#e0e0e0', backgroundColor: '#f8f9fa' },
+  eventosDelDiaFooter: { padding: 16, borderTopWidth: 1, borderTopColor: '#e0e0e0', backgroundColor: '#F6F7F9' },
   eventosDelDiaNote: { fontSize: 12, color: '#666', textAlign: 'center', fontStyle: 'italic' },
   eventosDelDiaEmpty: { paddingVertical: 24, paddingHorizontal: 20, alignItems: 'center' },
   eventosDelDiaEmptyText: { fontSize: 13, color: '#999', textAlign: 'center', lineHeight: 20 },
-  diaLimiteContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdecea', borderColor: '#e74c3c', borderWidth: 1, borderRadius: 8, marginHorizontal: 16, marginTop: 12, padding: 10 },
+  diaLimiteContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fdecea', borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, marginHorizontal: 16, marginTop: 12, padding: 10 },
   diaLimiteText: { flex: 1, fontSize: 13, color: '#c0392b', marginLeft: 6, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 20, width: '90%', maxWidth: 400, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
@@ -3474,7 +3474,7 @@ facultadSelectedHint: {
   modalOption: { paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   modalOptionText: { fontSize: 15, color: '#333' },
   modalMessage: { fontSize: 14, color: '#666', marginBottom: 12, lineHeight: 20 },
-  conflictEventCard: { backgroundColor: '#f8f9fa', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#e0e0e0' },
+  conflictEventCard: { backgroundColor: '#F6F7F9', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#e0e0e0' },
   conflictEventTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 4 },
   conflictEventDetails: { fontSize: 14, color: '#666', marginBottom: 4 },
   conflictEventResponsible: { fontSize: 14, color: '#666', fontStyle: 'italic' },
@@ -3482,9 +3482,9 @@ facultadSelectedHint: {
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
   modalButtonSecondary: { backgroundColor: '#f0f0f0', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
   modalButtonSecondaryText: { fontSize: 14, color: '#333', fontWeight: '600' },
-  modalButtonPrimary: { backgroundColor: '#C44B0A', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
+  modalButtonPrimary: { backgroundColor: '#C44200', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
   modalButtonPrimaryText: { fontSize: 14, color: '#ffffff', fontWeight: '600' },
-  selectedText: { fontSize: 14, color: '#C44B0A', marginTop: 5, marginLeft: 10 },
+  selectedText: { fontSize: 14, color: '#C44200', marginTop: 5, marginLeft: 10 },
    customTimePickerModal: {
     backgroundColor: '#fff',
     borderRadius: 20,
@@ -3529,12 +3529,12 @@ facultadSelectedHint: {
     marginBottom: 24,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
   },
   timeDisplayText: {
     fontSize: 48,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     letterSpacing: 2,
   },
   pickersRow: {
@@ -3558,7 +3558,7 @@ facultadSelectedHint: {
   scrollSelector: {
     maxHeight: 200,
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     borderRadius: 12,
     backgroundColor: '#fff',
   },
@@ -3570,7 +3570,7 @@ facultadSelectedHint: {
     borderBottomColor: '#f0f0f0',
   },
   timeOptionSelected: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
   },
   timeOptionText: {
     fontSize: 16,
@@ -3584,7 +3584,7 @@ facultadSelectedHint: {
   colonSeparator: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     marginTop: 30,
   },
   quickHoursContainer: {
@@ -3605,12 +3605,12 @@ facultadSelectedHint: {
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#e0e0e0',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     marginRight: 10,
   },
   quickHourBtnActive: {
-    backgroundColor: '#C44B0A',
-    borderColor: '#C44B0A',
+    backgroundColor: '#C44200',
+    borderColor: '#C44200',
   },
   quickHourText: {
     fontSize: 14,
@@ -3622,13 +3622,13 @@ facultadSelectedHint: {
     fontWeight: '700',
   },
   confirmButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -3640,7 +3640,7 @@ facultadSelectedHint: {
     fontWeight: '700',
   },
   requiredAsterisk: {
-  color: '#e74c3c',
+  color: '#EF4444',
   fontSize: 16,
   fontWeight: 'bold',
   marginLeft: 12,
@@ -3707,7 +3707,7 @@ timelineDot: {
   shadowRadius: 2,
 },
 timelineDotFirst: {
-  backgroundColor: '#C44B0A',
+  backgroundColor: '#C44200',
   width: 18,
   height: 18,
   borderRadius: 9,
@@ -3720,7 +3720,7 @@ timelineConnector: {
   marginRight: 8,
 },
 timelineEventCard: {
-  backgroundColor: '#f8f9fa',
+  backgroundColor: '#F6F7F9',
   borderRadius: 10,
   borderWidth: 1,
   borderColor: '#e8e8e8',
@@ -3734,7 +3734,7 @@ timelineEventCardFirst: {
 },
 timelineDate: {
   fontSize: 12,
-  color: '#C44B0A',
+  color: '#C44200',
   fontWeight: '700',
   marginTop: 4,
   marginBottom: 2,

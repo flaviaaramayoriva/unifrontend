@@ -31,10 +31,10 @@ const TOKEN_KEY = 'adminAuthToken';
 
 // Colores consistentes
 const COLORS = {
-  primary: '#0052A0',
-  secondary: '#2980b9',
-  accent: '#e74c3c',
-  background: '#f8fafc',
+  primary: '#C44200',
+  secondary: '#0F172A',
+  accent: '#EF4444',
+  background: '#F6F7F9',
   surface: '#ffffff',
   success: '#27ae60',
   warning: '#f39c12',

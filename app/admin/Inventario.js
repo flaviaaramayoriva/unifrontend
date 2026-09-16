@@ -18,14 +18,14 @@ const getToken = async () => {
 };
 
 const C = {
-  primary: '#C44B0A', primaryLight: '#FFF0E6',
+  primary: '#C44200', primaryLight: '#FFF0E6',
   success: '#047857', successLight: '#D1FAE5',
   warning: '#F59E0B', warningLight: '#FEF3C7',
   danger: '#EF4444',  dangerLight: '#FEE2E2',
   info: '#3B82F6',    infoLight: '#DBEAFE',
   purple: '#8B5CF6',  purpleLight: '#EDE9FE',
-  bg: '#F3F4F6', surface: '#FFFFFF',
-  t1: '#111827', t2: '#6B7280', t3: '#9CA3AF', border: '#E5E7EB',
+  bg: '#D1D5DB', surface: '#FFFFFF',
+  t1: '#111827', t2: '#64748B', t3: '#94A3B8', border: '#E6E9EF',
 };
 
 // Mismos colores que tu CrearRecurso.js, con icono agregado por tipo

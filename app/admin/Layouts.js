@@ -24,12 +24,12 @@ import { useEffect } from 'react';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 // Misma paleta que InventarioDAF.js para mantener consistencia visual
 const C = {
-  primary: '#C44B0A', primaryLight: '#FFF0E6',
+  primary: '#C44200', primaryLight: '#FFF0E6',
   success: '#047857', successLight: '#D1FAE5',
   danger: '#EF4444',  dangerLight: '#FEE2E2',
   info: '#3B82F6',    infoLight: '#DBEAFE',
-  bg: '#F3F4F6', surface: '#FFFFFF',
-  t1: '#111827', t2: '#6B7280', t3: '#9CA3AF', border: '#E5E7EB',
+  bg: '#D1D5DB', surface: '#FFFFFF',
+  t1: '#111827', t2: '#64748B', t3: '#94A3B8', border: '#E6E9EF',
 };
 
 const getTokenAsync = async () => {

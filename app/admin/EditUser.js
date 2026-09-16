@@ -288,12 +288,12 @@ const EditUser = () => {
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{
           title: 'Editar Usuario',
-          headerStyle: { backgroundColor: '#C44B0A' },
+          headerStyle: { backgroundColor: '#C44200' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
         }} />
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#C44B0A" />
+          <ActivityIndicator size="large" color="#C44200" />
           <Text style={styles.loadingText}>Cargando usuario...</Text>
         </View>
       </SafeAreaView>
@@ -306,7 +306,7 @@ const EditUser = () => {
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{
         title: 'Editar Usuario',
-        headerStyle: { backgroundColor: '#C44B0A' },
+        headerStyle: { backgroundColor: '#C44200' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
       }} />
@@ -337,7 +337,7 @@ const EditUser = () => {
           {/* Información Personal */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="person-outline" size={18} color="#C44B0A" />
+              <Ionicons name="person-outline" size={18} color="#C44200" />
               <Text style={styles.sectionTitle}>Información Personal</Text>
             </View>
             <InputField label="Nombre(s)" required value={formData.nombre}
@@ -357,7 +357,7 @@ const EditUser = () => {
           {/* Contacto */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="mail-outline" size={18} color="#C44B0A" />
+              <Ionicons name="mail-outline" size={18} color="#C44200" />
               <Text style={styles.sectionTitle}>Contacto</Text>
             </View>
             <InputField label="Correo Electrónico" required value={formData.email}
@@ -369,7 +369,7 @@ const EditUser = () => {
           {/* Contraseña */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="lock-closed-outline" size={18} color="#C44B0A" />
+              <Ionicons name="lock-closed-outline" size={18} color="#C44200" />
               <Text style={styles.sectionTitle}>Seguridad</Text>
             </View>
             <View style={styles.inputContainer}>
@@ -399,7 +399,7 @@ const EditUser = () => {
           {needsCarrera && (
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="school-outline" size={18} color="#C44B0A" />
+                <Ionicons name="school-outline" size={18} color="#C44200" />
                 <Text style={styles.sectionTitle}>Configuración Académica</Text>
               </View>
               <View style={styles.inputContainer}>
@@ -440,7 +440,7 @@ const EditUser = () => {
           {/* Estado */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="toggle-outline" size={18} color="#C44B0A" />
+              <Ionicons name="toggle-outline" size={18} color="#C44200" />
               <Text style={styles.sectionTitle}>Estado de la Cuenta</Text>
             </View>
             <TouchableOpacity
@@ -484,21 +484,21 @@ const EditUser = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: '#F6F7F9' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 10, fontSize: 16, color: '#6B7280' },
+  loadingText: { marginTop: 10, fontSize: 16, color: '#64748B' },
   scrollContainer: { padding: 20, paddingBottom: 60 },
 
   headerCard: {
     flexDirection: 'row', alignItems: 'center', gap: 16,
     backgroundColor: '#fff', borderRadius: 16, padding: 20,
-    marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#C44B0A',
+    marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#C44200',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
   },
   avatarCircle: {
     width: 52, height: 52, borderRadius: 26,
-    backgroundColor: '#C44B0A', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#C44200', justifyContent: 'center', alignItems: 'center',
   },
   avatarText: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#1F2937', marginBottom: 6 },
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start', backgroundColor: '#FFF0E8',
     paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20,
   },
-  rolePillText: { color: '#C44B0A', fontWeight: '700', fontSize: 12, textTransform: 'capitalize' },
+  rolePillText: { color: '#C44200', fontWeight: '700', fontSize: 12, textTransform: 'capitalize' },
 
   sectionCard: {
     backgroundColor: '#fff', borderRadius: 16, padding: 20,
@@ -523,11 +523,11 @@ const styles = StyleSheet.create({
 
   inputContainer: { marginBottom: 16 },
   label: { fontSize: 14, color: '#374151', marginBottom: 8, fontWeight: '600' },
-  required: { color: '#E74C3C' },
-  optional: { color: '#9CA3AF', fontWeight: '400' },
+  required: { color: '#EF4444' },
+  optional: { color: '#94A3B8', fontWeight: '400' },
   inputWrapper: { position: 'relative' },
   input: {
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#E6E9EF',
     borderRadius: 12, paddingHorizontal: 15, paddingVertical: 14, fontSize: 15, color: '#1F2937',
   },
   inputPadRight: { paddingRight: 48 },
@@ -536,10 +536,10 @@ const styles = StyleSheet.create({
   errorText: { color: '#EF4444', fontSize: 12, marginTop: 4, marginLeft: 2 },
 
   dropdownWrapper: { marginBottom: 8 },
-  dropdown: { backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', borderWidth: 1, borderRadius: 12, minHeight: 50 },
-  dropdownList: { backgroundColor: '#fff', borderColor: '#E5E7EB', borderWidth: 1, borderRadius: 12 },
+  dropdown: { backgroundColor: '#F6F7F9', borderColor: '#E6E9EF', borderWidth: 1, borderRadius: 12, minHeight: 50 },
+  dropdownList: { backgroundColor: '#fff', borderColor: '#E6E9EF', borderWidth: 1, borderRadius: 12 },
   dropdownText: { fontSize: 15, color: '#1F2937' },
-  dropdownPlaceholder: { fontSize: 15, color: '#9CA3AF' },
+  dropdownPlaceholder: { fontSize: 15, color: '#94A3B8' },
 
   facultadBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -547,12 +547,12 @@ const styles = StyleSheet.create({
     marginBottom: 12, borderLeftWidth: 3, borderLeftColor: '#27ae60',
   },
   facultadBadgeText: { fontSize: 13, color: '#15803d', fontWeight: '500', flex: 1 },
-  infoBox: { backgroundColor: '#FFF7ED', borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: '#C44B0A' },
+  infoBox: { backgroundColor: '#FFF7ED', borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: '#C44200' },
   infoText: { fontSize: 13, color: '#92400e' },
 
   toggleContainer: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#E6E9EF',
     borderRadius: 12, paddingHorizontal: 15, paddingVertical: 14,
   },
   toggleSwitch: {
@@ -572,13 +572,13 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1, paddingVertical: 15, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#C44B0A',
+    borderWidth: 2, borderColor: '#C44200',
   },
-  cancelButtonText: { color: '#C44B0A', fontSize: 15, fontWeight: '700' },
+  cancelButtonText: { color: '#C44200', fontSize: 15, fontWeight: '700' },
   saveButton: {
-    flex: 2, backgroundColor: '#C44B0A', paddingVertical: 15,
+    flex: 2, backgroundColor: '#C44200', paddingVertical: 15,
     borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'row', shadowColor: '#C44B0A',
+    flexDirection: 'row', shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
   },
   saveButtonDisabled: { backgroundColor: '#f9bda3', shadowOpacity: 0.1 },

@@ -16,11 +16,11 @@ import * as FileSystem from 'expo-file-system';
 import AdminHeader from '../../components/admin/AdminHeader';
 
 const COLORS = {
-  primary: '#C44B0A',
-  primaryLight: '#FFEDD5',
+  primary: '#C44200',
+  primaryLight: '#FFF0E6',
   secondary: '#0F172A',
   accent: '#EF4444',
-  success: '#16A34A',
+  success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
   purple: '#8B5CF6',
@@ -81,10 +81,10 @@ const estadoBadgeStyles = {
   finalizado: { bg: '#dbeafe', text: '#1d4ed8', icon: 'checkmark-done-circle' },
   pendiente: { bg: '#fef3c7', text: '#d97706', icon: 'time' },
   rechazado: { bg: '#fee2e2', text: '#dc2626', icon: 'close-circle' },
-  cancelado: { bg: '#f3f4f6', text: '#4b5563', icon: 'ban' },
-  vencido: { bg: '#ffedd5', text: '#c2410c', icon: 'alert-circle' },
+  cancelado: { bg: '#D1D5DB', text: '#0F172A', icon: 'ban' },
+  vencido: { bg: '#FFF0E6', text: '#c2410c', icon: 'alert-circle' },
 };
-const estadoBadgeFallback = { bg: '#f3f4f6', text: '#6b7280' };
+const estadoBadgeFallback = { bg: '#D1D5DB', text: '#64748B' };
 
 // ── Barra horizontal reutilizable (rankings) ─────────────────
 const RankBar = ({ rows }) => {
@@ -112,32 +112,37 @@ const RankBar = ({ rows }) => {
   );
 };
 
-const KpiCard = ({ label, value, icon, color, sub, delta, onPress, active }) => (
-  <TouchableOpacity
-    style={[styles.kpiCard, { borderTopColor: color }, active && { borderColor: color, backgroundColor: color + '0A' }]}
-    onPress={onPress}
-    disabled={!onPress}
-    activeOpacity={0.75}
-    accessibilityRole="button"
-    accessibilityLabel={label}
-  >
-    <View style={[styles.kpiIconWrap, { backgroundColor: color + '15' }]}>
-      <Ionicons name={icon} size={20} color={color} />
-    </View>
-    <Text style={styles.kpiValue}>{value}</Text>
-    <Text style={styles.kpiLabel}>{label}</Text>
-    {sub ? <Text style={styles.kpiSub}>{sub}</Text> : null}
-    {delta !== null && delta !== undefined ? (
-      <View style={styles.kpiDelta}>
-        <Ionicons name={delta >= 0 ? 'trending-up' : 'trending-down'} size={13} color={delta >= 0 ? COLORS.success : COLORS.error} />
-        <Text style={[styles.kpiDeltaText, { color: delta >= 0 ? COLORS.success : COLORS.error }]}>
-          {delta >= 0 ? '+' : ''}{delta}%
-        </Text>
-        <Text style={styles.kpiDeltaSub}>vs ant.</Text>
+const KpiCard = ({ label, value, icon, color, sub, delta, deltaTxt, invert, onPress, active }) => {
+  const buenSigno = delta !== null && delta !== undefined ? (invert ? delta <= 0 : delta >= 0) : null;
+  const deltaColor = buenSigno === null ? COLORS.textTertiary : buenSigno ? COLORS.success : COLORS.error;
+  const deltaIcon = buenSigno === null ? 'remove' : buenSigno ? 'trending-up' : 'trending-down';
+  return (
+    <TouchableOpacity
+      style={[styles.kpiCard, { borderTopColor: color }, active && { borderColor: color, backgroundColor: color + '0A' }]}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <View style={[styles.kpiIconWrap, { backgroundColor: color + '15' }]}>
+        <Ionicons name={icon} size={20} color={color} />
       </View>
-    ) : null}
-  </TouchableOpacity>
-);
+      <Text style={styles.kpiValue}>{value}</Text>
+      <Text style={styles.kpiLabel}>{label}</Text>
+      {sub ? <Text style={styles.kpiSub}>{sub}</Text> : null}
+      {delta !== null && delta !== undefined ? (
+        <View style={styles.kpiDelta}>
+          <Ionicons name={deltaIcon} size={13} color={deltaColor} />
+          <Text style={[styles.kpiDeltaText, { color: deltaColor }]}>
+            {delta >= 0 ? '+' : ''}{delta}%
+          </Text>
+          <Text style={styles.kpiDeltaSub}>{deltaTxt || 'vs ant.'}</Text>
+        </View>
+      ) : null}
+    </TouchableOpacity>
+  );
+};
 
 const SectionHeader = ({ title, subtitle, icon, action }) => (
   <View style={styles.sectionHeader}>
@@ -169,28 +174,28 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
   const eco = (economicos && economicos.resumen) || null;
   const bal = eco ? Number(eco.balance_real) : null;
   const porEstado = Array.isArray(operacionales?.porEstado) ? operacionales.porEstado : [];
-  const estadoColor = { aprobado: '#16A34A', completado: '#1d4ed8', finalizado: '#1d4ed8', pendiente: '#F59E0B', rechazado: '#EF4444', cancelado: '#9CA3AF', vencido: '#EA580C' };
+  const estadoColor = { aprobado: '#047857', completado: '#1d4ed8', finalizado: '#1d4ed8', pendiente: '#F59E0B', rechazado: '#EF4444', cancelado: '#94A3B8', vencido: '#EA580C' };
   const porEvento = Array.isArray(economicos?.porEvento) ? economicos.porEvento : [];
   const porMerode = Array.isArray(economicos?.porMoneda) ? economicos.porMoneda : [];
 
   const economicoRows = porMerode.map(m => {
     const git = m.tipo === 'gasto' ? m.total : null;
     const ing = m.tipo === 'ingreso' ? m.total : null;
-    return `<tr><td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;font-weight:600;">${h(m.moneda)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:right;">${fmtBs(ing)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:right;">${fmtBs(git)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:right;${(bal || 0) >= 0 ? 'color:#16a34a;' : 'color:#dc2626;'};font-weight:700;">${fmtBs(bal)}</td></tr>`;
+    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(m.moneda)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:right;">${fmtBs(ing)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:right;">${fmtBs(git)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:right;${(bal || 0) >= 0 ? 'color:#047857;' : 'color:#dc2626;'};font-weight:700;">${fmtBs(bal)}</td></tr>`;
   }).join('');
 
   const eventRows = (ev) => {
     const e = String(ev.estado || '').toLowerCase();
     const col = estadoBadgeStyles[e] || estadoBadgeFallback;
-    return `<tr><td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;font-weight:600;">${h(ev.nombre)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;">${ev.fecha ? String(ev.fecha).slice(0, 10) : '–'}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;">${h(ev.lugar)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;">${h(ev.solicitante)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${fmtNum(ev.recursos)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;"><span style="background:${col.bg};color:${col.text};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">${capStr(ev.estado)}</span></td></tr>`;
+    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(ev.nombre)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${ev.fecha ? String(ev.fecha).slice(0, 10) : '–'}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.lugar)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.solicitante)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(ev.recursos)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;"><span style="background:${col.bg};color:${col.text};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">${capStr(ev.estado)}</span></td></tr>`;
   };
 
   // Evolución mensual para el anual
@@ -215,13 +220,13 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
       const pctEv = Math.round((ev / maxEv) * 100);
       const pctAp = ev > 0 ? Math.round((ap / ev) * 100) : 0;
       rows.push(`<tr>
-          <td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;font-weight:600;">${MONTH_NAMES_FULL[i - 1]}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;font-weight:700;">${fmtNum(ev)}</td>
-          <td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;">
-            <div style="background:#e5e7eb;border-radius:5px;height:9px;min-width:60px;"><div style="width:${pctEv}%;height:100%;background:#3B82F6;border-radius:5px;"></div></div>
+          <td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${MONTH_NAMES_FULL[i - 1]}</td>
+          <td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;font-weight:700;">${fmtNum(ev)}</td>
+          <td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">
+            <div style="background:#E6E9EF;border-radius:5px;height:9px;min-width:60px;"><div style="width:${pctEv}%;height:100%;background:#3B82F6;border-radius:5px;"></div></div>
           </td>
-          <td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${fmtNum(ap)} <span style="color:#16a34a;font-size:10px;">(${pctAp}%)</span></td>
-          <td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;font-weight:700;">${fmtNum(inscr)}</td>
+          <td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(ap)} <span style="color:#047857;font-size:10px;">(${pctAp}%)</span></td>
+          <td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;font-weight:700;">${fmtNum(inscr)}</td>
         </tr>`);
     }
     monthlyHtml = `
@@ -240,29 +245,29 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
 
   const estadosHtml = porEstado.filter(x => (x.total || 0) > 0).map(x => {
     const c = estadoColor[String(x.estado).toLowerCase()] || '#3B82F6';
-    return `<tr><td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;"><span style="color:${c};font-weight:700;">${capStr(x.estado)}</span></td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${x.total}</td></tr>`;
+    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;"><span style="color:${c};font-weight:700;">${capStr(x.estado)}</span></td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${x.total}</td></tr>`;
   }).join('');
 
   const recRows = (r.recursosMasUsados || []).slice(0, 8).map(x => {
     const maxv = Math.max(...(r.recursosMasUsados || []).map(y => y.usos || 0), 1);
     const pct = Math.round(((x.usos || 0) / maxv) * 100);
-    return `<tr><td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;font-weight:600;">${h(x.nombre)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${fmtNum(x.usos)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;"><div style="background:#e5e7eb;border-radius:5px;height:9px;"><div style="width:${pct}%;height:100%;background:#3B82F6;border-radius:5px;"></div></div></td></tr>`;
+    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(x.nombre)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(x.usos)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;"><div style="background:#E6E9EF;border-radius:5px;height:9px;"><div style="width:${pct}%;height:100%;background:#3B82F6;border-radius:5px;"></div></div></td></tr>`;
   }).join('');
 
   const facRows = (inscripciones?.porFacultad || []).slice(0, 8).map(x => {
     const maxv = Math.max(...(inscripciones?.porFacultad || []).map(y => y.inscritos || 0), 1);
     const pct = Math.round(((x.inscritos || 0) / maxv) * 100);
-    return `<tr><td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;font-weight:600;">${h(x.facultad)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${fmtNum(x.inscritos)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;"><div style="background:#e5e7eb;border-radius:5px;height:9px;"><div style="width:${pct}%;height:100%;background:#8B5CF6;border-radius:5px;"></div></div></td></tr>`;
+    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(x.facultad)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(x.inscritos)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;"><div style="background:#E6E9EF;border-radius:5px;height:9px;"><div style="width:${pct}%;height:100%;background:#8B5CF6;border-radius:5px;"></div></div></td></tr>`;
   }).join('');
 
   const tipoRows = (tipos || []).slice(0, 8).map(x => {
-    return `<tr><td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;font-weight:600;">${h(x.tipo)}</td>` +
-      `<td style="padding:8px;border:1px solid #e5e7eb;font-size:12px;text-align:center;">${fmtNum(x.total)}</td></tr>`;
+    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(x.tipo)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(x.total)}</td></tr>`;
   }).join('');
 
   const listaEventos = (r.eventoRecientes || []).slice(0, 80).map(ev => {
@@ -274,7 +279,7 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
   const kpiGrid = `
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Solicitudes</div><div class="stat-value">${fmtNum(r.totalSolicitudes)}</div></div>
-      <div class="stat-card" style="border-left-color:#16a34a"><div class="stat-label">Aprobados</div><div class="stat-value" style="color:#16a34a">${fmtNum(r.aprobadas)}</div></div>
+      <div class="stat-card" style="border-left-color:#047857"><div class="stat-label">Aprobados</div><div class="stat-value" style="color:#047857">${fmtNum(r.aprobadas)}</div></div>
       <div class="stat-card" style="border-left-color:#f59e0b"><div class="stat-label">Pendientes</div><div class="stat-value" style="color:#f59e0b">${fmtNum(r.pendientes)}</div></div>
       <div class="stat-card" style="border-left-color:#8b5cf6"><div class="stat-label">Inscritos</div><div class="stat-value" style="color:#8b5cf6">${fmtNum(inscripciones?.total)}</div></div>
     </div>`;
@@ -283,15 +288,15 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     <div style="margin-top:22px;">
       <div class="section-h">Resumen económico</div>
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;">
-        <div style="flex:1;min-width:150px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;text-align:center;border-top:4px solid #3B82F6;">
+        <div style="flex:1;min-width:150px;background:#fff;border:1px solid #E6E9EF;border-radius:10px;padding:14px;text-align:center;border-top:4px solid #3B82F6;">
           <div class="stat-label">Ingresos registrados</div>
           <div style="font-size:17px;font-weight:800;color:#1d4ed8;">${fmtBs(eco.ingreso_total)}</div></div>
-        <div style="flex:1;min-width:150px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;text-align:center;border-top:4px solid #ef4444;">
+        <div style="flex:1;min-width:150px;background:#fff;border:1px solid #E6E9EF;border-radius:10px;padding:14px;text-align:center;border-top:4px solid #ef4444;">
           <div class="stat-label">Egresos registrados</div>
           <div style="font-size:17px;font-weight:800;color:#dc2626;">${fmtBs(eco.egreso_total)}</div></div>
-        <div style="flex:1;min-width:150px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;text-align:center;border-top:4px solid ${bal >= 0 ? '#16a34a' : '#dc2626'};">
+        <div style="flex:1;min-width:150px;background:#fff;border:1px solid #E6E9EF;border-radius:10px;padding:14px;text-align:center;border-top:4px solid ${bal >= 0 ? '#047857' : '#dc2626'};">
           <div class="stat-label">Balance real</div>
-          <div style="font-size:17px;font-weight:800;color:${bal >= 0 ? '#16a34a' : '#dc2626'};">${fmtBs(bal)}</div></div>
+          <div style="font-size:17px;font-weight:800;color:${bal >= 0 ? '#047857' : '#dc2626'};">${fmtBs(bal)}</div></div>
       </div>
       ${economicoRows ? `<div style="margin-top:16px;"><table class="main-table"><thead><tr><th style="text-align:left;">Moneda</th><th style="width:26%;text-align:right;">Ingresos</th><th style="width:26%;text-align:right;">Egresos</th><th style="width:26%;text-align:right;">Balance</th></tr></thead><tbody>${economicoRows}</tbody></table></div>` : ''}
     </div>` : '';
@@ -300,9 +305,9 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
   <style>
     @page{size:A4 portrait;margin:14mm 12mm}
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;background:#f3f4f6;color:#1f2937;font-size:12px;line-height:1.5}
+    body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;background:#D1D5DB;color:#1f2937;font-size:12px;line-height:1.5}
     .wrap{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)}
-    .cover{background:linear-gradient(135deg,#123314 0%,#2d5016 55%,#C44B0A 100%);color:#fff;padding:40px 38px;position:relative}
+    .cover{background:linear-gradient(135deg,#123314 0%,#2d5016 55%,#C44200 100%);color:#fff;padding:40px 38px;position:relative}
     .uft-logo{display:flex;align-items:center;gap:14px;margin-bottom:20px}
     .uft-monogram{width:54px;height:54px;border-radius:12px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800}
     .uft-name{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
@@ -314,17 +319,17 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     .accent-bar{position:absolute;left:0;right:0;bottom:0;height:5px;background:#fff}
     .content{padding:26px 32px 38px;page-break-inside:avoid}
     .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
-    .stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:13px;text-align:center;border-left:4px solid #C44B0A}
-    .stat-label{font-size:9px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700}
+    .stat-card{background:#fff;border:1px solid #E6E9EF;border-radius:10px;padding:13px;text-align:center;border-left:4px solid #C44200}
+    .stat-label{font-size:9px;color:#64748B;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700}
     .stat-value{font-size:20px;font-weight:800;color:#111827}
-    .section-h{font-size:14px;font-weight:800;margin:22px 0 10px;color:#111827;text-transform:uppercase;border-left:4px solid #C44B0A;padding-left:10px;letter-spacing:.5px}
+    .section-h{font-size:14px;font-weight:800;margin:22px 0 10px;color:#111827;text-transform:uppercase;border-left:4px solid #C44200;padding-left:10px;letter-spacing:.5px}
     .main-table{width:100%;border-collapse:collapse;margin-top:8px}
     .main-table th{background:#2d5016;color:#fff;padding:8px 10px;border:1px solid #2d5016;text-align:left;font-weight:700;font-size:11px}
-    .main-table td{padding:7px 9px;border:1px solid #e5e7eb;vertical-align:top;font-size:11.5px}
+    .main-table td{padding:7px 9px;border:1px solid #E6E9EF;vertical-align:top;font-size:11.5px}
     .main-table tr:nth-child(even){background:#f8faf8}
     .page-break{page-break-before:always}
-    .footer{margin-top:28px;text-align:center;font-size:10.5px;color:#9ca3af;padding:14px 0 4px;border-top:1px solid #e5e7eb}
-    .footer strong{color:#6b7280}
+    .footer{margin-top:28px;text-align:center;font-size:10.5px;color:#94A3B8;padding:14px 0 4px;border-top:1px solid #E6E9EF}
+    .footer strong{color:#64748B}
     @media print{.cover{background:#2d5016}.wrap{box-shadow:none}body{background:#fff}}
   </style></head><body><div class="wrap">
   <div class="cover">
@@ -345,19 +350,19 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     ${kpiGrid}
     ${monthlyHtml}
     <div class="section-h">Distribución por estado</div>
-    <table class="main-table"><thead><tr><th style="text-align:left;">Estado</th><th style="width:20%;text-align:center;">Cantidad</th></tr></thead><tbody>${estadosHtml || '<tr><td colspan="2" style="padding:12px;color:#9ca3af;text-align:center;">Sin datos</td></tr>'}</tbody></table>
+    <table class="main-table"><thead><tr><th style="text-align:left;">Estado</th><th style="width:20%;text-align:center;">Cantidad</th></tr></thead><tbody>${estadosHtml || '<tr><td colspan="2" style="padding:12px;color:#94A3B8;text-align:center;">Sin datos</td></tr>'}</tbody></table>
     <div class="section-h">Recursos más solicitados</div>
-    <table class="main-table"><thead><tr><th style="text-align:left;">Recurso</th><th style="width:14%;text-align:center;">Usos</th><th style="width:34%;">Distribución</th></tr></thead><tbody>${recRows || '<tr><td colspan="3" style="padding:12px;color:#9ca3af;text-align:center;">Sin datos</td></tr>'}</tbody></table>
+    <table class="main-table"><thead><tr><th style="text-align:left;">Recurso</th><th style="width:14%;text-align:center;">Usos</th><th style="width:34%;">Distribución</th></tr></thead><tbody>${recRows || '<tr><td colspan="3" style="padding:12px;color:#94A3B8;text-align:center;">Sin datos</td></tr>'}</tbody></table>
     <div class="section-h">Inscritos por facultad</div>
-    <table class="main-table"><thead><tr><th style="text-align:left;">Facultad</th><th style="width:14%;text-align:center;">Inscritos</th><th style="width:34%;">Distribución</th></tr></thead><tbody>${facRows || '<tr><td colspan="3" style="padding:12px;color:#9ca3af;text-align:center;">Sin datos</td></tr>'}</tbody></table>
+    <table class="main-table"><thead><tr><th style="text-align:left;">Facultad</th><th style="width:14%;text-align:center;">Inscritos</th><th style="width:34%;">Distribución</th></tr></thead><tbody>${facRows || '<tr><td colspan="3" style="padding:12px;color:#94A3B8;text-align:center;">Sin datos</td></tr>'}</tbody></table>
     <div class="section-h">Tipos de evento</div>
-    <table class="main-table"><thead><tr><th style="text-align:left;">Tipo</th><th style="width:20%;text-align:center;">Cantidad</th></tr></thead><tbody>${tipoRows || '<tr><td colspan="2" style="padding:12px;color:#9ca3af;text-align:center;">Sin datos</td></tr>'}</tbody></table>
+    <table class="main-table"><thead><tr><th style="text-align:left;">Tipo</th><th style="width:20%;text-align:center;">Cantidad</th></tr></thead><tbody>${tipoRows || '<tr><td colspan="2" style="padding:12px;color:#94A3B8;text-align:center;">Sin datos</td></tr>'}</tbody></table>
     ${economiaHtml}
     <div class="page-break"></div>
     <div class="section-h">Detalle de eventos</div>
     <table class="main-table">
       <thead><tr><th style="text-align:left;">Evento</th><th style="width:11%;">Fecha</th><th style="width:17%;">Lugar</th><th style="width:17%;">Solicitante</th><th style="width:9%;text-align:center;">Recursos</th><th style="width:13%;text-align:center;">Estado</th></tr></thead>
-      <tbody>${listaEventos || '<tr><td colspan="6" style="padding:12px;color:#9ca3af;text-align:center;">Sin eventos</td></tr>'}</tbody>
+      <tbody>${listaEventos || '<tr><td colspan="6" style="padding:12px;color:#94A3B8;text-align:center;">Sin eventos</td></tr>'}</tbody>
     </table>
     <div class="footer"><strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos · Generado el ${new Date().toLocaleDateString('es-BO', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
   </div>
@@ -409,6 +414,12 @@ const ReportesAvanzadosScreen = () => {
   const [ordenTipos, setOrdenTipos] = useState('desc');
   const [prevData, setPrevData] = useState(null); // período anterior para comparar
 
+  // Fase 1: segmentación y comparación
+  const [facultadFiltro, setFacultadFiltro] = useState(null); // id facultad | null
+  const [tipoFiltro, setTipoFiltro] = useState(null); // id tipo de evento | null
+  const [listaFacultades, setListaFacultades] = useState([]);
+  const [comparacionTipo, setComparacionTipo] = useState('prev'); // 'prev' | 'anio'
+
   // Datos
   const [repRecursos, setRepRecursos] = useState(null);
   const [repInscripciones, setRepInscripciones] = useState(null);
@@ -416,6 +427,7 @@ const ReportesAvanzadosScreen = () => {
   const [repEconomicos, setRepEconomicos] = useState(null);
   const [repTipos, setRepTipos] = useState([]);
   const [repMensual, setRepMensual] = useState([]);
+  const [repGestion, setRepGestion] = useState(null);
 
   const showError = (msg) => Alert.alert('Error', msg, [{ text: 'OK' }]);
 
@@ -423,20 +435,23 @@ const ReportesAvanzadosScreen = () => {
     const p = {};
     if (reporteDesde) p.desde = reporteDesde;
     if (reporteHasta) p.hasta = reporteHasta;
+    if (facultadFiltro) p.facultad_id = facultadFiltro;
+    if (tipoFiltro) p.tipo = tipoFiltro;
     return p;
-  }, [reporteDesde, reporteHasta]);
+  }, [reporteDesde, reporteHasta, facultadFiltro, tipoFiltro]);
 
   const fetchDatos = useCallback(async (params) => {
     const token = await getTokenAsync();
     if (!token) return null;
     const headers = { Authorization: `Bearer ${token}` };
-    const [recRes, inscRes, opRes, ecoRes, tipoRes, mesRes] = await Promise.all([
+    const [recRes, inscRes, opRes, ecoRes, tipoRes, mesRes, gesRes] = await Promise.all([
       axios.get(`${API_BASE_URL}/reportes/recursos`, { params: { periodo: 'mes', ...params }, headers }).catch(() => null),
       axios.get(`${API_BASE_URL}/reportes/inscripciones`, { params, headers }).catch(() => null),
       axios.get(`${API_BASE_URL}/reportes/operacionales`, { params, headers }).catch(() => null),
       axios.get(`${API_BASE_URL}/reportes/economicos`, { params, headers }).catch(() => null),
       axios.get(`${API_BASE_URL}/reportes/tipos`, { params, headers }).catch(() => null),
       axios.get(`${API_BASE_URL}/dashboard/mensual`, { params, headers }).catch(() => null),
+      axios.get(`${API_BASE_URL}/reportes/gestion`, { params, headers }).catch(() => null),
     ]);
     const datos = {
       recursos: recRes?.data || null,
@@ -445,8 +460,9 @@ const ReportesAvanzadosScreen = () => {
       economicos: ecoRes?.data || null,
       tipos: Array.isArray(tipoRes?.data?.porTipo) ? tipoRes.data.porTipo : [],
       mensual: Array.isArray(mesRes?.data) ? mesRes.data : [],
+      gestion: gesRes?.data || null,
     };
-    const ok = recRes || inscRes || opRes || ecoRes || tipoRes || mesRes;
+    const ok = recRes || inscRes || opRes || ecoRes || tipoRes || mesRes || gesRes;
     return { ...datos, ok: !!ok };
   }, []);
 
@@ -470,6 +486,19 @@ const ReportesAvanzadosScreen = () => {
     return { desde: fmtLocalDate(iniPrev), hasta: fmtLocalDate(finPrev) };
   }, [reporteDesde, reporteHasta]);
 
+  // Ventana del año anterior (mismo rango, 12 meses antes) para comparación YoY
+  const rangoAnteriorAnio = useMemo(() => {
+    const hoy = new Date();
+    const ini = reporteDesde ? new Date(reporteDesde + 'T00:00:00') : new Date(hoy);
+    const fin = reporteHasta ? new Date(reporteHasta + 'T00:00:00') : new Date(hoy);
+    const iniPrev = new Date(ini);
+    iniPrev.setFullYear(iniPrev.getFullYear() - 1);
+    const finPrev = new Date(fin);
+    finPrev.setFullYear(finPrev.getFullYear() - 1);
+    if (finPrev < iniPrev) finPrev.setDate(iniPrev.getDate());
+    return { desde: fmtLocalDate(iniPrev), hasta: fmtLocalDate(finPrev) };
+  }, [reporteDesde, reporteHasta]);
+
   const cargarDatos = useCallback(async (silent) => {
     if (silent) setRefreshing(true); else setLoading(true);
     setError(null);
@@ -482,19 +511,30 @@ const ReportesAvanzadosScreen = () => {
       setRepEconomicos(datos.economicos);
       setRepTipos(datos.tipos);
       setRepMensual(datos.mensual);
+      setRepGestion(datos.gestion);
       if (!datos.ok && !silent) setError('No se pudo contactar el servidor.');
 
       try {
         const token = await getTokenAsync();
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-        const [prevRec, prevInsc] = await Promise.all([
-          axios.get(`${API_BASE_URL}/reportes/recursos`, { params: { periodo: 'mes', ...rangoAnterior }, headers }).catch(() => null),
-          axios.get(`${API_BASE_URL}/reportes/inscripciones`, { params: rangoAnterior, headers }).catch(() => null),
+        const rangoComp = comparacionTipo === 'anio' ? rangoAnteriorAnio : rangoAnterior;
+        const [prevRec, prevInsc, prevGes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/reportes/recursos`, { params: { periodo: 'mes', ...rangoComp }, headers }).catch(() => null),
+          axios.get(`${API_BASE_URL}/reportes/inscripciones`, { params: rangoComp, headers }).catch(() => null),
+          axios.get(`${API_BASE_URL}/reportes/gestion`, { params: rangoComp, headers }).catch(() => null),
         ]);
         setPrevData(prevRec?.data ? {
           solicitudes: prevRec.data.totalSolicitudes || 0,
           aprobados: prevRec.data.aprobadas || 0,
           inscritos: prevInsc?.data?.total || 0,
+          gestion: prevGes?.data ? {
+            asistentes: prevGes.data.asistentes || 0,
+            dias: prevGes.data.diasPromedioAprobacion,
+            ejecucion: prevGes.data.ejecucionPresupuestaria?.porcentaje ?? null,
+            tasaAsistencia: prevGes.data.tasaAsistencia ?? null,
+            tasaAceptacion: prevGes.data.aprobados > 0 && prevGes.data.totalEventos > 0
+              ? Math.round((prevGes.data.aprobados / prevGes.data.totalEventos) * 100) : null,
+          } : null,
         } : null);
       } catch (e) { /* comparación opcional */ }
     } catch (err) {
@@ -504,9 +544,23 @@ const ReportesAvanzadosScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [fetchDatos, paramsReportes, rangoAnterior]);
+  }, [fetchDatos, paramsReportes, rangoAnterior, rangoAnteriorAnio, comparacionTipo]);
 
   useEffect(() => { cargarDatos(); }, [cargarDatos]);
+
+  // Lista de facultades para el filtro de segmentación
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      try {
+        const token = await getTokenAsync();
+        if (!token) return;
+        const res = await axios.get(`${API_BASE_URL}/facultades`, { headers: { Authorization: `Bearer ${token}` } });
+        if (activo && Array.isArray(res.data)) setListaFacultades(res.data);
+      } catch (e) { /* lista opcional */ }
+    })();
+    return () => { activo = false; };
+  }, []);
 
   const limpiarFiltro = () => { setReporteDesde(''); setReporteHasta(''); };
   const limpiarDrill = () => { setDrillMes(null); setReporteDesde(''); setReporteHasta(''); setPeriodoPreset('todo'); };
@@ -554,26 +608,36 @@ const ReportesAvanzadosScreen = () => {
   // ── Derivados para gráficos ──────────────────────────────
   const kpis = useMemo(() => {
     const r = repRecursos || {};
+    const g = repGestion || null;
     const eco = repEconomicos?.resumen || null;
     const bal = eco ? Number(eco.balance_real) : null;
     const PV = prevData || null;
-    const d = (v, pv) => (PV ? deltaPct(v, pv) : null);
+    const PVg = PV?.gestion || null;
+    const isAnio = comparacionTipo === 'anio';
+    const dtxt = isAnio ? 'vs año ant.' : 'vs ant.';
+    const d = (v, pv) => (PV || PVg ? deltaPct(v, pv) : null);
     const onEstado = (f) => () => setEstadoFiltro(estadoFiltro === f ? null : f);
+    const tasaAceptActual = g ? (g.totalEventos > 0 ? Math.round((g.aprobados / g.totalEventos) * 100) : null) : null;
+    const mejorFac = (g?.aceptacionPorFacultad || []).find(f => f.tasa !== null && f.tasa !== undefined) || null;
     return [
-      { label: 'Solicitudes', value: fmtNum(r.totalSolicitudes), icon: 'file-tray-full-outline', color: COLORS.cyan, sub: 'total de recursos', delta: d(r.totalSolicitudes || 0, PV?.solicitudes), onPress: onEstado(null), active: estadoFiltro === null },
-      { label: 'Aprobados', value: fmtNum(r.aprobadas), icon: 'checkmark-done-outline', color: COLORS.success, sub: 'eventos aprobados', delta: d(r.aprobadas || 0, PV?.aprobados), onPress: onEstado('aprobado'), active: estadoFiltro === 'aprobado' },
+      { label: 'Solicitudes', value: fmtNum(r.totalSolicitudes), icon: 'file-tray-full-outline', color: COLORS.cyan, sub: 'total de recursos', delta: d(r.totalSolicitudes || 0, PV?.solicitudes), deltaTxt: dtxt, onPress: onEstado(null), active: estadoFiltro === null },
+      { label: 'Aprobados', value: fmtNum(r.aprobadas), icon: 'checkmark-done-outline', color: COLORS.success, sub: 'eventos aprobados', delta: d(r.aprobadas || 0, PV?.aprobados), deltaTxt: dtxt, onPress: onEstado('aprobado'), active: estadoFiltro === 'aprobado' },
       { label: 'Pendientes', value: fmtNum(r.pendientes), icon: 'time-outline', color: COLORS.warning, sub: 'en revisión', onPress: onEstado('pendiente'), active: estadoFiltro === 'pendiente' },
       { label: 'Rechazados', value: fmtNum((r.rechazadas || 0) + (r.canceladas || 0)), icon: 'close-circle-outline', color: COLORS.error, sub: 'rechazados + cancelados', onPress: onEstado('rechazado'), active: estadoFiltro === 'rechazado' },
-      { label: 'Inscritos', value: fmtNum(repInscripciones?.total), icon: 'person-add-outline', color: COLORS.purple, sub: 'participantes', delta: d(repInscripciones?.total || 0, PV?.inscritos) },
+      { label: 'Inscritos', value: fmtNum(repInscripciones?.total), icon: 'person-add-outline', color: COLORS.purple, sub: 'participantes', delta: d(repInscripciones?.total || 0, PV?.inscritos), deltaTxt: dtxt },
       { label: 'Balance real', value: bal === null || bal === undefined ? '–' : fmtBs(bal), icon: 'wallet-outline', color: bal >= 0 ? COLORS.success : COLORS.error, sub: 'informes de cierre' },
       { label: 'Tasa aprobación', value: r.totalSolicitudes ? Math.round((r.aprobadas / r.totalSolicitudes) * 100) + '%' : '–', icon: 'analytics-outline', color: COLORS.info, sub: 'sobre solicitudes' },
+      { label: 'Asistencia', value: g?.tasaAsistencia !== null && g?.tasaAsistencia !== undefined ? g.tasaAsistencia + '%' : '–', icon: 'location-outline', color: COLORS.success, sub: g ? `${fmtNum(g.asistentes)} de ${fmtNum(g.inscritos)} inscritos` : 'sin informes', delta: d(g?.tasaAsistencia, PVg?.tasaAsistencia), deltaTxt: dtxt },
+      { label: 'Días hasta aprobación', value: g?.diasPromedioAprobacion !== null && g?.diasPromedioAprobacion !== undefined ? `${g.diasPromedioAprobacion} d` : '–', icon: 'hourglass-outline', color: COLORS.purple, sub: 'promedio del período', delta: d(g?.diasPromedioAprobacion, PVg?.dias), deltaTxt: dtxt, invert: true },
+      { label: 'Ejecución presupuesto', value: g?.ejecucionPresupuestaria?.porcentaje !== null && g?.ejecucionPresupuestaria?.porcentaje !== undefined ? g.ejecucionPresupuestaria.porcentaje + '%' : '–', icon: 'pie-chart-outline', color: COLORS.primary, sub: g ? `Egresos reales: ${fmtBs(g.ejecucionPresupuestaria?.real_egresos || 0)}` : 'sin presupuesto', delta: d(g?.ejecucionPresupuestaria?.porcentaje, PVg?.ejecucion), deltaTxt: dtxt },
+      { label: 'Aceptación por facultad', value: tasaAceptActual !== null ? tasaAceptActual + '%' : '–', icon: 'ribbon-outline', color: COLORS.warning, sub: mejorFac ? `Mejor: ${mejorFac.facultad} (${mejorFac.tasa}%)` : 'global', delta: d(tasaAceptActual, PVg?.tasaAceptacion), deltaTxt: dtxt },
     ];
-  }, [repRecursos, repInscripciones, repEconomicos, prevData, estadoFiltro, deltaPct]);
+  }, [repRecursos, repInscripciones, repEconomicos, repGestion, prevData, estadoFiltro, comparacionTipo, deltaPct]);
 
   const pieEstados = useMemo(() => {
     const colorMap = {
-      aprobado: '#16A34A', completado: '#1d4ed8', finalizado: '#1d4ed8',
-      pendiente: '#F59E0B', rechazado: '#EF4444', cancelado: '#9CA3AF', vencido: '#EA580C',
+      aprobado: '#047857', completado: '#1d4ed8', finalizado: '#1d4ed8',
+      pendiente: '#F59E0B', rechazado: '#EF4444', cancelado: '#94A3B8', vencido: '#EA580C',
     };
     const porEstado = Array.isArray(repOperacionales?.porEstado) ? repOperacionales.porEstado : [];
     const items = porEstado
@@ -590,13 +654,37 @@ const ReportesAvanzadosScreen = () => {
 
   const trendData = useMemo(() => {
     const mes = repMensual;
+    const meses = mes.map(m => m.mes);
+    const seriePorMes = {};
+    mes.forEach(m => { seriePorMes[m.mes] = m; });
+    // Capa comparativa YoY: para cada mes del rango actual, su equivalente de hace 12 meses
+    let anioTot = null;
+    let anioApr = null;
+    if (comparacionTipo === 'anio' && meses.length) {
+      anioTot = meses.map(key => {
+        const d = new Date(parseInt(key.slice(0, 4), 10), parseInt(key.slice(5, 7), 10) - 1, 1);
+        d.setFullYear(d.getFullYear() - 1);
+        const pk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const row = seriePorMes[pk];
+        return row ? (row.totalEvents || 0) : 0;
+      });
+      anioApr = meses.map(key => {
+        const d = new Date(parseInt(key.slice(0, 4), 10), parseInt(key.slice(5, 7), 10) - 1, 1);
+        d.setFullYear(d.getFullYear() - 1);
+        const pk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const row = seriePorMes[pk];
+        return row ? (row.aprobado || 0) : 0;
+      });
+    }
     return {
       labels: mes.map(m => monthLabel(m.mes)),
-      meses: mes.map(m => m.mes),
+      meses,
       total: mes.map(m => m.totalEvents || 0),
       aprob: mes.map(m => m.aprobado || 0),
+      anioTot,
+      anioApr,
     };
-  }, [repMensual]);
+  }, [repMensual, comparacionTipo]);
 
   const inscritosPorMes = useMemo(() => {
     const porMes = Array.isArray(repInscripciones?.porMes) ? repInscripciones.porMes : [];
@@ -621,21 +709,37 @@ const ReportesAvanzadosScreen = () => {
     return ordenTipos === 'asc' ? [...arr].sort((a, b) => a.value - b.value) : arr;
   }, [repTipos, ordenTipos]);
 
+  const rankingSolicitantes = useMemo(() =>
+    (repGestion?.topSolicitantes || []).map(r => ({ name: r.nombre, value: r.aprobados })),
+  [repGestion]);
+
   const tablaEventos = useMemo(() => {
     const recientes = repRecursos?.eventoRecientes || [];
     const econMap = {};
     (repEconomicos?.porEvento || []).forEach(ev => { econMap[String(ev.idevento)] = ev; });
-    return recientes.map(ev => ({
-      id: ev.id,
-      nombre: ev.nombreEvento,
-      fecha: ev.fecha || ev.fechaevento,
-      lugar: ev.lugarevento,
-      solicitante: ev.solicitante,
-      recursos: ev.totalRecursos,
-      estado: ev.estado,
-      balance: econMap[String(ev.id)] ? econMap[String(ev.id)].balance_real : null,
-    }));
-  }, [repRecursos, repEconomicos]);
+    const asisMap = {};
+    (repGestion?.asistenciaPorEvento || []).forEach(ev => { asisMap[String(ev.idevento)] = ev; });
+    const ejeMap = {};
+    (repGestion?.ejecucionPorEvento || []).forEach(ev => { ejeMap[String(ev.idevento)] = ev; });
+    return recientes.map(ev => {
+      const asis = asisMap[String(ev.id)] || null;
+      const eje = ejeMap[String(ev.id)] || null;
+      return {
+        id: ev.id,
+        nombre: ev.nombreEvento,
+        fecha: ev.fecha || ev.fechaevento,
+        lugar: ev.lugarevento,
+        solicitante: ev.solicitante,
+        recursos: ev.totalRecursos,
+        estado: ev.estado,
+        balance: econMap[String(ev.id)] ? econMap[String(ev.id)].balance_real : null,
+        asistentes: asis?.asistentes ?? null,
+        inscritos: asis?.inscritos ?? null,
+        tasaAsistencia: asis?.tasa ?? null,
+        ejecucion: eje?.porcentaje ?? null,
+      };
+    });
+  }, [repRecursos, repEconomicos, repGestion]);
 
   // ── Detalle evento por evento ──────────────────────────
   const detalleEventos = useMemo(() => {
@@ -644,14 +748,20 @@ const ReportesAvanzadosScreen = () => {
     (repEconomicos?.porEvento || []).forEach(ev => { econMap[String(ev.idevento)] = ev; });
     const inscMap = {};
     (repInscripciones?.topEventos || []).forEach(ev => { inscMap[String(ev.idevento)] = ev; });
+    const asisMap = {};
+    (repGestion?.asistenciaPorEvento || []).forEach(ev => { asisMap[String(ev.idevento)] = ev; });
+    const ejeMap = {};
+    (repGestion?.ejecucionPorEvento || []).forEach(ev => { ejeMap[String(ev.idevento)] = ev; });
     return recientes.map(ev => {
       const econ = econMap[String(ev.id)] || null;
       const insc = inscMap[String(ev.id)] || null;
+      const asis = asisMap[String(ev.id)] || null;
+      const eje = ejeMap[String(ev.id)] || null;
       return {
         id: ev.id,
-        nombre: ev.nombreEvento || 'Sin nombre',
+        nombre: ev.nombre || 'Sin nombre',
         fecha: ev.fecha || ev.fechaevento || null,
-        lugar: ev.lugarevento || null,
+        lugar: ev.lugar || null,
         solicitante: ev.solicitante || null,
         recursos: ev.totalRecursos || 0,
         estado: ev.estado,
@@ -664,9 +774,12 @@ const ReportesAvanzadosScreen = () => {
         } : null,
         inscritos: insc ? insc.inscritos : null,
         facultad: insc ? insc.facultad : null,
+        asistentes: asis ? asis.asistentes : null,
+        tasaAsistencia: asis ? asis.tasa : null,
+        ejecucion: eje ? eje.porcentaje : null,
       };
     });
-  }, [repRecursos, repEconomicos, repInscripciones]);
+  }, [repRecursos, repEconomicos, repInscripciones, repGestion]);
 
   // ── Exportación CSV ─────────────────────────────────────
   const exportarCSV = async () => {
@@ -825,7 +938,7 @@ const ReportesAvanzadosScreen = () => {
         <x:Worksheet><x:Name>Economico</x:Name></x:Worksheet>
         <x:Worksheet><x:Name>Mensual</x:Name></x:Worksheet>
       </x:Worksheets></x:ExcelWorkbook></xml>
-      <style>table{border-collapse:collapse}th{background:#C44B0A;color:#fff;padding:5px 8px;font-weight:bold}td{padding:4px 8px;border:1px solid #ccc;mso-number-format:"\\@"}</style>
+      <style>table{border-collapse:collapse}th{background:#C44200;color:#fff;padding:5px 8px;font-weight:bold}td{padding:4px 8px;border:1px solid #ccc;mso-number-format:"\\@"}</style>
       </head><body>${hojaEventos}${hojaEco}${hojaMes}</body></html>`;
 
       if (Platform.OS === 'web') {
@@ -1011,6 +1124,76 @@ const ReportesAvanzadosScreen = () => {
             </TouchableOpacity>
           ) : null}
         </View>
+
+        {/* Segmentar por facultad y tipo de evento */}
+        {listaFacultades.length > 0 || repTipos.length > 0 ? (
+          <View style={styles.segWrap}>
+            {listaFacultades.length > 0 ? (
+              <View style={styles.segGroup}>
+                <Text style={styles.segLabel}><Ionicons name="school-outline" size={12} color={COLORS.purple} /> Facultad</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segChipsRow}>
+                  <TouchableOpacity
+                    style={[styles.segChip, !facultadFiltro && styles.segChipActivo]}
+                    onPress={() => setFacultadFiltro(null)}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.segChipText, !facultadFiltro && styles.segChipTextActivo]}>Todas</Text>
+                  </TouchableOpacity>
+                  {listaFacultades.map(f => (
+                    <TouchableOpacity
+                      key={f.facultad_id}
+                      style={[styles.segChip, facultadFiltro === f.facultad_id && styles.segChipActivo]}
+                      onPress={() => setFacultadFiltro(facultadFiltro === f.facultad_id ? null : f.facultad_id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filtrar por ${f.nombre_facultad}`}
+                    >
+                      <Text style={[styles.segChipText, facultadFiltro === f.facultad_id && styles.segChipTextActivo]} numberOfLines={1}>{f.nombre_facultad}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+            {repTipos.length > 0 ? (
+              <View style={styles.segGroup}>
+                <Text style={styles.segLabel}><Ionicons name="pricetags-outline" size={12} color={COLORS.info} /> Tipo de evento</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segChipsRow}>
+                  <TouchableOpacity
+                    style={[styles.segChip, !tipoFiltro && styles.segChipActivo]}
+                    onPress={() => setTipoFiltro(null)}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.segChipText, !tipoFiltro && styles.segChipTextActivo]}>Todos</Text>
+                  </TouchableOpacity>
+                  {repTipos.map(t => (
+                    <TouchableOpacity
+                      key={t.idtipoevento}
+                      style={[styles.segChip, tipoFiltro === t.idtipoevento && styles.segChipActivo]}
+                      onPress={() => setTipoFiltro(tipoFiltro === t.idtipoevento ? null : t.idtipoevento)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filtrar por ${t.tipo}`}
+                    >
+                      <Text style={[styles.segChipText, tipoFiltro === t.idtipoevento && styles.segChipTextActivo]} numberOfLines={1}>{t.tipo}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* Comparar con período anterior o mismo período del año anterior */}
+        <View style={styles.compareRow}>
+          <Ionicons name="git-compare-outline" size={13} color={COLORS.info} />
+          <Text style={styles.compareLabel}>Comparar con:</Text>
+          <View style={styles.segment}>
+            <TouchableOpacity style={[styles.segmentBtn, comparacionTipo === 'prev' && styles.segmentBtnActivo]} onPress={() => setComparacionTipo('prev')} accessibilityRole="button" accessibilityLabel="Comparar con período anterior">
+              <Text style={[styles.segmentText, comparacionTipo === 'prev' && styles.segmentTextActivo]}>Período anterior</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.segmentBtn, comparacionTipo === 'anio' && styles.segmentBtnActivo]} onPress={() => setComparacionTipo('anio')} accessibilityRole="button" accessibilityLabel="Comparar con mismo período del año anterior">
+              <Text style={[styles.segmentText, comparacionTipo === 'anio' && styles.segmentTextActivo]}>Mismo {new Date().getFullYear() - 1}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       {/* Modal selector de año para el reporte anual */}
@@ -1189,12 +1372,17 @@ const ReportesAvanzadosScreen = () => {
               />
               <View style={styles.kpiGrid}>
                 {kpis.slice(0, 4).map(k => (
-                  <KpiCard key={k.label} label={k.label} value={k.value} icon={k.icon} color={k.color} sub={k.sub} delta={k.delta} onPress={k.onPress} active={k.active} />
+                  <KpiCard key={k.label} {...k} />
                 ))}
               </View>
               <View style={styles.kpiGrid}>
-                {kpis.slice(4).map(k => (
-                  <KpiCard key={k.label} label={k.label} value={k.value} icon={k.icon} color={k.color} sub={k.sub} delta={k.delta} onPress={k.onPress} active={k.active} />
+                {kpis.slice(4, 8).map(k => (
+                  <KpiCard key={k.label} {...k} />
+                ))}
+              </View>
+              <View style={styles.kpiGrid}>
+                {kpis.slice(8, 12).map(k => (
+                  <KpiCard key={k.label} {...k} />
                 ))}
               </View>
               {estadoFiltro ? (
@@ -1233,6 +1421,13 @@ const ReportesAvanzadosScreen = () => {
                           color: (o = 1) => `rgba(${tendenciaMetrica === 'aprobados' ? '22, 163, 74' : '59, 130, 246'}, ${o})`,
                           strokeWidth: 2.5,
                         },
+                        ...(comparacionTipo === 'anio' && trendData.anioTot ? [{
+                          data: tendenciaMetrica === 'aprobados' ? trendData.anioApr : trendData.anioTot,
+                          color: (o = 1) => `rgba(148, 163, 184, ${o})`,
+                          strokeWidth: 1.6,
+                          strokeDashArray: [6, 6],
+                          withDots: false,
+                        }] : []),
                       ],
                     }}
                     onDataPointClick={({ index }) => {
@@ -1257,6 +1452,12 @@ const ReportesAvanzadosScreen = () => {
                 <Text style={styles.chartHint}>
                   <Ionicons name="finger-print" size={11} color={COLORS.textTertiary} /> Toca un punto de la línea para filtrar KPIs y listas a ese mes.
                 </Text>
+                {comparacionTipo === 'anio' && trendData.anioTot ? (
+                  <View style={styles.chartLegend}>
+                    <View style={styles.chartLegendItem}><View style={[styles.chartLegendDot, { backgroundColor: tendenciaMetrica === 'aprobados' ? '#047857' : '#3B82F6' }]} /><Text style={styles.chartLegendText}>Actual</Text></View>
+                    <View style={styles.chartLegendItem}><View style={styles.chartLegendDash} /><Text style={styles.chartLegendText}>{new Date().getFullYear() - 1}</Text></View>
+                  </View>
+                ) : null}
               </View>
             </View>
 
@@ -1345,6 +1546,10 @@ const ReportesAvanzadosScreen = () => {
                 />
                 <RankBar rows={rankingTipos} />
               </View>
+              <View style={styles.cardFull}>
+                <SectionHeader icon="people-outline" title="Top solicitantes" subtitle="por eventos aprobados" />
+                <RankBar rows={rankingSolicitantes} />
+              </View>
             </View>
 
             {/* Tabla exportable y filtrable */}
@@ -1396,22 +1601,37 @@ const ReportesAvanzadosScreen = () => {
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View>
                       <View style={styles.tableHeader}>
-                        <Text style={[styles.tCell, styles.tHead, { width: 220 }]}>Evento</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 100 }]}>Fecha</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 140 }]}>Lugar</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 140 }]}>Solicitante</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 80, textAlign: 'right' }]}>Recursos</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 110, textAlign: 'center' }]}>Estado</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 210 }]}>Evento</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 92 }]}>Fecha</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 130 }]}>Solicitante</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 74, textAlign: 'right' }]}>Recursos</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 96, textAlign: 'center' }]}>Estado</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 90, textAlign: 'center', color: COLORS.purple }]}>Asistencia</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 130 }]}>Presup. ejecutado</Text>
                         <Text style={[styles.tCell, styles.tHead, { width: 40, textAlign: 'center' }]}>Ver</Text>
                       </View>
                       {tablaEventosFiltrados.slice(0, 25).map((r, i) => (
                         <TouchableOpacity key={`${i}-${r.id || r.nombre}`} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]} onPress={() => irDetalleEvento(r.id)} activeOpacity={0.6}>
-                          <Text style={[styles.tCell, { width: 220, fontWeight: '600' }]} numberOfLines={1}>{r.nombre || 'Sin nombre'}</Text>
-                          <Text style={[styles.tCell, { width: 100 }]}>{fechaTxt(r.fecha)}</Text>
-                          <Text style={[styles.tCell, { width: 140, color: COLORS.textSecondary }]} numberOfLines={1}>{r.lugar || '–'}</Text>
-                          <Text style={[styles.tCell, { width: 140, color: COLORS.textSecondary }]} numberOfLines={1}>{r.solicitante || '–'}</Text>
-                          <Text style={[styles.tCell, { width: 80, textAlign: 'right' }]}>{fmtNum(r.recursos)}</Text>
-                          <View style={[styles.tCell, { width: 110, alignItems: 'center' }]}><EstadoBadge estado={r.estado} /></View>
+                          <Text style={[styles.tCell, { width: 210, fontWeight: '600' }]} numberOfLines={1}>{r.nombre || 'Sin nombre'}</Text>
+                          <Text style={[styles.tCell, { width: 92 }]}>{fechaTxt(r.fecha)}</Text>
+                          <Text style={[styles.tCell, { width: 130, color: COLORS.textSecondary }]} numberOfLines={1}>{r.solicitante || '–'}</Text>
+                          <Text style={[styles.tCell, { width: 74, textAlign: 'right' }]}>{fmtNum(r.recursos)}</Text>
+                          <View style={[styles.tCell, { width: 96, alignItems: 'center' }]}><EstadoBadge estado={r.estado} /></View>
+                          <Text style={[styles.tCell, { width: 90, textAlign: 'center', fontWeight: '700', color: r.tasaAsistencia === null ? COLORS.textTertiary : r.tasaAsistencia >= 70 ? COLORS.success : r.tasaAsistencia >= 40 ? COLORS.warning : COLORS.error }]}>
+                            {r.tasaAsistencia === null ? '–' : r.tasaAsistencia + '%'}
+                          </Text>
+                          <View style={[styles.tCell, { width: 130 }]}>
+                            {r.ejecucion === null ? (
+                              <Text style={{ fontSize: 12, color: COLORS.textTertiary }}>–</Text>
+                            ) : (
+                              <View style={styles.ejecBar}>
+                                <View style={styles.ejecBarTrack}>
+                                  <View style={[styles.ejecBarFill, { width: `${Math.min(100, Math.max(3, r.ejecucion))}%`, backgroundColor: r.ejecucion > 100 ? COLORS.error : r.ejecucion >= 70 ? COLORS.success : r.ejecucion >= 40 ? COLORS.warning : COLORS.info }]} />
+                                </View>
+                                <Text style={styles.ejecPct}>{r.ejecucion}%</Text>
+                              </View>
+                            )}
+                          </View>
                           <View style={[styles.tCell, { width: 40, alignItems: 'center' }]}>
                             <Ionicons name="open-outline" size={15} color={COLORS.primary} />
                           </View>
@@ -1479,6 +1699,12 @@ const ReportesAvanzadosScreen = () => {
                           <View style={styles.detFila}><Text style={styles.detLabel}>Recursos solicitados</Text><Text style={styles.detValor}>{fmtNum(ev.recursos)}</Text></View>
                           {ev.facultad ? <View style={styles.detFila}><Text style={styles.detLabel}>Facultad</Text><Text style={styles.detValor}>{ev.facultad}</Text></View> : null}
                           <View style={styles.detFila}><Text style={styles.detLabel}>Inscritos</Text><Text style={styles.detValor}>{ev.inscritos === null || ev.inscritos === undefined ? '–' : fmtNum(ev.inscritos)}</Text></View>
+                          <View style={styles.detFila}><Text style={styles.detLabel}>Asistencia real</Text><Text style={[styles.detValor, { color: ev.tasaAsistencia === null ? COLORS.textTertiary : ev.tasaAsistencia >= 70 ? COLORS.success : COLORS.warning }]}>
+                            {ev.tasaAsistencia === null ? '–' : `${ev.tasaAsistencia}%${ev.asistentes ? ` (${fmtNum(ev.asistentes)} asistentes)` : ''}`}
+                          </Text></View>
+                          <View style={styles.detFila}><Text style={styles.detLabel}>Presupuesto ejecutado</Text><Text style={[styles.detValor, { color: ev.ejecucion === null ? COLORS.textTertiary : ev.ejecucion > 100 ? COLORS.error : ev.ejecucion >= 70 ? COLORS.success : COLORS.warning }]}>
+                            {ev.ejecucion === null ? '–' : ev.ejecucion + '%'}
+                          </Text></View>
                           <View style={styles.detEco}>
                             <View style={styles.detEcoCol}>
                               <Text style={styles.detEcoTitulo}>Presupuesto</Text>
@@ -1657,7 +1883,7 @@ const styles = StyleSheet.create({
   detValor: { fontSize: 13.5, fontWeight: '700', color: COLORS.textPrimary },
   detEco: {
     flexDirection: 'row', gap: 10, marginTop: 10,
-    backgroundColor: '#F8FAFC', borderRadius: 10, padding: 10,
+    backgroundColor: '#F6F7F9', borderRadius: 10, padding: 10,
   },
   detEcoCol: { flex: 1 },
   detEcoTitulo: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4, color: COLORS.textTertiary, marginBottom: 3 },
@@ -1680,6 +1906,34 @@ const styles = StyleSheet.create({
   presetChipTextActivo: { color: COLORS.white },
   drillChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.purple, borderColor: COLORS.purple },
   drillChipText: { fontSize: 12, fontWeight: '800', color: COLORS.white },
+  segWrap: { paddingHorizontal: 16, marginTop: 12 },
+  segGroup: { marginBottom: 9 },
+  segLabel: {
+    fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6,
+    color: COLORS.textTertiary, marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 4,
+  },
+  segChipsRow: { gap: 6, paddingRight: 8 },
+  segChip: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99,
+    backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, maxWidth: 190,
+  },
+  segChipActivo: { backgroundColor: COLORS.purple, borderColor: COLORS.purple },
+  segChipText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
+  segChipTextActivo: { color: COLORS.white },
+  compareRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginTop: 12,
+    flexWrap: 'wrap',
+  },
+  compareLabel: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
+  chartLegend: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 10 },
+  chartLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  chartLegendDot: { width: 10, height: 10, borderRadius: 5 },
+  chartLegendDash: { width: 16, height: 0, borderTopWidth: 2, borderTopColor: '#94A3B8', borderStyle: 'dashed', marginRight: 5 },
+  chartLegendText: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600' },
+  ejecBar: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ejecBarTrack: { flex: 1, height: 8, borderRadius: 5, backgroundColor: COLORS.divider, overflow: 'hidden' },
+  ejecBarFill: { height: '100%', borderRadius: 5, minWidth: 3 },
+  ejecPct: { width: 36, textAlign: 'right', fontSize: 12, fontWeight: '800', color: COLORS.textSecondary },
   segment: { flexDirection: 'row', backgroundColor: COLORS.divider, borderRadius: 9, padding: 3 },
   segmentBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 7 },
   segmentBtnActivo: { backgroundColor: COLORS.white },

@@ -457,7 +457,7 @@ const MinimalHeader = ({ nombreUsuario, unreadCount, onNotificationPress, lastUp
   );
 };
 const SALA_GENERAL = 'general';
-const ROL_COLORS = { admin: '#FF6B35', creador: '#007AFF', logistica: '#34C759' };
+const ROL_COLORS = { admin: '#C44200', creador: '#007AFF', logistica: '#34C759' };
 
 const initialDe = (nombre) => (nombre || '?').trim().charAt(0).toUpperCase();
 
@@ -569,7 +569,7 @@ const InputPanelAdmin = ({ input, setInput, onSend, connected }) => {
         backgroundColor: COLORS.white, borderTopWidth: 1, borderColor: COLORS.border,
       }}>
         <View style={{
-          flex: 1, backgroundColor: '#F3F4F6', borderRadius: 22,
+          flex: 1, backgroundColor: '#D1D5DB', borderRadius: 22,
           paddingHorizontal: 14, paddingVertical: Platform.OS === 'ios' ? 10 : 5,
           maxHeight: 110,
         }}>

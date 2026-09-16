@@ -150,7 +150,7 @@ const SeleccionarServicioScreen = () => {
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemContainer} onPress={() => handleSelectServicio(item)}>
       <Text style={styles.itemText}>{item.nombreservicio}</Text>
-      <Ionicons name="chevron-forward-outline" size={20} color="#C44B0A" />
+      <Ionicons name="chevron-forward-outline" size={20} color="#C44200" />
     </TouchableOpacity>
   );
 
@@ -160,7 +160,7 @@ const SeleccionarServicioScreen = () => {
       <ScrollView style={styles.formViewContainer} contentContainerStyle={styles.formContentContainer} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: 'Crear Nuevo Servicio' }} />
         <TouchableOpacity onPress={() => setShowCreateForm(false)} style={styles.cancelButton}>
-          <Ionicons name="arrow-back-outline" size={24} color="#C44B0A" />
+          <Ionicons name="arrow-back-outline" size={24} color="#C44200" />
           <Text style={styles.cancelButtonText}>Volver a la Lista</Text>
         </TouchableOpacity>
 
@@ -192,7 +192,7 @@ const SeleccionarServicioScreen = () => {
 
         <Text style={styles.label}>Fecha de Entrega/Realización</Text>
         <TouchableOpacity onPress={() => setShowDatePickerEntrega(true)} style={styles.datePickerButton}>
-          <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
+          <Ionicons name="calendar-outline" size={20} color="#C44200" style={styles.inputIcon} />
           <Text style={styles.datePickerText}>
             {fechaEntrega instanceof Date && !isNaN(fechaEntrega.valueOf()) ? fechaEntrega.toLocaleDateString() : 'Seleccionar fecha'}
           </Text>
@@ -224,7 +224,7 @@ const SeleccionarServicioScreen = () => {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="#C44B0A" size="small" />
+            <ActivityIndicator color="#C44200" size="small" />
           ) : (
             <Text style={styles.createButtonText}>Guardar Servicio</Text>
           )}
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 25,
     bottom: 25,
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     width: 56, // Tamaño estándar de FAB
     height: 56,
     borderRadius: 28,
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     // marginRight: 8, // Espacio entre icono y texto si es necesario
   },
   createButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     marginLeft: 6,
-    color: '#C44B0A',
+    color: '#C44200',
     fontSize: 16,
     fontWeight: '500',
   }

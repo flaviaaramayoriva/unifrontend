@@ -8,13 +8,13 @@ import { useLocalSearchParams } from 'expo-router';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const COLORS = {
-  primary: '#C44B0A',
+  primary: '#C44200',
   surface: '#FFFFFF',
-  background: '#F9FAFB',
-  border: '#E5E7EB',
+  background: '#F6F7F9',
+  border: '#E6E9EF',
   textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
   success: '#047857',
 };
 

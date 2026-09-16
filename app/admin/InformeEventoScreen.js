@@ -32,16 +32,16 @@ const getTokenAsync = async () => {
 };
 
 const COLORS = {
-  accent: '#0052A0',
-  secondary: '#2980b9',
-  primary: '#C44B0A',
-  background: '#f8fafc',
+  accent: '#C44200',
+  secondary: '#0F172A',
+  primary: '#C44200',
+  background: '#F6F7F9',
   surface: '#ffffff',
   success: '#27ae60',
   warning: '#f39c12',
   info: '#3498db',
   purple: '#9b59b6',
-  logout: '#e74c3c',
+  logout: '#EF4444',
   white: '#fff',
   grayLight: '#ecf0f1',
   grayText: '#64748b',
@@ -329,14 +329,14 @@ const InformeEventoScreen = () => {
     return `<html><head><meta charset="UTF-8"><style>
       @page { margin: 1.5cm; }
       body { font-family: Arial, sans-serif; color: #333; font-size: 12px; }
-      h1 { color: #C44B0A; border-bottom: 2px solid #C44B0A; padding-bottom: 5px; font-size: 22px; }
-      h2 { color: #C44B0A; border-bottom: 1px solid #C44B0A; padding-bottom: 3px; font-size: 16px; margin-top: 20px; }
-      .section-title { background: #C44B0A; color: #fff; font-weight: bold; padding: 6px 10px; margin-top: 20px; margin-bottom: 10px; font-size: 14px; border-radius: 4px; }
+      h1 { color: #C44200; border-bottom: 2px solid #C44200; padding-bottom: 5px; font-size: 22px; }
+      h2 { color: #C44200; border-bottom: 1px solid #C44200; padding-bottom: 3px; font-size: 16px; margin-top: 20px; }
+      .section-title { background: #C44200; color: #fff; font-weight: bold; padding: 6px 10px; margin-top: 20px; margin-bottom: 10px; font-size: 14px; border-radius: 4px; }
       table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
       th { background: #f4f4f4; font-weight: bold; }
       td, th { border: 1px solid #ccc; padding: 6px; font-size: 11px; }
       .balance-box { background: #ecf0f1; padding: 10px; font-weight: bold; text-align: right; margin-top: 10px; border-radius: 4px; font-size: 14px; }
-      .text-block { background: #f9f9f9; padding: 10px; border-left: 4px solid #C44B0A; margin-bottom: 10px; white-space: pre-wrap; }
+      .text-block { background: #f9f9f9; padding: 10px; border-left: 4px solid #C44200; margin-bottom: 10px; white-space: pre-wrap; }
       ul { margin: 0; padding-left: 20px; }
     </style></head><body>
       <h1>Informe del Evento: ${event?.title || ''}</h1>

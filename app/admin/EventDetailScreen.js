@@ -165,19 +165,19 @@ const getNotificationIcon = (type) => {
 };
 
 const COLORS = {
-  primary: '#C44B0A',
-  primaryLight: '#FFEDD5',
-  secondary: '#4B5563',
+  primary: '#C44200',
+  primaryLight: '#FFF0E6',
+  secondary: '#0F172A',
   accent: '#EF4444',
   success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
-  background: '#F9FAFB',
+  background: '#F6F7F9',
   surface: '#FFFFFF',
   textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
   divider: '#D1D5DB',
   shadow: 'rgba(0, 0, 0, 0.05)',
   white: '#FFFFFF',
@@ -218,9 +218,9 @@ const TimePicker = ({ value, onChange, editable = true }) => {
   if (!editable) {
     return (
       <View style={styles.timePickerTriggerDisabled}>
-        <Ionicons name="time-outline" size={20} color="#9CA3AF" />
+        <Ionicons name="time-outline" size={20} color="#94A3B8" />
         <Text style={styles.timePickerTriggerTextDisabled}>{pad(h)}:{pad(m)}</Text>
-        <Ionicons name="lock-closed" size={16} color="#9CA3AF" />
+        <Ionicons name="lock-closed" size={16} color="#94A3B8" />
       </View>
     );
   }
@@ -233,7 +233,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
           style={styles.timePickerTrigger}
           activeOpacity={0.7}
         >
-          <Ionicons name="time-outline" size={20} color="#C44B0A" />
+          <Ionicons name="time-outline" size={20} color="#C44200" />
           <Text style={styles.timePickerTriggerText}>{pad(h)}:{pad(m)}</Text>
           <Ionicons name="chevron-down" size={16} color="#888" />
         </TouchableOpacity>
@@ -289,7 +289,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
         style={styles.timePickerTrigger}
         activeOpacity={0.7}
       >
-        <Ionicons name="time-outline" size={20} color="#C44B0A" />
+        <Ionicons name="time-outline" size={20} color="#C44200" />
         <Text style={styles.timePickerTriggerText}>{pad(h)}:{pad(m)}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color="#888" />
       </TouchableOpacity>
@@ -303,7 +303,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
         <View style={styles.modalOverlayCentered}>
           <View style={styles.timePickerModalCentered}>
             <View style={styles.timePickerModalHeader}>
-              <Ionicons name="alarm" size={24} color="#C44B0A" />
+              <Ionicons name="alarm" size={24} color="#C44200" />
               <Text style={styles.timePickerModalTitle}>Hora de Inicio</Text>
               <TouchableOpacity onPress={() => setOpen(false)} style={styles.closeButton} accessibilityLabel="Cerrar" accessibilityRole="button">
                 <Ionicons name="close" size={24} color="#666" />
@@ -321,7 +321,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                       apply(newH, m);
                     }}
                   >
-                    <Ionicons name="chevron-up" size={24} color="#C44B0A" />
+                    <Ionicons name="chevron-up" size={24} color="#C44200" />
                   </TouchableOpacity>
                   <TextInput
                     style={styles.drumInput}
@@ -341,7 +341,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                       apply(newH, m);
                     }}
                   >
-                    <Ionicons name="chevron-down" size={24} color="#C44B0A" />
+                    <Ionicons name="chevron-down" size={24} color="#C44200" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -357,7 +357,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                       apply(h, newM);
                     }}
                   >
-                    <Ionicons name="chevron-up" size={24} color="#C44B0A" />
+                    <Ionicons name="chevron-up" size={24} color="#C44200" />
                   </TouchableOpacity>
                   <TextInput
                     style={styles.drumInput}
@@ -377,7 +377,7 @@ const TimePicker = ({ value, onChange, editable = true }) => {
                       apply(h, newM);
                     }}
                   >
-                    <Ionicons name="chevron-down" size={24} color="#C44B0A" />
+                    <Ionicons name="chevron-down" size={24} color="#C44200" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -476,7 +476,7 @@ const NotificationsModal = ({ visible, onClose, notifications, markAsRead }) => 
                   <Ionicons
                     name={getNotificationIcon(notification.type || notification.tipo)}
                     size={20}
-                    color="#C44B0A"
+                    color="#C44200"
                     style={styles.notificationIcon}
                   />
                   {(!notification.read && notification.estado !== 'leido') && (
@@ -580,7 +580,7 @@ const TablaPresupuesto = ({
           <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
           {editable && (
             <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={[styles.deleteButtonSmall, { flex: 0.5 }]}>
-              <Ionicons name="close-circle" size={20} color="#e74c3c" />
+              <Ionicons name="close-circle" size={20} color="#EF4444" />
             </TouchableOpacity>
           )}
         </View>
@@ -647,13 +647,13 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
       )}
       <View style={styles.calendarHeader}>
         <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navButton} disabled={!editable}>
-          <Ionicons name="chevron-back" size={24} color={editable ? "#C44B0A" : "#ccc"} />
+          <Ionicons name="chevron-back" size={24} color={editable ? "#C44200" : "#ccc"} />
         </TouchableOpacity>
         <Text style={styles.monthYearText}>
           {dayjs(fechaHoraSeleccionada).format('MMMM YYYY').toUpperCase()}
         </Text>
         <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navButton} disabled={!editable}>
-          <Ionicons name="chevron-forward" size={24} color={editable ? "#C44B0A" : "#ccc"} />
+          <Ionicons name="chevron-forward" size={24} color={editable ? "#C44200" : "#ccc"} />
         </TouchableOpacity>
       </View>
       <View style={styles.weekDaysHeader}>
@@ -702,7 +702,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
                 </Text>
                 {dayEvents.length > 0 && (
                   <View style={styles.eventIndicators}>
-                    <View style={[styles.eventDot, { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44B0A' }]} />
+                    <View style={[styles.eventDot, { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44200' }]} />
                     {dayEvents.length > 1 && <Text style={styles.eventCount}>+{dayEvents.length - 1}</Text>}
                   </View>
                 )}
@@ -780,7 +780,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada }) => {
   return (
     <View style={styles.eventosDelDiaContainer}>
       <View style={styles.eventosDelDiaHeader}>
-        <Ionicons name="calendar-outline" size={20} color="#C44B0A" />
+        <Ionicons name="calendar-outline" size={20} color="#C44200" />
         <Text style={styles.eventosDelDiaTitle}>Eventos en {dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')}</Text>
         <View style={styles.eventCountBadge}>
           <Text style={styles.eventCountText}>{eventosDelDia.length}</Text>
@@ -1535,7 +1535,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
   const SectionHeader = ({ icon, children }) => (
     <View style={styles.sectionHeaderBar}>
       <View style={styles.sectionHeaderIcon}>
-        <Ionicons name={icon} size={16} color="#C44B0A" />
+        <Ionicons name={icon} size={16} color="#C44200" />
       </View>
       <Text style={styles.sectionTitle}>{children}</Text>
     </View>
@@ -1680,7 +1680,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                   <Ionicons
                     name={isDone && !isActiveStep ? 'checkmark' : step.icon}
                     size={13}
-                    color={isActiveStep ? '#ffffff' : isDone ? '#C44B0A' : '#94A3B8'}
+                    color={isActiveStep ? '#ffffff' : isDone ? '#C44200' : '#94A3B8'}
                   />
                 </View>
                 <Text style={[styles.stepChipText, isActiveStep && styles.stepChipTextActive, isDone && !isActiveStep && styles.stepChipTextDone]}>
@@ -1701,7 +1701,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
       )}
       <View style={styles.timePickerSection}>
         <View style={styles.timePickerHeader}>
-          <Ionicons name="alarm" size={24} color="#C44B0A" />
+          <Ionicons name="alarm" size={24} color="#C44200" />
           <Text style={styles.timePickerSectionTitle}>Hora de Inicio del Evento</Text>
         </View>
         <TimePicker
@@ -1818,7 +1818,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
             <Text style={styles.label}>Tipo de Evento (puede seleccionar más de un tipo)</Text>
             {TIPOS_DE_EVENTO.map((item) => (
               <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)} disabled={isReadOnly}>
-                <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
+                <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44200" : "#888"} />
                 <Text style={styles.checkboxLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -1848,7 +1848,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                     { key: 'internacionalizacion', label: 'Internacionalización' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)} disabled={isReadOnly}>
-                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
+                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44200" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1860,7 +1860,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                     { key: 'otro', label: 'Otro' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)} disabled={isReadOnly}>
-                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
+                      <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44200" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1897,7 +1897,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                     { key: 'docentes', label: 'Docentes' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setSegmentoObjetivo, item.key)} disabled={isReadOnly}>
-                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44B0A" : "#888"} />
+                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44200" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1909,7 +1909,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                     { key: 'otro', label: 'Otro' }
                   ].map((item) => (
                     <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setSegmentoObjetivo, item.key)} disabled={isReadOnly}>
-                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44B0A" : "#888"} />
+                      <Ionicons name={segmentoObjetivo[item.key] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[item.key] ? "#C44200" : "#888"} />
                       <Text style={styles.checkboxLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -1962,11 +1962,11 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                 <SectionHeader icon="people-outline">IV. COMITÉ DEL EVENTO</SectionHeader>
                 <Text style={styles.comiteDescription}>Selecciona a los miembros del comité del evento:</Text>
                 {comiteLoading ? (
-                  <ActivityIndicator size="small" color="#C44B0A" style={{ marginTop: 10 }} />
+                  <ActivityIndicator size="small" color="#C44200" style={{ marginTop: 10 }} />
                 ) : comiteError ? (
                   <View style={{ alignItems: 'center', marginTop: 10 }}>
                     <Text style={{ color: 'red', marginBottom: 10 }}>No se pudieron cargar los usuarios.</Text>
-                    <TouchableOpacity onPress={fetchUsuariosComite} style={{ backgroundColor: '#C44B0A', padding: 10, borderRadius: 5 }}>
+                    <TouchableOpacity onPress={fetchUsuariosComite} style={{ backgroundColor: '#C44200', padding: 10, borderRadius: 5 }}>
                       <Text style={{ color: '#fff', fontWeight: 'bold' }}>Reintentar</Text>
                     </TouchableOpacity>
                   </View>
@@ -1986,7 +1986,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                         }}
                         disabled={isReadOnly}
                       >
-                        <Ionicons name={comiteSeleccionado.includes(usuario.id) ? "checkbox" : "square-outline"} size={24} color={comiteSeleccionado.includes(usuario.id) ? "#C44B0A" : "#888"} />
+                        <Ionicons name={comiteSeleccionado.includes(usuario.id) ? "checkbox" : "square-outline"} size={24} color={comiteSeleccionado.includes(usuario.id) ? "#C44200" : "#888"} />
                         <View style={styles.comiteUserText}>
                           <Text style={styles.checkboxLabel}>{usuario.nombreCompleto}</Text>
                           <Text style={[styles.comiteUserRole, { fontSize: 12, color: '#666', fontStyle: 'italic' }]}>
@@ -2026,7 +2026,7 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
                           disabled={isReadOnly}
                         >
                           <View style={styles.recursoCheckboxContainer}>
-                            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={24} color={isSelected ? "#C44B0A" : "#888"} />
+                            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={24} color={isSelected ? "#C44200" : "#888"} />
                           </View>
                           <View style={styles.recursoInfo}>
                             <Text style={styles.recursoNombre}>{recurso.nombre_recurso}</Text>
@@ -2170,8 +2170,8 @@ if (!tieneAlgunObjetivo) newErrors.objetivos = 'Selecciona al menos un objetivo.
 
 const styles = StyleSheet.create({
   inputReadOnly: {
-    backgroundColor: '#F3F4F6',
-    color: '#6B7280',
+    backgroundColor: '#D1D5DB',
+    color: '#64748B',
   },
   statusBadge: {
     marginTop: 4,
@@ -2204,9 +2204,9 @@ const styles = StyleSheet.create({
   timePickerTriggerDisabled: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D1D5DB',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#E6E9EF',
     borderRadius: 25,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -2215,7 +2215,7 @@ const styles = StyleSheet.create({
   timePickerTriggerTextDisabled: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#9CA3AF',
+    color: '#94A3B8',
   },
   dayCellDisabled: {
     opacity: 0.6,
@@ -2242,12 +2242,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff5f0',
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     borderRadius: 25,
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -2263,12 +2263,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff5f0',
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
     gap: 12,
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -2277,7 +2277,7 @@ const styles = StyleSheet.create({
   timePickerDisplay: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     letterSpacing: 1,
   },
   timePickerDropdown: {
@@ -2288,7 +2288,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     padding: 20,
     zIndex: 1000,
     shadowColor: '#000',
@@ -2325,12 +2325,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#e0e0e0',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     marginRight: 10,
   },
   quickHourButtonActive: {
-    backgroundColor: '#C44B0A',
-    borderColor: '#C44B0A',
+    backgroundColor: '#C44200',
+    borderColor: '#C44200',
   },
   quickHourText: {
     fontSize: 14,
@@ -2342,7 +2342,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   detailedPicker: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 8,
     padding: 16,
   },
@@ -2384,11 +2384,11 @@ const styles = StyleSheet.create({
   detailedSeparator: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     marginHorizontal: 12,
   },
   confirmButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2404,7 +2404,7 @@ const styles = StyleSheet.create({
   timePickerTriggerText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     letterSpacing: 1,
     marginHorizontal: 4,
   },
@@ -2415,7 +2415,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     padding: 16,
     zIndex: 9999,
     shadowColor: '#000',
@@ -2434,7 +2434,7 @@ const styles = StyleSheet.create({
   },
   drum: {
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -2463,7 +2463,7 @@ const styles = StyleSheet.create({
   drumInput: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     paddingVertical: 8,
     textAlign: 'center',
     width: '100%',
@@ -2474,7 +2474,7 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
   },
   drumValueContainer: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     paddingVertical: 12,
     paddingHorizontal: 20,
     marginVertical: 4,
@@ -2491,14 +2491,14 @@ const styles = StyleSheet.create({
   drumVal: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     paddingVertical: 8,
     textAlign: 'center',
   },
   drumColon: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#C44B0A',
+    color: '#C44200',
     marginTop: 28,
   },
   quickTimesContainer: {
@@ -2523,12 +2523,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#e0e0e0',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     marginRight: 8,
   },
   quickTimeBtnActive: {
-    backgroundColor: '#C44B0A',
-    borderColor: '#C44B0A',
+    backgroundColor: '#C44200',
+    borderColor: '#C44200',
   },
   quickTimeBtnText: {
     fontSize: 14,
@@ -2540,14 +2540,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   timePickerApply: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -2587,7 +2587,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
   },
   mobilePickerOverlay: {
     flex: 1,
@@ -2626,7 +2626,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   timePickerApply: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
@@ -2638,7 +2638,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   gotoButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2691,9 +2691,9 @@ const styles = StyleSheet.create({
   checkboxContainer: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
   formSectionHighlighted: {
     backgroundColor: '#fff5f0',
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     borderWidth: 2,
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -2702,7 +2702,7 @@ const styles = StyleSheet.create({
   checkboxColumn: { flex: 1, marginRight: 10 },
   recursosDisponiblesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 },
   recursoDisponibleCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
@@ -2717,7 +2717,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  recursoDisponibleCardSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2 },
+  recursoDisponibleCardSelected: { backgroundColor: '#fff5f0', borderColor: '#C44200', borderWidth: 2 },
   recursoCheckboxContainer: { marginRight: 10 },
   recursoInfo: { flex: 1 },
   recursoNombre: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4 },
@@ -2745,7 +2745,7 @@ const styles = StyleSheet.create({
   headerButton: { padding: 8 },
   headerCloseButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  notificationBell: { position: 'relative', padding: 8, borderRadius: 20, backgroundColor: '#f8f9fa' },
+  notificationBell: { position: 'relative', padding: 8, borderRadius: 20, backgroundColor: '#F6F7F9' },
   notificationBadge: {
     position: 'absolute', top: 0, right: 0,
     backgroundColor: '#ff4444', borderRadius: 10,
@@ -2754,8 +2754,8 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: '#ffffff',
   },
   notificationBadgeText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
-  calendarTitleContainer: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
-  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#C44B0A', textAlign: 'left' },
+  calendarTitleContainer: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#F6F7F9', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  calendarTitle: { fontSize: 16, fontWeight: 'bold', color: '#C44200', textAlign: 'left' },
   notificationsModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   notificationsModalContent: {
     backgroundColor: 'white', borderRadius: 16, padding: 20,
@@ -2777,8 +2777,8 @@ const styles = StyleSheet.create({
     borderRadius: 8, marginBottom: 5, backgroundColor: '#ffffff',
   },
   notificationItemUnread: {
-    backgroundColor: '#f8f9ff', borderLeftWidth: 4, borderLeftColor: '#C44B0A',
-    shadowColor: '#C44B0A', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+    backgroundColor: '#f8f9ff', borderLeftWidth: 4, borderLeftColor: '#C44200',
+    shadowColor: '#C44200', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
   },
   objetivoPDIRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   objetivoPDINumber: { fontSize: 16, color: '#333', marginRight: 10, marginTop: 12, fontWeight: '500' },
@@ -2801,21 +2801,21 @@ const styles = StyleSheet.create({
   objetivoPDIColumn: { width: '48%', marginBottom: 10 },
   confirmModalTitle: { fontSize: 20, fontWeight: 'bold', color: '#2d3748', marginLeft: 12 },
   confirmModalMessage: { fontSize: 16, color: '#4a5568', marginBottom: 20, lineHeight: 22, textAlign: 'center' },
-  confirmModalDetails: { backgroundColor: '#f8f9fa', borderRadius: 12, padding: 16, marginBottom: 24 },
+  confirmModalDetails: { backgroundColor: '#F6F7F9', borderRadius: 12, padding: 16, marginBottom: 24 },
   confirmModalDetailTitle: { fontSize: 16, fontWeight: '600', color: '#2d3748', marginBottom: 12 },
   confirmModalDetail: { fontSize: 14, color: '#4a5568', marginBottom: 8, lineHeight: 20 },
   detailLabel: { fontWeight: '600', color: '#2d3748' },
   confirmModalButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   confirmModalButton: { flex: 1, paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  confirmModalButtonCancel: { backgroundColor: '#f8f9fa', borderWidth: 1, borderColor: '#e0e0e0' },
-  confirmModalButtonConfirm: { backgroundColor: '#C44B0A' },
+  confirmModalButtonCancel: { backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#e0e0e0' },
+  confirmModalButtonConfirm: { backgroundColor: '#C44200' },
   confirmModalButtonTextCancel: { fontSize: 16, fontWeight: '600', color: '#4a5568' },
   confirmModalButtonTextConfirm: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
   keyboardAvoidingContainer: { flex: 1, backgroundColor: '#F4F7F9', minHeight: 0 },
   stepNavContainer: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#E6E9EF',
     paddingVertical: 8,
   },
   stepNavContent: { gap: 8, paddingHorizontal: 16 },
@@ -2831,11 +2831,11 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   stepChipActive: {
-    backgroundColor: '#C44B0A',
-    borderColor: '#C44B0A',
+    backgroundColor: '#C44200',
+    borderColor: '#C44200',
   },
   stepChipDone: {
-    backgroundColor: '#FFEDD5',
+    backgroundColor: '#FFF0E6',
     borderColor: '#FFD6B0',
   },
   stepChipIcon: {
@@ -2864,7 +2864,7 @@ const styles = StyleSheet.create({
   sectionHeaderBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFEDD5',
+    backgroundColor: '#FFF0E6',
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     marginHorizontal: -20,
@@ -2894,7 +2894,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, color: '#555', marginBottom: 8, fontWeight: '500' },
   inputGroup: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E0E0E0',
+    backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#E0E0E0',
     borderRadius: 8, marginBottom: 18,
   },
   inputError: { borderColor: 'red' },
@@ -2904,7 +2904,7 @@ const styles = StyleSheet.create({
   textArea: { height: 100, textAlignVertical: 'top' },
   datePickerButton: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, backgroundColor: '#fff', marginBottom: 15 },
   datePickerText: { fontSize: 16, color: '#333' },
-  otroInputContainer: { marginLeft: 36, marginTop: 5, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F8F9FA' },
+  otroInputContainer: { marginLeft: 36, marginTop: 5, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F6F7F9' },
   resultadoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   resultadoLabel: { fontSize: 16, color: '#333', flex: 1 },
   resultadoInput: { flex: 2, backgroundColor: '#F4F7F9', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16, fontSize: 16, color: '#333' },
@@ -2927,7 +2927,7 @@ const styles = StyleSheet.create({
   balanceAmount: { fontWeight: 'bold', fontSize: 16 },
   floatingActionButton: {
     position: 'absolute', right: 20, bottom: 20,
-    backgroundColor: '#C44B0A', width: 60, height: 60, borderRadius: 30,
+    backgroundColor: '#C44200', width: 60, height: 60, borderRadius: 30,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 8,
   },
@@ -2939,7 +2939,7 @@ const styles = StyleSheet.create({
   borderTopColor: '#e0e0e0',
 },
 submitButton: {
-  backgroundColor: '#C44B0A',
+  backgroundColor: '#C44200',
   paddingVertical: 16,
   borderRadius: 12,
   alignItems: 'center',
@@ -2957,7 +2957,7 @@ submitButton: {
     backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, overflow: 'hidden',
   },
-  calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#F6F7F9', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   navButton: { padding: 8, borderRadius: 20, backgroundColor: '#ffffff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   monthYearText: { fontSize: 18, fontWeight: 'bold', color: '#333', letterSpacing: 1 },
   weekDaysHeader: { flexDirection: 'row', backgroundColor: '#f0f0f0', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
@@ -2965,31 +2965,31 @@ submitButton: {
   weekDayText: { fontSize: 13, fontWeight: '600', color: '#666' },
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: '#ffffff' },
   dayCell: { width: '14.28%', minHeight: 80, borderRightWidth: 0.5, borderBottomWidth: 0.5, borderColor: '#e8e8e8', paddingTop: 8, paddingHorizontal: 4 },
-  dayCellInactive: { backgroundColor: '#f8f9fa' },
-  dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#C44B0A', borderWidth: 2, borderRadius: 6, margin: -1 },
+  dayCellInactive: { backgroundColor: '#F6F7F9' },
+  dayCellSelected: { backgroundColor: '#fff5f0', borderColor: '#C44200', borderWidth: 2, borderRadius: 6, margin: -1 },
   dayCellToday: { backgroundColor: '#e8f4fd' },
   dayCellContent: { flex: 1, alignItems: 'center' },
   dayNumber: { fontSize: 16, fontWeight: '500', color: '#333', marginBottom: 4 },
   dayNumberInactive: { color: '#999' },
-  dayNumberSelected: { color: '#C44B0A', fontWeight: 'bold', fontSize: 18 },
+  dayNumberSelected: { color: '#C44200', fontWeight: 'bold', fontSize: 18 },
   dayNumberToday: { backgroundColor: '#2196f3', color: 'white', borderRadius: 12, paddingHorizontal: 6, paddingVertical: 2, overflow: 'hidden' },
   eventIndicators: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   eventDot: { width: 6, height: 6, borderRadius: 3, marginRight: 2 },
   eventCount: { fontSize: 10, color: '#666', fontWeight: '500' },
   eventPreview: { marginTop: 4, width: '100%' },
   eventPreviewText: { fontSize: 8, color: '#333', marginBottom: 1, textAlign: 'center' },
-  eventPreviewMore: { fontSize: 8, color: '#C44B0A', fontWeight: 'bold', textAlign: 'center' },
+  eventPreviewMore: { fontSize: 8, color: '#C44200', fontWeight: 'bold', textAlign: 'center' },
   eventosDelDiaContainer: { backgroundColor: '#ffffff', borderRadius: 12, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, overflow: 'hidden' },
-  eventosDelDiaHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#f8f9fa', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  eventosDelDiaHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#F6F7F9', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   eventosDelDiaTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginLeft: 8, flex: 1 },
-  eventCountBadge: { backgroundColor: '#C44B0A', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  eventCountBadge: { backgroundColor: '#C44200', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   eventCountText: { fontSize: 12, color: '#ffffff', fontWeight: 'bold' },
   eventsList: { maxHeight: 200, paddingHorizontal: 16 },
   eventoCard: { backgroundColor: '#ffffff', borderRadius: 8, padding: 12, marginVertical: 8, borderWidth: 1, borderColor: '#e0e0e0', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   eventoCardConflict: { borderColor: '#ff6b6b', backgroundColor: '#fff5f5' },
   eventoCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   eventoTimeContainer: { flexDirection: 'row', alignItems: 'center' },
-  eventoTime: { fontSize: 14, fontWeight: '600', color: '#C44B0A', marginLeft: 4 },
+  eventoTime: { fontSize: 14, fontWeight: '600', color: '#C44200', marginLeft: 4 },
   eventoTimeConflict: { color: '#ff6b6b' },
   conflictBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ff6b6b', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   conflictBadgeText: { fontSize: 10, color: '#ffffff', marginLeft: 4, fontWeight: '600' },
@@ -2997,7 +2997,7 @@ submitButton: {
   eventoDetails: { marginLeft: 4 },
   eventoDetailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   eventoDetailText: { fontSize: 12, color: '#666', marginLeft: 4 },
-  eventosDelDiaFooter: { padding: 16, borderTopWidth: 1, borderTopColor: '#e0e0e0', backgroundColor: '#f8f9fa' },
+  eventosDelDiaFooter: { padding: 16, borderTopWidth: 1, borderTopColor: '#e0e0e0', backgroundColor: '#F6F7F9' },
   eventosDelDiaNote: { fontSize: 12, color: '#666', textAlign: 'center', fontStyle: 'italic' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 20, width: '90%', maxWidth: 400, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
@@ -3006,7 +3006,7 @@ submitButton: {
   modalOption: { paddingVertical: 14, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   modalOptionText: { fontSize: 15, color: '#333' },
   modalMessage: { fontSize: 14, color: '#666', marginBottom: 12, lineHeight: 20 },
-  conflictEventCard: { backgroundColor: '#f8f9fa', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#e0e0e0' },
+  conflictEventCard: { backgroundColor: '#F6F7F9', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#e0e0e0' },
   conflictEventTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 4 },
   conflictEventDetails: { fontSize: 14, color: '#666', marginBottom: 4 },
   conflictEventResponsible: { fontSize: 14, color: '#666', fontStyle: 'italic' },
@@ -3014,9 +3014,9 @@ submitButton: {
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
   modalButtonSecondary: { backgroundColor: '#f0f0f0', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, marginRight: 8, alignItems: 'center' },
   modalButtonSecondaryText: { fontSize: 14, color: '#333', fontWeight: '600' },
-  modalButtonPrimary: { backgroundColor: '#C44B0A', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
+  modalButtonPrimary: { backgroundColor: '#C44200', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, alignItems: 'center' },
   modalButtonPrimaryText: { fontSize: 14, color: '#ffffff', fontWeight: '600' },
-  selectedText: { fontSize: 14, color: '#C44B0A', marginTop: 5, marginLeft: 10 },
+  selectedText: { fontSize: 14, color: '#C44200', marginTop: 5, marginLeft: 10 },
   mobileTimePickerContainer: {
     position: 'relative',
     zIndex: 100,
@@ -3052,7 +3052,7 @@ submitButton: {
     height: Platform.OS === 'ios' ? 180 : 'auto',
   },
   doneButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',

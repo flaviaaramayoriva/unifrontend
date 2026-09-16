@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reportes · Propuesta Fase 1 (Preview)</title>
+<style>
+  :root {
+    --primary:#C44B0A; --primary-soft:#FFEDD5; --secondary:#4B5563;
+    --accent:#EF4444; --success:#047857; --success-soft:#D1FAE5;
+    --warning:#F59E0B; --warning-soft:#FEF3C7; --info:#3B82F6; --info-soft:#DBEAFE;
+    --purple:#8B5CF6; --purple-soft:#EDE9FE;
+    --bg:#F3F4F6; --surface:#FFFFFF; --t1:#1F2937; --t2:#6B7280; --t3:#9CA3AF;
+    --border:#E5E7EB; --new:#7C3AED;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:
+      radial-gradient(900px 360px at 70% -5%, rgba(196,75,10,.08), transparent 60%),
+      var(--bg);
+    font-family:'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    color:var(--t1); padding:28px 16px 60px; line-height:1.5;
+  }
+  .wrap { max-width:1060px; margin:0 auto; display:grid; grid-template-columns:1fr 320px; gap:24px; align-items:start; }
+
+  /* ── Leyenda ─────────────────────────── */
+  .legend {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:16px 18px; position:sticky; top:16px; box-shadow:0 10px 24px rgba(0,0,0,.05);
+  }
+  .legend h2 { font-size:14px; color:var(--t1); margin-bottom:10px; }
+  .legend .item { display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; font-size:13px; color:var(--t2); }
+  .legend .item b { color:var(--t1); }
+  .tag { flex:none; margin-top:2px; font-size:10px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; border-radius:6px; padding:3px 7px; }
+  .tag.new  { background:var(--new); color:#fff; }
+  .tag.back { background:var(--info-soft); color:var(--info); }
+  .tag.ui   { background:var(--success-soft); color:var(--success); }
+  .note { font-size:12px; color:var(--t3); border-top:1px solid var(--border); padding-top:10px; margin-top:4px; }
+  .note b { color:var(--t2); }
+
+  /* ── Teléfono ─────────────────────────── */
+  .phone {
+    background:var(--bg); border-radius:30px; border:1px solid rgba(0,0,0,.12);
+    box-shadow:0 30px 70px rgba(0,0,0,.18); padding:16px 12px 22px; max-width:430px; margin:0 auto;
+  }
+  .screen { border-radius:20px; overflow:hidden; background:var(--bg); }
+  .scroller { max-height:720px; overflow:auto; padding-bottom:24px; }
+
+  /* ├─ Header ─ */
+  .hdr { display:flex; align-items:center; gap:10px; padding:14px 16px 10px; }
+  .hdr .txt { flex:1; }
+  .hdr .eyebrow { font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--primary); }
+  .hdr .title { font-size:19px; font-weight:800; color:var(--t1); }
+  .hdr .sub { font-size:11px; color:var(--t2); }
+  .hdr .ic { width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; }
+  .hdr .ic.primary { background:var(--primary); border-color:var(--primary); }
+
+  /* ├─ Filtro y presets ─ */
+  .bar { padding:6px 16px 0; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { border:1px solid var(--border); background:var(--surface); border-radius:99px; padding:7px 12px; font-size:12px; font-weight:600; color:var(--t2); }
+  .chip.on { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .chip.pale { background:var(--primary-soft); border-color:var(--primary); color:var(--primary); }
+  .chip.new { position:relative; font-weight:700; }
+  .chip.new::after { content:'NUEVO'; position:absolute; top:-8px; right:-6px; background:var(--new); color:#fff; font-size:8px; font-weight:800; letter-spacing:.3px; border-radius:5px; padding:2px 5px; }
+
+  .divider { height:1px; background:var(--border); margin:11px 16px 0; }
+
+  /* ├─ Segmentar (NUEVO) ─ */
+  .seg { padding:11px 16px 0; }
+  .seg .lbl { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:var(--t3); margin-bottom:7px; display:flex; align-items:center; gap:6px; }
+  .seg .lbl .dot { width:8px; height:8px; border-radius:4px; background:var(--new); }
+  .seg .opts { display:flex; gap:6px; flex-wrap:wrap; }
+  .opt { font-size:12px; font-weight:600; border-radius:8px; padding:6px 11px; background:var(--surface); border:1px solid var(--border); color:var(--t2); }
+  .opt.on { background:var(--primary-soft); border-color:var(--primary); color:var(--primary); font-weight:700; }
+  .hint { font-size:10.5px; color:var(--t3); margin-top:6px; }
+
+  /* ├─ Comparar (NUEVO) ─ */
+  .compare { padding:11px 16px 0; }
+  .compare .lbl { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:var(--t3); margin-bottom:7px; display:flex; gap:6px; align-items:center; }
+  .compare .lbl .dot { width:8px; height:8px; border-radius:4px; background:var(--info); }
+  .compare .sel { display:flex; gap:6px; flex-wrap:wrap; }
+  .csel { font-size:12px; font-weight:700; border-radius:9px; padding:7px 12px; background:var(--surface); border:1px solid var(--border); color:var(--t2); }
+  .csel.on { background:var(--info); border-color:var(--info); color:#fff; }
+
+  /* ├─ KPIs ─ */
+  .kpis { display:grid; grid-template-columns:repeat(2,1fr); gap:9px; padding:14px 16px 4px; }
+  .kpi { background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:11px 12px; position:relative; }
+  .kpi .lbl { font-size:10px; color:var(--t3); font-weight:600; padding-right:48px; }
+  .kpi .val { font-size:21px; font-weight:800; letter-spacing:-.3px; margin-top:2px; }
+  .kpi .sub { font-size:10px; color:var(--t3); margin-top:2px; display:flex; align-items:center; gap:4px; }
+  .kpi .up { color:var(--success); font-weight:700; }
+  .kpi .dn { color:var(--accent); font-weight:700; }
+  .kpi .ic { position:absolute; right:10px; top:10px; width:26px; height:26px; border-radius:8px; display:grid; place-items:center; font-size:13px; }
+  .kpi .badge-new { position:absolute; top:-7px; right:-5px; background:var(--new); color:#fff; font-size:8.5px; font-weight:800; border-radius:6px; padding:2px 6px; letter-spacing:.3px; }
+  .val.success { color:var(--success); } .val.info { color:var(--info); } .val.purple { color:var(--purple); } .val.primary { color:var(--primary); }
+
+  /* ├─ Gráficos ─ */
+  .sec-title { display:flex; align-items:center; gap:7px; padding:16px 16px 0; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:var(--t2); }
+  .chart { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin:9px 16px 0; padding:13px 12px 11px; }
+  .chart .head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .chart .head b { font-size:13px; color:var(--t1); }
+  .chart .head small { font-size:10px; color:var(--info); background:var(--info-soft); border-radius:6px; padding:3px 7px; font-weight:700; }
+  .chart .head small.new { background:var(--new); color:#fff; }
+  .legend-row { display:flex; gap:14px; margin-top:8px; font-size:10.5px; color:var(--t2); }
+  .legend-row .sq { width:9px; height:9px; border-radius:3px; display:inline-block; margin-right:4px; }
+  .legend-row .dashed { border:0; border-top:2px dashed var(--t3); width:11px; display:inline-block; margin-right:4px; }
+
+  /* barras simples */
+  .bars { display:flex; align-items:flex-end; gap:6px; height:74px; }
+  .bars .b { flex:1; border-radius:4px 4px 2px 2px; height:var(--h); background:linear-gradient(180deg,var(--primary),#a83c08); min-height:6px; }
+  .bars .b.dash { background:repeating-linear-gradient(180deg, var(--t3) 0 3px, transparent 3px 6px); }
+
+  .mini-list { display:grid; gap:7px; margin-top:8px; }
+  .rb .row { display:flex; align-items:center; gap:8px; font-size:11.5px; }
+  .rb .name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--t1); font-weight:600; }
+  .rb .track { flex:2.2; height:8px; border-radius:5px; background:var(--bg); overflow:hidden; }
+  .rb .fill { height:100%; border-radius:5px; background:linear-gradient(90deg,var(--primary),#e67e22); }
+  .rb .fill.purple { background:linear-gradient(90deg,var(--purple),#a78bfa); }
+  .rb .fill.info { background:linear-gradient(90deg,var(--info),#60a5fa); }
+  .rb .n { width:22px; text-align:right; font-weight:800; color:var(--t2); }
+
+  /* ├─ Tabla ─ */
+  .table { margin:9px 16px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .trow { display:grid; grid-template-columns:1.7fr .9fr .8fr .7fr .6fr; gap:6px; padding:9px 11px; font-size:11px; align-items:center; border-bottom:1px solid var(--border); }
+  .trow.head { background:var(--primary-soft); font-weight:800; text-transform:uppercase; font-size:9.5px; letter-spacing:.4px; color:var(--primary); }
+  .trow .cell.new { background:var(--new); color:#fff; font-size:8.5px; font-weight:800; text-align:center; border-radius:6px; padding:3px 2px; }
+  .bad { font-size:9px; border-radius:6px; padding:3px 7px; font-weight:700; text-align:center; }
+  .bad.ok { background:var(--success-soft); color:var(--success); }
+  .bad.pend { background:var(--warning-soft); color:var(--warning); }
+  .bad.bad2 { background:#FEE2E2; color:var(--accent); }
+  .barx { height:7px; border-radius:5px; background:var(--bg); overflow:hidden; }
+  .barx .f { height:100%; background:var(--success); }
+  .barx .f.warn { background:var(--warning); }
+  .barx .f.bad { background:var(--accent); }
+
+  .foot { padding:12px 16px 0; font-size:10.5px; color:var(--t3); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- Leyenda lateral -->
+  <aside class="legend">
+    <h2>Leyenda del preview</h2>
+    <div class="item"><span class="tag new">NUEVO</span><span><b>Funcionalidad que se añade</b> en esta fase.</span></div>
+    <div class="item"><span class="tag ui">UI</span><span>Cambio visual/interacción sobre lo ya existente.</span></div>
+    <div class="item"><span class="tag back">API</span><span>Cambio de backend requerido (a desplegar en Railway).</span></div>
+    <div class="note">
+      <b>Contenido propuesto de la Fase 1.</b> Los valores son ejemplos
+      (no datos reales). Nada de la app real se ha modificado todavía.
+    </div>
+  </aside>
+
+  <!-- Mock del teléfono -->
+  <div class="phone">
+    <div class="screen">
+      <div class="scroller">
+
+        <!-- Header -->
+        <div class="hdr">
+          <div class="txt">
+            <div class="eyebrow">Reportes · Admin</div>
+            <div class="title">Reportes</div>
+            <div class="sub">Eventos, recursos y finanzas</div>
+          </div>
+          <div class="ic"><span style="font-size:15px">⬇</span></div>
+          <div class="ic primary"><span style="font-size:15px;color:#fff">🔄</span></div>
+        </div>
+
+        <!-- Filtro fechas + presets -->
+        <div class="bar">
+          <div class="chips">
+            <span class="chip pale">Desde · 01/01/2026</span>
+            <span class="chip pale">Hasta · 30/09/2026</span>
+            <span class="chip">Limpiar</span>
+          </div>
+        </div>
+        <div class="bar" style="margin-top:8px">
+          <div class="chips">
+            <span class="chip">7 días</span>
+            <span class="chip on">Este mes</span>
+            <span class="chip">3 meses</span>
+            <span class="chip">Año</span>
+            <span class="chip">Todo</span>
+          </div>
+        </div>
+
+        <!-- Segmentar por facultad y tipo (NUEVO) -->
+        <div class="seg">
+          <div class="lbl"><span class="dot"></span>Segmentar por facultad <span class="tag new">NUEVO</span></div>
+          <div class="opts">
+            <span class="opt">Todas</span>
+            <span class="opt on">Ingeniería</span>
+            <span class="opt">Ciencias de la Salud</span>
+            <span class="opt">Humanidades</span>
+            <span class="opt">Agronomía</span>
+          </div>
+          <div class="lbl" style="margin-top:10px"><span class="dot"></span>Por tipo de evento <span class="tag new">NUEVO</span></div>
+          <div class="opts">
+            <span class="opt on">Todos</span>
+            <span class="opt">Conferencia</span>
+            <span class="opt">Taller</span>
+            <span class="opt">Congreso</span>
+            <span class="opt">Seminario</span>
+          </div>
+          <div class="hint">Recalculan KPIs, gráficos, rankings y tabla. Via <b>API</b>: params <code>facultad_id</code> y <code>tipo</code>.</div>
+        </div>
+
+        <!-- Comparar con (NUEVO) -->
+        <div class="compare">
+          <div class="lbl"><span class="dot"></span>Comparar con <span class="tag new">NUEVO</span></div>
+          <div class="sel">
+            <span class="csel on">Período anterior</span>
+            <span class="csel">Mismo período 2025</span>
+          </div>
+          <div class="hint">Añade la capa discontinua en la tendencia y las flechas % en los KPIs. <b>UI</b> + <b>API</b> (rango calculado).</div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpis">
+          <div class="kpi">
+            <div class="lbl">Solicitudes</div>
+            <div class="val">248</div>
+            <div class="sub"><span class="up">▲ 6%</span><span>vs prev. (2025: +6%)</span></div>
+            <div class="ic" style="background:var(--primary-soft)">🧾</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl">Aprobados</div>
+            <div class="val success">184</div>
+            <div class="sub"><span class="up">▲ 11%</span><span>vs 2025</span></div>
+            <div class="ic" style="background:var(--success-soft)">✓</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl">Pendientes</div>
+            <div class="val">41</div>
+            <div class="sub"><span class="up">▼ 3%</span><span>vs 2025</span></div>
+            <div class="ic" style="background:var(--warning-soft)">⏳</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl">Inscritos</div>
+            <div class="val info">1 210</div>
+            <div class="sub"><span class="up">▲ 9%</span><span>vs 2025</span></div>
+            <div class="ic" style="background:var(--info-soft)">👥</div>
+          </div>
+
+          <div class="kpi">
+            <div class="badge-new">NUEVO</div>
+            <div class="lbl">Asistencia real vs inscritos</div>
+            <div class="val success">82%</div>
+            <div class="sub"><span>≈ 992 de 1 210 asistentes</span></div>
+            <div class="ic" style="background:var(--success-soft)">📍</div>
+          </div>
+          <div class="kpi">
+            <div class="badge-new">NUEVO</div>
+            <div class="lbl">Días hasta aprobación</div>
+            <div class="val purple">3.2</div>
+            <div class="sub"><span class="dn">▲ 0.8</span><span>días más que 2025</span></div>
+            <div class="ic" style="background:var(--purple-soft)">⚡</div>
+          </div>
+          <div class="kpi">
+            <div class="badge-new">NUEVO</div>
+            <div class="lbl">Ejecución presupuesto</div>
+            <div class="val primary">68%</div>
+            <div class="sub"><span>Bs 18.4M de 27M</span></div>
+            <div class="ic" style="background:var(--primary-soft)">₿</div>
+          </div>
+          <div class="kpi">
+            <div class="badge-new">NUEVO</div>
+            <div class="lbl">Aceptación por facultad</div>
+            <div class="val">74%</div>
+            <div class="sub"><span>Mejor: Ingeniería (81%)</span></div>
+            <div class="ic" style="background:#FEE2E2">📊</div>
+          </div>
+        </div>
+
+        <!-- Tendencia -->
+        <div class="sec-title">Tendencia de eventos</div>
+        <div class="chart">
+          <div class="head"><b>Eventos por mes</b><small>Mismo mes 2025 · NUEVO</small></div>
+          <div class="bars">
+            <div class="b" style="--h:38%"></div>
+            <div class="b dash" style="--h:30%"></div>
+            <div class="b" style="--h:54%"></div>
+            <div class="b dash" style="--h:42%"></div>
+            <div class="b" style="--h:70%"></div>
+            <div class="b dash" style="--h:58%"></div>
+            <div class="b" style="--h:64%"></div>
+            <div class="b dash" style="--h:52%"></div>
+            <div class="b" style="--h:88%"></div>
+            <div class="b dash" style="--h:74%"></div>
+            <div class="b" style="--h:78%"></div>
+            <div class="b dash" style="--h:66%"></div>
+          </div>
+          <div class="legend-row">
+            <span><span class="sq" style="background:var(--primary)"></span>2026 · en período</span>
+            <span><span class="dashed"></span>2025 · comparación</span>
+          </div>
+        </div>
+
+        <!-- Estados + Inscritos -->
+        <div class="sec-title">Estados e inscripciones</div>
+        <div class="chart">
+          <div class="head"><b>Estados</b><small>al seleccionar facultad / tipo</small></div>
+          <div style="display:flex; gap:6px; margin-top:6px">
+            <span style="flex:1; background:var(--success); height:58px; border-radius:6px"></span>
+            <span style="flex:.35; background:var(--warning); height:58px; border-radius:6px"></span>
+            <span style="flex:.22; background:var(--accent); height:58px; border-radius:6px"></span>
+            <span style="flex:.15; background:#94A3B8; height:58px; border-radius:6px"></span>
+          </div>
+          <div class="legend-row">
+            <span><span class="sq" style="background:var(--success)"></span>Aprobados 184</span>
+            <span><span class="sq" style="background:var(--warning)"></span>Pendientes 41</span>
+            <span><span class="sq" style="background:var(--accent)"></span>Rechazados 23</span>
+          </div>
+        </div>
+
+        <!-- Rankings -->
+        <div class="sec-title">Rankings</div>
+        <div class="chart">
+          <div class="head"><b>Recursos más usados</b></div>
+          <div class="mini-list rb">
+            <div class="row"><span class="name">Auditorio principal</span><span class="track"><span class="fill" style="width:92%"></span></span><span class="n">46</span></div>
+            <div class="row"><span class="name">Proyector multimedia</span><span class="track"><span class="fill" style="width:74%"></span></span><span class="n">37</span></div>
+            <div class="row"><span class="name">Sonido + micrófonos</span><span class="track"><span class="fill" style="width:58%"></span></span><span class="n">29</span></div>
+          </div>
+        </div>
+        <div class="chart">
+          <div class="head"><b>Tipos de evento</b></div>
+          <div class="mini-list rb">
+            <div class="row"><span class="name">Conferencia</span><span class="track"><span class="fill info" style="width:80%"></span></span><span class="n">58</span></div>
+            <div class="row"><span class="name">Taller</span><span class="track"><span class="fill info" style="width:55%"></span></span><span class="n">40</span></div>
+            <div class="row"><span class="name">Congreso</span><span class="track"><span class="fill info" style="width:34%"></span></span><span class="n">25</span></div>
+          </div>
+        </div>
+        <div class="chart">
+          <div class="head"><b>Top solicitantes</b><small class="new">NUEVO</small></div>
+          <div class="mini-list rb">
+            <div class="row"><span class="name">M. Pérez (Ingeniería)</span><span class="track"><span class="fill purple" style="width:90%"></span></span><span class="n">14</span></div>
+            <div class="row"><span class="name">L. Ramírez (Salud)</span><span class="track"><span class="fill purple" style="width:70%"></span></span><span class="n">11</span></div>
+            <div class="row"><span class="name">J. Blanco (Ciencias)</span><span class="track"><span class="fill purple" style="width:52%"></span></span><span class="n">8</span></div>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="sec-title">Detalle de eventos · <span style="color:var(--new)">2 columnas nuevas</span></div>
+        <div class="table">
+          <div class="trow head">
+            <span>Evento</span><span>Estado</span><span>Inscritos</span><span class="cell new">ASISTENCIA</span><span class="cell new">PRESUP. EJEC.</span>
+          </div>
+          <div class="trow">
+            <span><b>Feria de la Ciencia</b><br><small style="color:var(--t3)">UFT · 24/05/2026</small></span>
+            <span><span class="bad ok">Aprobado</span></span>
+            <span>420</span>
+            <span><span style="font-weight:800;color:var(--success)">85%</span></span>
+            <span><div class="barx"><div class="f" style="width:78%"></div></div><small style="color:var(--t3)">78%</small></span>
+          </div>
+          <div class="trow">
+            <span><b>Congreso Regional</b><br><small style="color:var(--t3)">Aula magna · 18/08/2026</small></span>
+            <span><span class="bad ok">Aprobado</span></span>
+            <span>310</span>
+            <span><span style="font-weight:800;color:var(--success)">91%</span></span>
+            <span><div class="barx"><div class="f warn" style="width:52%"></div></div><small style="color:var(--t3)">52%</small></span>
+          </div>
+          <div class="trow" style="border-bottom:none">
+            <span><b>Taller de Emprendimiento</b><br><small style="color:var(--t3)">Lab. 3 · 02/09/2026</small></span>
+            <span><span class="bad pend">Pendiente</span></span>
+            <span>95</span>
+            <span><small style="color:var(--t3)">—</small></span>
+            <span><div class="barx"><div class="f bad" style="width:31%"></div></div><small style="color:var(--t3)">31%</small></span>
+          </div>
+        </div>
+        <div class="foot">
+          Fases siguientes (no incluidas aquí): URL compartible, consolidado trimestral,
+          endpoint único <code>/reportes/general</code> y paginación en la tabla.
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

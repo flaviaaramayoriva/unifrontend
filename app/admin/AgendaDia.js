@@ -39,7 +39,7 @@ const AgendaDia = () => {
         );
         
         const eventTypeColors = {
-          '1': '#C44B0A', '2': '#3498db', '3': '#2ecc71',
+          '1': '#C44200', '2': '#3498db', '3': '#2ecc71',
           '4': '#9b59b6', '5': '#f1c40f', '6': '#7f8c8d',
         };
 
@@ -73,7 +73,7 @@ const AgendaDia = () => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#C44B0A" />
+        <ActivityIndicator size="large" color="#C44200" />
         <Text style={styles.loadingText}>Cargando agenda...</Text>
       </View>
     );

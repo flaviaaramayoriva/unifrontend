@@ -44,16 +44,16 @@ const deleteTokenAsync = async () => {
 };
 
 const COLORS = {
-  accent: '#0052A0',
-  secondary: '#2980b9',
-  primary: '#C44B0A',
-  background: '#f8fafc',
+  accent: '#C44200',
+  secondary: '#0F172A',
+  primary: '#C44200',
+  background: '#F6F7F9',
   surface: '#ffffff',
   success: '#27ae60',
   warning: '#f39c12',
   info: '#3498db',
   purple: '#9b59b6',
-  logout: '#e74c3c',
+  logout: '#EF4444',
   white: '#fff',
   grayLight: '#ecf0f1',
   grayText: '#64748b',
@@ -83,8 +83,8 @@ const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', fg: '#B45309', bg: '#FEF3C7', icon: 'time-outline' },
   aprobado: { label: 'Aprobado', fg: '#15803D', bg: '#DCFCE7', icon: 'checkmark-circle-outline' },
   rechazado: { label: 'Rechazado', fg: '#B91C1C', bg: '#FEE2E2', icon: 'close-circle-outline' },
-  cancelado: { label: 'Cancelado', fg: '#4B5563', bg: '#F3F4F6', icon: 'ban-outline' },
-  vencido: { label: 'Vencido', fg: '#C2410C', bg: '#FFEDD5', icon: 'alert-circle-outline' },
+  cancelado: { label: 'Cancelado', fg: '#0F172A', bg: '#D1D5DB', icon: 'ban-outline' },
+  vencido: { label: 'Vencido', fg: '#C2410C', bg: '#FFF0E6', icon: 'alert-circle-outline' },
   completado: { label: 'Completado', fg: '#1D4ED8', bg: '#DBEAFE', icon: 'flag-outline' },
 };
 
@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F6F7F9',
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 10,

@@ -24,15 +24,15 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-prod
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#C44B0A',
-  primaryLight: '#FFEDD5',
+  primary: '#C44200',
+  primaryLight: '#FFF0E6',
   accent: '#EF4444',
-  background: '#F9FAFB',
+  background: '#F6F7F9',
   surface: '#FFFFFF',
   textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
   success: '#047857',
   warning: '#F59E0B',
   white: '#FFFFFF',

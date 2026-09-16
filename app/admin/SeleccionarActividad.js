@@ -170,7 +170,7 @@ export default function SeleccionarActividadScreen() {
     <TouchableOpacity style={styles.itemContainer} onPress={() => handleSelectActividad(item)}>
       <Text style={styles.itemText}>{item.nombreactividad}</Text>
       {/* Podrías mostrar más info aquí, como item.responsable o fechas */}
-      <Ionicons name="chevron-forward-outline" size={20} color="#C44B0A" />
+      <Ionicons name="chevron-forward-outline" size={20} color="#C44200" />
     </TouchableOpacity>
   );
 
@@ -180,7 +180,7 @@ export default function SeleccionarActividadScreen() {
       <ScrollView style={styles.formViewContainer} contentContainerStyle={styles.formContentContainer} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: 'Crear Nueva Actividad' }} />
         <TouchableOpacity onPress={() => setShowCreateForm(false)} style={styles.cancelButton}>
-          <Ionicons name="arrow-back-outline" size={24} color="#C44B0A" />
+          <Ionicons name="arrow-back-outline" size={24} color="#C44200" />
           <Text style={styles.cancelButtonText}>Volver a la Lista</Text>
         </TouchableOpacity>
 
@@ -208,7 +208,7 @@ export default function SeleccionarActividadScreen() {
 
         <Text style={styles.label}>Fecha de Inicio</Text>
         <TouchableOpacity onPress={() => setShowDatePickerInicio(true)} style={styles.datePickerButton}>
-          <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
+          <Ionicons name="calendar-outline" size={20} color="#C44200" style={styles.inputIcon} />
           <Text style={styles.datePickerText}>
             {fechaInicioNuevaActividad.toLocaleDateString()}
           </Text>
@@ -224,7 +224,7 @@ export default function SeleccionarActividadScreen() {
 
         <Text style={styles.label}>Fecha de Fin</Text>
         <TouchableOpacity onPress={() => setShowDatePickerFin(true)} style={styles.datePickerButton}>
-          <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
+          <Ionicons name="calendar-outline" size={20} color="#C44200" style={styles.inputIcon} />
           <Text style={styles.datePickerText}>
             {fechaFinNuevaActividad.toLocaleDateString()}
           </Text>
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 25,
     bottom: 25,
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     // marginRight: 8,
   },
   createButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     marginLeft: 6,
-    color: '#C44B0A',
+    color: '#C44200',
     fontSize: 16,
     fontWeight: '500',
   }

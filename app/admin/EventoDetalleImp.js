@@ -55,16 +55,16 @@ const deleteTokenAsync = async () => {
 };
 
 const COLORS = {
-  accent: '#0052A0',
-  secondary: '#2980b9',
-  primary: '#C44B0A',
-  background: '#f8fafc',
+  accent: '#C44200',
+  secondary: '#0F172A',
+  primary: '#C44200',
+  background: '#F6F7F9',
   surface: '#ffffff',
   success: '#27ae60',
   warning: '#f39c12',
   info: '#3498db',
   purple: '#9b59b6',
-  logout: '#e74c3c',
+  logout: '#EF4444',
   white: '#fff',
   grayLight: '#ecf0f1',
   grayText: '#64748b',
@@ -106,8 +106,8 @@ const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', fg: '#B45309', bg: '#FEF3C7', icon: 'time-outline' },
   aprobado: { label: 'Aprobado', fg: '#15803D', bg: '#DCFCE7', icon: 'checkmark-circle-outline' },
   rechazado: { label: 'Rechazado', fg: '#B91C1C', bg: '#FEE2E2', icon: 'close-circle-outline' },
-  cancelado: { label: 'Cancelado', fg: '#4B5563', bg: '#F3F4F6', icon: 'ban-outline' },
-  vencido: { label: 'Vencido', fg: '#C2410C', bg: '#FFEDD5', icon: 'alert-circle-outline' },
+  cancelado: { label: 'Cancelado', fg: '#0F172A', bg: '#D1D5DB', icon: 'ban-outline' },
+  vencido: { label: 'Vencido', fg: '#C2410C', bg: '#FFF0E6', icon: 'alert-circle-outline' },
   completado: { label: 'Completado', fg: '#1D4ED8', bg: '#DBEAFE', icon: 'flag-outline' },
 };
 
@@ -478,9 +478,9 @@ const EventDetailScreen = () => {
       <style>
         @page{size:A4 portrait;margin:13mm 11mm}
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;background:#f3f4f6;color:#1f2937;font-size:12px;line-height:1.55}
+        body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;background:#D1D5DB;color:#1f2937;font-size:12px;line-height:1.55}
         .wrap{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)}
-        .cover{background:linear-gradient(135deg,#123314 0%,#2d5016 55%,#C44B0A 100%);color:#fff;padding:38px 36px;position:relative}
+        .cover{background:linear-gradient(135deg,#123314 0%,#2d5016 55%,#C44200 100%);color:#fff;padding:38px 36px;position:relative}
         .cover .uft-logo{display:flex;align-items:center;gap:14px;margin-bottom:16px}
         .cover .uft-monogram{width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800}
         .cover .uft-name{font-size:12.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
@@ -492,24 +492,24 @@ const EventDetailScreen = () => {
         .cover .accent-bar{position:absolute;left:0;right:0;bottom:0;height:5px;background:#fff}
         .content{padding:26px 32px 36px}
         .exec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
-        .exec-item{border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center}
-        .exec-label{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:4px}
+        .exec-item{border:1px solid #E6E9EF;border-radius:10px;padding:12px;text-align:center}
+        .exec-label{font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:4px}
         .exec-value{font-size:16px;font-weight:800;color:#111827}
         .section{margin-top:20px}
-        .section-title{font-size:14px;font-weight:800;color:#111827;text-transform:uppercase;border-left:4px solid #C44B0A;padding-left:10px;margin-bottom:10px;letter-spacing:.5px}
+        .section-title{font-size:14px;font-weight:800;color:#111827;text-transform:uppercase;border-left:4px solid #C44200;padding-left:10px;margin-bottom:10px;letter-spacing:.5px}
         .detail-row{margin-bottom:.2cm;padding:2px 0}
-        .label{font-weight:700;color:#2980b9}
+        .label{font-weight:700;color:#0F172A}
         ul{padding-left:1.1cm;margin:.15cm 0}
         li{margin-bottom:.25cm}
-        .positive{color:#16a34a;font-weight:700}
+        .positive{color:#047857;font-weight:700}
         .negative{color:#dc2626;font-weight:700}
         .budget{font-weight:800}
         .main-table{width:100%;border-collapse:collapse;margin-top:6px}
-        .main-table td{padding:6px 0;border-bottom:1px solid #e5e7eb;font-size:11.5px}
+        .main-table td{padding:6px 0;border-bottom:1px solid #E6E9EF;font-size:11.5px}
         .main-table .t-label{font-weight:700;width:180px}
         img{max-width:100%;border-radius:8px;margin:.2cm 0}
-        .footer{margin-top:26px;text-align:center;font-size:10.5px;color:#9ca3af;padding:12px 0 2px;border-top:1px solid #e5e7eb}
-        .footer strong{color:#6b7280}
+        .footer{margin-top:26px;text-align:center;font-size:10.5px;color:#94A3B8;padding:12px 0 2px;border-top:1px solid #E6E9EF}
+        .footer strong{color:#64748B}
         @media print{body{background:#fff}.wrap{box-shadow:none}}
       </style></head><body><div class="wrap">
 
@@ -1684,7 +1684,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F6F7F9',
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 10,

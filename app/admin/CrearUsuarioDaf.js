@@ -21,6 +21,23 @@ import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
+const TOKEN_KEY = 'adminAuthToken';
+const getTokenAsync = async () => {
+  if (Platform.OS === 'web') {
+    try {
+      return sessionStorage.getItem(TOKEN_KEY);
+    } catch (e) {
+      console.error("Error al acceder a sessionStorage en web:", e);
+      return null;
+    }
+  }
+  try {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch (e) {
+    console.error("Error al obtener token de SecureStore en nativo:", e);
+    return null;
+  }
+};
 const CrearUsuarioDaf = () => {
   const router = useRouter();
   const role = 'daf';
@@ -157,7 +174,14 @@ const CrearUsuarioDaf = () => {
       };
 
       console.log("Enviando datos:", newUserPayload);
-      const response = await axios.post(`${API_BASE_URL}/auth/register`, newUserPayload);
+      const token = await getTokenAsync();
+      if (!token) {
+        Alert.alert('Error de Autenticación', 'Token de administrador no disponible.');
+        return;
+      }
+      const response = await axios.post(`${API_BASE_URL}/users`, newUserPayload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       setFormData({
         username: '',
@@ -169,7 +193,7 @@ const CrearUsuarioDaf = () => {
         habilitado: true,
       });
       setCurrentStep(1);
-      router.replace('/Login');
+      router.back();
 
     } catch (error) {
       console.error("Error al crear usuario:", error);
@@ -387,7 +411,7 @@ const CrearUsuarioDaf = () => {
           options={{ 
             title: 'Nuevo Usuario DAF',
             headerStyle: {
-              backgroundColor: '#C44B0A',
+              backgroundColor: '#C44200',
             },
             headerTintColor: '#fff',
             headerTitleStyle: {
@@ -416,7 +440,7 @@ const CrearUsuarioDaf = () => {
                 onPress={prevStep}
                 disabled={isLoading}
               >
-                <Ionicons name="arrow-back" size={20} color="#C44B0A" />
+                <Ionicons name="arrow-back" size={20} color="#C44200" />
                 <Text style={styles.secondaryButtonText}>Anterior</Text>
               </TouchableOpacity>
             )}
@@ -453,11 +477,11 @@ const CrearUsuarioDaf = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
   },
   scrollContainer: {
     paddingHorizontal: 20,
@@ -485,7 +509,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressCircleActive: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
   },
   progressNumber: {
     fontSize: 16,
@@ -502,7 +526,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   progressLineActive: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
   },
   stepTitle: {
     fontSize: 24,
@@ -527,7 +551,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   required: {
-    color: '#e74c3c',
+    color: '#EF4444',
   },
   inputWrapper: {
     position: 'relative',
@@ -564,11 +588,11 @@ const styles = StyleSheet.create({
     top: 17,
   },
   inputError: {
-    borderColor: '#e74c3c',
+    borderColor: '#EF4444',
     borderWidth: 2,
   },
   errorText: {
-    color: '#e74c3c',
+    color: '#EF4444',
     fontSize: 12,
     marginTop: 5,
     marginLeft: 5,
@@ -588,7 +612,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   strengthBarWeak: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#EF4444',
   },
   strengthBarMedium: {
     backgroundColor: '#f39c12',
@@ -629,12 +653,12 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   roleInfoContainer: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 8,
     padding: 12,
     marginTop: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#C44B0A',
+    borderLeftColor: '#C44200',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -643,7 +667,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   primaryButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 12,
@@ -651,7 +675,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     flex: 1,
-    shadowColor: '#C44B0A',
+    shadowColor: '#C44200',
     shadowOffset: {
       width: 0,
       height: 4,
@@ -670,7 +694,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flex: 1,
     borderWidth: 2,
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
   },
   fullWidthButton: {
     flex: 1,
@@ -686,7 +710,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   secondaryButtonText: {
-    color: '#C44B0A',
+    color: '#C44200',
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,

@@ -134,7 +134,7 @@ const ProyectoDetalleModal = ({ visible, proyecto, onClose, onAprobar, onRechaza
                 <Text style={styles.detalleSectionTitle}>Balance Económico</Text>
                 <Text style={[
                   styles.detalleBalance,
-                  { color: proyecto.balance_economico >= 0 ? '#27ae60' : '#e74c3c' }
+                  { color: proyecto.balance_economico >= 0 ? '#27ae60' : '#EF4444' }
                 ]}>
                   Bs {proyecto.balance_economico?.toFixed(2)}
                 </Text>
@@ -257,7 +257,7 @@ const NotificationsModal = ({ visible, onClose, notifications }) => (
           ) : (
             notifications.map((notification, index) => (
               <View key={index} style={styles.notificationItem}>
-                <Ionicons name="calendar" size={20} color="#C44B0A" style={styles.notificationIcon} />
+                <Ionicons name="calendar" size={20} color="#C44200" style={styles.notificationIcon} />
                 <View style={styles.notificationContent}>
                   <Text style={styles.notificationText}>{notification.message}</Text>
                   <Text style={styles.notificationTime}>
@@ -499,7 +499,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
             cy={centerY}
             r={radius}
             fill="white"
-            stroke="#C44B0A"
+            stroke="#C44200"
             strokeWidth={2}
           />
           {Array.from({ length: 12 }, (_, i) => {
@@ -516,7 +516,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
               <Line
                 key={`hour-mark-${i}`}
                 x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke={isMainHour ? "#C44B0A" : "#cbd5e0"}
+                stroke={isMainHour ? "#C44200" : "#cbd5e0"}
                 strokeWidth={isMainHour ? 3 : 2}
                 strokeLinecap="round"
               />
@@ -537,7 +537,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
                 alignmentBaseline="central"
                 fontSize={isCurrentHour ? 18 : 16}
                 fontWeight={isCurrentHour ? "700" : "600"}
-                fill={isCurrentHour ? "#C44B0A" : "#2d3748"}
+                fill={isCurrentHour ? "#C44200" : "#2d3748"}
               >
                 {hour}
               </SvgText>
@@ -546,7 +546,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
           <Line
             x1={centerX} y1={centerY}
             x2={minuteHandX} y2={minuteHandY}
-            stroke="#C44B0A"
+            stroke="#C44200"
             strokeWidth={dragType === 'minute' ? 4 : 3}
             strokeLinecap="round"
           />
@@ -561,7 +561,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
             cx={centerX}
             cy={centerY}
             r={8}
-            fill="#C44B0A"
+            fill="#C44200"
             stroke="#ffffff"
             strokeWidth={3}
           />
@@ -570,7 +570,7 @@ const InteractiveClockPicker = ({ value, onChange }) => {
 
       <View style={styles.instructionsContainer}>
         <View style={styles.instructionRow}>
-          <Ionicons name="time-outline" size={16} color="#C44B0A" />
+          <Ionicons name="time-outline" size={16} color="#C44200" />
           <Text style={styles.instructionText}>
             Toca la hora naranja para escribir directamente
           </Text>
@@ -649,7 +649,7 @@ const TablaPresupuesto = ({
           />
           <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
           <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={[styles.deleteButtonSmall, { flex: 0.5 }]} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Eliminar fila" accessibilityRole="button">
-            <Ionicons name="close-circle" size={20} color="#e74c3c" />
+            <Ionicons name="close-circle" size={20} color="#EF4444" />
           </TouchableOpacity>
         </View>
       );
@@ -723,7 +723,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
           accessibilityLabel="Mes anterior"
           accessibilityRole="button"
         >
-          <Ionicons name="chevron-back" size={24} color="#C44B0A" />
+          <Ionicons name="chevron-back" size={24} color="#C44200" />
         </TouchableOpacity>
         <Text style={styles.monthYearText}>
           {dayjs(fechaHoraSeleccionada).format('MMMM YYYY').toUpperCase()}
@@ -735,7 +735,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
           accessibilityLabel="Mes siguiente"
           accessibilityRole="button"
         >
-          <Ionicons name="chevron-forward" size={24} color="#C44B0A" />
+          <Ionicons name="chevron-forward" size={24} color="#C44200" />
         </TouchableOpacity>
       </View>
       <View style={styles.weekDaysHeader}>
@@ -782,7 +782,7 @@ const GoogleStyleCalendarView = ({ fechaHoraSeleccionada, setFechaHoraSelecciona
                   <View style={styles.eventIndicators}>
                     <View style={[
                       styles.eventDot,
-                      { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44B0A' }
+                      { backgroundColor: dayEvents.length > 1 ? '#ff6b6b' : '#C44200' }
                     ]} />
                     {dayEvents.length > 1 && (
                       <Text style={styles.eventCount}>+{dayEvents.length - 1}</Text>
@@ -879,7 +879,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
   return (
     <View style={styles.eventosDelDiaContainer}>
       <View style={styles.eventosDelDiaHeader}>
-        <Ionicons name="calendar-outline" size={20} color="#C44B0A" />
+        <Ionicons name="calendar-outline" size={20} color="#C44200" />
         <Text style={styles.eventosDelDiaTitle}>
           Eventos en {dayjs(fechaHoraSeleccionada).format('DD/MM/YYYY')}
         </Text>
@@ -907,7 +907,7 @@ const EventosDelDiaMejorado = ({ eventosDelDia, fechaHoraSeleccionada, verificar
                   <Ionicons 
                     name="time-outline" 
                     size={16} 
-                    color={isConflict ? "#ff6b6b" : "#C44B0A"} 
+                    color={isConflict ? "#ff6b6b" : "#C44200"} 
                   />
                   <Text style={[
                     styles.eventoTime,
@@ -1541,7 +1541,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
           <Text style={styles.label}>Tipo de Evento (puede seleccionar más de un tipo)</Text>
           {TIPOS_DE_EVENTO.map((item) => (
             <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleTipoEventoChange(item.id)}>
-              <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44B0A" : "#888"} />
+              <Ionicons name={tiposSeleccionados[item.id] ? "checkbox" : "square-outline"} size={24} color={tiposSeleccionados[item.id] ? "#C44200" : "#888"} />
               <Text style={styles.checkboxLabel}>{item.label}</Text>
             </TouchableOpacity>
           ))}
@@ -1564,12 +1564,12 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
             { key: 'fidelizacion', label: 'Fidelización' }
           ].map((item) => (
             <TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}>
-              <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} />
+              <Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44200" : "#888"} />
               <Text style={styles.checkboxLabel}>{item.label}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, 'otro')}>
-            <Ionicons name={objetivos.otro ? "checkbox" : "square-outline"} size={24} color={objetivos.otro ? "#C44B0A" : "#888"} />
+            <Ionicons name={objetivos.otro ? "checkbox" : "square-outline"} size={24} color={objetivos.otro ? "#C44200" : "#888"} />
             <Text style={styles.checkboxLabel}>Otro</Text>
           </TouchableOpacity>
           {errors.objetivos && <Text style={styles.errorText}>{errors.objetivos}</Text>}
@@ -1608,7 +1608,7 @@ const ConfirmModal = ({ showConfirmModal, setShowConfirmModal, handleSubmitConfi
             const stateKey = item.label.charAt(0).toLowerCase() + item.label.slice(1).replace(' ', '');
             return (
               <TouchableOpacity key={item.id} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setSegmentoObjetivo, stateKey)}>
-                <Ionicons name={segmentoObjetivo[stateKey] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[stateKey] ? "#C44B0A" : "#888"} />
+                <Ionicons name={segmentoObjetivo[stateKey] ? "checkbox" : "square-outline"} size={24} color={segmentoObjetivo[stateKey] ? "#C44200" : "#888"} />
                 <Text style={styles.checkboxLabel}>{item.label}</Text>
               </TouchableOpacity>
             );
@@ -1802,7 +1802,7 @@ confirmModalContent: {
     textAlign: 'center',
   },
   confirmModalDetails: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
@@ -1836,12 +1836,12 @@ confirmModalContent: {
     justifyContent: 'center',
   },
   confirmModalButtonCancel: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   confirmModalButtonConfirm: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
   },
   confirmModalButtonTextCancel: {
     fontSize: 16,
@@ -1900,7 +1900,7 @@ confirmModalContent: {
   inputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F6F7F9',
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
@@ -1960,7 +1960,7 @@ confirmModalContent: {
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
-    backgroundColor: '#F8F9FA'
+    backgroundColor: '#F6F7F9'
   },
   objetivoPDIRow: {
     flexDirection: 'row',
@@ -2105,7 +2105,7 @@ confirmModalContent: {
     fontSize: 16
   },
   submitButton: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     padding: 15,
     borderRadius: 12,
     alignItems: 'center',
@@ -2125,7 +2125,7 @@ confirmModalContent: {
     paddingVertical: 10,
   },
   digitalDisplay: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 10,
@@ -2204,7 +2204,7 @@ confirmModalContent: {
     paddingVertical: 6,
   },
   periodButtonActive: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
   },
   periodText: {
     fontSize: 14,
@@ -2240,7 +2240,7 @@ confirmModalContent: {
   resourceInputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F6F7F9',
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
@@ -2284,7 +2284,7 @@ confirmModalContent: {
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0'
   },
@@ -2335,7 +2335,7 @@ confirmModalContent: {
     paddingHorizontal: 4
   },
   dayCellInactive: {
-    backgroundColor: '#f8f9fa'
+    backgroundColor: '#F6F7F9'
   },
   dayCellSelected: {
     backgroundColor: '#fff5f0'
@@ -2357,7 +2357,7 @@ confirmModalContent: {
     color: '#999'
   },
   dayNumberSelected: {
-    color: '#C44B0A',
+    color: '#C44200',
     fontWeight: 'bold'
   },
   dayNumberToday: {
@@ -2396,7 +2396,7 @@ confirmModalContent: {
   },
   eventPreviewMore: {
     fontSize: 8,
-    color: '#C44B0A',
+    color: '#C44200',
     fontWeight: 'bold',
     textAlign: 'center'
   },
@@ -2415,7 +2415,7 @@ confirmModalContent: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0'
   },
@@ -2427,7 +2427,7 @@ confirmModalContent: {
     flex: 1
   },
   eventCountBadge: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4
@@ -2471,7 +2471,7 @@ confirmModalContent: {
   eventoTime: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#C44B0A',
+    color: '#C44200',
     marginLeft: 4,
   },
   eventoTimeConflict: {
@@ -2514,7 +2514,7 @@ confirmModalContent: {
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
   },
   eventosDelDiaNote: {
     fontSize: 12,
@@ -2558,7 +2558,7 @@ confirmModalContent: {
     lineHeight: 20,
   },
   conflictEventCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F6F7F9',
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -2606,7 +2606,7 @@ confirmModalContent: {
     fontWeight: '600',
   },
   modalButtonPrimary: {
-    backgroundColor: '#C44B0A',
+    backgroundColor: '#C44200',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -2620,7 +2620,7 @@ confirmModalContent: {
   },
   selectedText: {
     fontSize: 14,
-    color: '#C44B0A',
+    color: '#C44200',
     marginTop: 5,
     marginLeft: 10,
   },

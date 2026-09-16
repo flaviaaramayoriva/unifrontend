@@ -612,7 +612,7 @@ const handleDirectLogin = async () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
-        <Stack.Screen options={{ title: 'Nuevo Estudiante', headerStyle: { backgroundColor: '#C44B0A' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }} />
+        <Stack.Screen options={{ title: 'Nuevo Estudiante', headerStyle: { backgroundColor: '#C44200' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }} />
         
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
@@ -627,7 +627,7 @@ const handleDirectLogin = async () => {
           <View style={styles.buttonContainer}>
             {currentStep > 1 && (
               <TouchableOpacity style={styles.secondaryButton} onPress={prevStep} disabled={isLoading}>
-                <Ionicons name="arrow-back" size={20} color="#C44B0A" />
+                <Ionicons name="arrow-back" size={20} color="#C44200" />
                 <Text style={styles.secondaryButtonText}>Anterior</Text>
               </TouchableOpacity>
             )}
@@ -671,8 +671,8 @@ const handleDirectLogin = async () => {
         router.back(); // vuelve al panel de donde viniste
       }}
     >
-      <Ionicons name="home-outline" size={20} color="#C44B0A" />
-      <Text style={[styles.successActionText, { color: '#C44B0A' }]}>Volver al menú</Text>
+      <Ionicons name="home-outline" size={20} color="#C44200" />
+      <Text style={[styles.successActionText, { color: '#C44200' }]}>Volver al menú</Text>
     </TouchableOpacity>
   </View>
 )}
@@ -684,36 +684,36 @@ const handleDirectLogin = async () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#C44B0A' },
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  safeArea: { flex: 1, backgroundColor: '#C44200' },
+  container: { flex: 1, backgroundColor: '#F6F7F9' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 40 },
   header: { paddingVertical: 20, alignItems: 'center' },
   carreraDropdown: { paddingVertical: 15, paddingHorizontal: 15, minHeight: 50, borderRadius: 12, borderWidth: 1, borderColor: '#ddd' },
   progressContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   progressStep: { flexDirection: 'row', alignItems: 'center' },
   progressCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' },
-  progressCircleActive: { backgroundColor: '#C44B0A' },
+  progressCircleActive: { backgroundColor: '#C44200' },
   progressNumber: { fontSize: 16, fontWeight: 'bold', color: '#999' },
   progressNumberActive: { color: '#fff' },
   progressLine: { width: 50, height: 2, backgroundColor: '#e0e0e0', marginHorizontal: 5 },
-  progressLineActive: { backgroundColor: '#C44B0A' },
+  progressLineActive: { backgroundColor: '#C44200' },
   stepTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center' },
   stepContainer: { paddingVertical: 20 },
   conditionalContainer: { marginTop: 25 },
   inputContainer: { marginBottom: 20 },
   label: { fontSize: 16, color: '#333', marginBottom: 8, fontWeight: '600' },
-  required: { color: '#e74c3c' },
+  required: { color: '#EF4444' },
   inputWrapper: { position: 'relative' },
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, paddingHorizontal: 15, paddingVertical: 15, fontSize: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3.84, elevation: 2 },
   inputWithIcon: { paddingLeft: 50 },
   inputIcon: { position: 'absolute', left: 15, top: 17, zIndex: 1 },
   passwordToggle: { position: 'absolute', right: 15, top: 17 },
-  inputError: { borderColor: '#e74c3c', borderWidth: 2 },
-  errorText: { color: '#e74c3c', fontSize: 12, marginTop: 5, marginLeft: 5 },
+  inputError: { borderColor: '#EF4444', borderWidth: 2 },
+  errorText: { color: '#EF4444', fontSize: 12, marginTop: 5, marginLeft: 5 },
   passwordStrengthContainer: { marginTop: 10 },
   passwordStrength: { flexDirection: 'row', marginBottom: 5 },
   strengthBar: { height: 4, flex: 1, backgroundColor: '#e0e0e0', marginRight: 5, borderRadius: 2 },
-  strengthBarWeak: { backgroundColor: '#e74c3c' },
+  strengthBarWeak: { backgroundColor: '#EF4444' },
   strengthBarMedium: { backgroundColor: '#f39c12' },
   strengthBarStrong: { backgroundColor: '#27ae60' },
   passwordHint: { fontSize: 12, color: '#666', fontStyle: 'italic' },
@@ -726,16 +726,16 @@ const styles = StyleSheet.create({
   roleBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2ecc71', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginBottom: 8 },
   roleBadgeText: { color: '#fff', fontSize: 16, fontWeight: '600', marginLeft: 8 },
   roleInfoText: { fontSize: 14, color: '#27ae60', textAlign: 'center', marginTop: 5 },
-  roleInfoContainer: { backgroundColor: '#f8f9fa', borderRadius: 8, padding: 12, marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#C44B0A' },
+  roleInfoContainer: { backgroundColor: '#F6F7F9', borderRadius: 8, padding: 12, marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#C44200' },
   autoSelectionBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e8f8f5', padding: 10, borderRadius: 8, marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#27ae60' },
   autoSelectionText: { fontSize: 14, color: '#27ae60', marginLeft: 8, fontWeight: '500' },
   buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 30, gap: 15 },
-  primaryButton: { backgroundColor: '#C44B0A', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', flex: 1, shadowColor: '#C44B0A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 8 },
-  secondaryButton: { backgroundColor: '#fff', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', flex: 1, borderWidth: 2, borderColor: '#C44B0A' },
+  primaryButton: { backgroundColor: '#C44200', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', flex: 1, shadowColor: '#C44200', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 8 },
+  secondaryButton: { backgroundColor: '#fff', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', flex: 1, borderWidth: 2, borderColor: '#C44200' },
   fullWidthButton: { flex: 1 },
   buttonDisabled: { backgroundColor: '#f9bda3', shadowOpacity: 0.1 },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginRight: 8 },
-  secondaryButtonText: { color: '#C44B0A', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+  secondaryButtonText: { color: '#C44200', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
   toastContainer: { position: 'absolute', bottom: 60, left: 0, right: 0, alignItems: 'center', zIndex: 9999, paddingHorizontal: 20 },
   toastContent: { backgroundColor: '#27ae60', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 8, minWidth: 280 },
   toastText: { color: '#fff', fontSize: 16, fontWeight: '600', marginLeft: 12, textAlign: 'center' },
@@ -767,7 +767,7 @@ successActionButton: {
 successActionSecondary: {
   backgroundColor: '#fff',
   borderWidth: 2,
-  borderColor: '#C44B0A',
+  borderColor: '#C44200',
 },
 successActionText: {
   color: '#fff',

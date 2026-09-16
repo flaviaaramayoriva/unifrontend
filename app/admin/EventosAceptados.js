@@ -79,7 +79,7 @@ const EventosAceptados = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF8F5',
+    backgroundColor: '#F6F7F9',
     padding: 16,
   },
   center: {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#FF6B35',
+    color: '#C44200',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B35',
+    borderLeftColor: '#C44200',
   },
   cardTitle: {
     fontWeight: 'bold',

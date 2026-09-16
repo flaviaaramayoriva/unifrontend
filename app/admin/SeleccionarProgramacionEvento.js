@@ -25,9 +25,9 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-prod
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#C44B0A',
-  primaryLight: '#FFEDD5',
-  success: '#16A34A',
+  primary: '#C44200',
+  primaryLight: '#FFF0E6',
+  success: '#047857',
   successLight: '#E8F5E9',
   warning: '#F59E0B',
   info: '#3B82F6',
@@ -36,7 +36,7 @@ const COLORS = {
   background: '#F6F7F9',
   surface: '#FFFFFF',
   grayLight: '#E0E0E0',
-  grayMedium: '#9CA3AF',
+  grayMedium: '#94A3B8',
   grayText: '#64748B',
   darkText: '#0F172A',
   border: '#E6E9EF',
@@ -92,8 +92,8 @@ const getEventFaculty = (event) => event.faculty || event.facultad || 'Sin facul
 
 const getFacultyColor = (facultyName) => {
   const colors = [
-    '#C44B0A', '#9C27B0', '#2563EB', '#0D9488', '#DC2626',
-    '#7C3AED', '#EA580C', '#0284C7', '#16A34A', '#DB2777'
+    '#C44200', '#9C27B0', '#2563EB', '#0D9488', '#DC2626',
+    '#7C3AED', '#EA580C', '#0284C7', '#047857', '#DB2777'
   ];
   const hash = facultyName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];

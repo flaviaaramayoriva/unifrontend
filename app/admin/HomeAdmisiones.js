@@ -94,7 +94,7 @@ const HomeAdmisiones = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0052A0" />
+      <StatusBar barStyle="light-content" backgroundColor="#C44200" />
       
       <View style={styles.headerContainer}>
         <Image

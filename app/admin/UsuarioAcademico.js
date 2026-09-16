@@ -84,10 +84,10 @@ const getIniciales = (user) => {
 };
 
 const COLORS = {
-  primary: '#C44B0A',
-  primaryLight: '#FFEDD5',
+  primary: '#C44200',
+  primaryLight: '#FFF0E6',
   accent: '#EF4444',
-  success: '#16A34A',
+  success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
   background: '#F6F7F9',
@@ -106,7 +106,7 @@ const ROLE_META = {
   user:     { icon: 'person-outline',            color: '#3B82F6' },
   daf:      { icon: 'people-outline',            color: '#F59E0B' },
   student:  { icon: 'school-outline',            color: '#8B5CF6' },
-  academico:{ icon: 'book-outline',              color: '#C44B0A' },
+  academico:{ icon: 'book-outline',              color: '#C44200' },
   sin_rol:  { icon: 'help-circle-outline',       color: '#94A3B8' },
 };
 

@@ -60,7 +60,7 @@ const CrearUsuarioA = () => {
   const [showSuccessActions, setShowSuccessActions] = useState(false);
   
   const [items] = useState([ 
-    { label: 'Administrador', value: 'admin', icon: () => <Ionicons name="shield-checkmark" size={20} color="#e74c3c" /> },
+    { label: 'Administrador', value: 'admin', icon: () => <Ionicons name="shield-checkmark" size={20} color="#EF4444" /> },
     { label: 'Estudiante', value: 'student', icon: () => <Ionicons name="person" size={20} color="#2ecc71" /> },
     { label: 'Director de Carrera', value: 'academico', icon: () => <Ionicons name="person-circle" size={20} color="#8e44ad" /> },
     { label: 'DAF', value: 'daf', icon: () => <Ionicons name="calculator" size={20} color="#9b59b6" /> },
@@ -765,7 +765,7 @@ const CrearUsuarioA = () => {
         <Stack.Screen 
           options={{ 
             title: role === 'student' ? 'Nuevo Estudiante' : 'Nuevo Usuario',
-            headerStyle: { backgroundColor: '#C44B0A' },
+            headerStyle: { backgroundColor: '#C44200' },
             headerTintColor: '#fff',
             headerTitleStyle: { fontWeight: 'bold' },
           }} 
@@ -792,7 +792,7 @@ const CrearUsuarioA = () => {
                 onPress={prevStep}
                 disabled={isLoading}
               >
-                <Ionicons name="arrow-back" size={20} color="#C44B0A" />
+                <Ionicons name="arrow-back" size={20} color="#C44200" />
                 <Text style={styles.secondaryButtonText}>Anterior</Text>
               </TouchableOpacity>
             )}
@@ -844,8 +844,8 @@ const CrearUsuarioA = () => {
         router.back();
       }}
     >
-      <Ionicons name="home-outline" size={20} color="#C44B0A" />
-      <Text style={[styles.successActionText, { color: '#C44B0A' }]}>Volver al panel</Text>
+      <Ionicons name="home-outline" size={20} color="#C44200" />
+      <Text style={[styles.successActionText, { color: '#C44200' }]}>Volver al panel</Text>
     </TouchableOpacity>
   </View>
 )}
@@ -855,8 +855,8 @@ const CrearUsuarioA = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#C44B0A' },
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  safeArea: { flex: 1, backgroundColor: '#C44200' },
+  container: { flex: 1, backgroundColor: '#F6F7F9' },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 150 },
   header: { paddingVertical: 20, alignItems: 'center' },
   progressContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
@@ -865,17 +865,17 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center',
   },
-  progressCircleActive: { backgroundColor: '#C44B0A' },
+  progressCircleActive: { backgroundColor: '#C44200' },
   progressNumber: { fontSize: 16, fontWeight: 'bold', color: '#999' },
   progressNumberActive: { color: '#fff' },
   progressLine: { width: 50, height: 2, backgroundColor: '#e0e0e0', marginHorizontal: 5 },
-  progressLineActive: { backgroundColor: '#C44B0A' },
+  progressLineActive: { backgroundColor: '#C44200' },
   stepTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center' },
   stepContainer: { paddingVertical: 20, paddingBottom: 200 },
   conditionalContainer: { marginTop: 20 },
   inputContainer: { marginBottom: 20 },
   label: { fontSize: 16, color: '#333', marginBottom: 8, fontWeight: '600' },
-  required: { color: '#e74c3c' },
+  required: { color: '#EF4444' },
   inputWrapper: { position: 'relative' },
   input: {
     backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd',
@@ -886,12 +886,12 @@ const styles = StyleSheet.create({
   inputWithIcon: { paddingLeft: 50 },
   inputIcon: { position: 'absolute', left: 15, top: 17, zIndex: 1 },
   passwordToggle: { position: 'absolute', right: 15, top: 17 },
-  inputError: { borderColor: '#e74c3c', borderWidth: 2 },
-  errorText: { color: '#e74c3c', fontSize: 12, marginTop: 5, marginLeft: 5 },
+  inputError: { borderColor: '#EF4444', borderWidth: 2 },
+  errorText: { color: '#EF4444', fontSize: 12, marginTop: 5, marginLeft: 5 },
   passwordStrengthContainer: { marginTop: 10 },
   passwordStrength: { flexDirection: 'row', marginBottom: 5 },
   strengthBar: { height: 4, flex: 1, backgroundColor: '#e0e0e0', marginRight: 5, borderRadius: 2 },
-  strengthBarWeak: { backgroundColor: '#e74c3c' },
+  strengthBarWeak: { backgroundColor: '#EF4444' },
   strengthBarMedium: { backgroundColor: '#f39c12' },
   strengthBarStrong: { backgroundColor: '#27ae60' },
   passwordHint: { fontSize: 12, color: '#666', fontStyle: 'italic' },
@@ -905,8 +905,8 @@ const styles = StyleSheet.create({
   dropdownText: { fontSize: 16, color: '#333' },
   dropdownPlaceholder: { fontSize: 16, color: '#999' },
   roleInfoContainer: {
-    backgroundColor: '#f8f9fa', borderRadius: 8, padding: 12,
-    marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#C44B0A',
+    backgroundColor: '#F6F7F9', borderRadius: 8, padding: 12,
+    marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#C44200',
   },
   roleInfoText: { fontSize: 14, color: '#666' },
   roleBadgeContainer: {
@@ -938,20 +938,20 @@ const styles = StyleSheet.create({
     paddingTop: 30, paddingBottom: 20, gap: 15,
   },
   primaryButton: {
-    backgroundColor: '#C44B0A', paddingVertical: 15, paddingHorizontal: 30,
+    backgroundColor: '#C44200', paddingVertical: 15, paddingHorizontal: 30,
     borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'row', flex: 1, shadowColor: '#C44B0A',
+    flexDirection: 'row', flex: 1, shadowColor: '#C44200',
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 8,
   },
   secondaryButton: {
     backgroundColor: '#fff', paddingVertical: 15, paddingHorizontal: 30,
     borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'row', flex: 1, borderWidth: 2, borderColor: '#C44B0A',
+    flexDirection: 'row', flex: 1, borderWidth: 2, borderColor: '#C44200',
   },
   fullWidthButton: { flex: 1 },
   buttonDisabled: { backgroundColor: '#f9bda3', shadowOpacity: 0.1 },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginRight: 8 },
-  secondaryButtonText: { color: '#C44B0A', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+  secondaryButtonText: { color: '#C44200', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
   toastContainer: {
     position: 'absolute', bottom: 60, left: 0, right: 0,
     alignItems: 'center', zIndex: 9999, paddingHorizontal: 20,
@@ -991,7 +991,7 @@ const styles = StyleSheet.create({
 successActionSecondary: {
   backgroundColor: '#fff',
   borderWidth: 2,
-  borderColor: '#C44B0A',
+  borderColor: '#C44200',
 },
 successActionText: {
   color: '#fff',

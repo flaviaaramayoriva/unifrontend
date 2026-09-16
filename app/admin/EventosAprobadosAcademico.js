@@ -32,11 +32,11 @@ const TOKEN_KEY = 'adminAuthToken';
 
 // Nueva paleta de colores para diferenciar de "Pendientes"
 const COLORS = {
-  primary: '#2E7D32',       // Verde oscuro para aprobados
-  accent: '#4CAF50',        // Verde principal
-  background: '#F1F8E9',    // Fondo verde muy claro
+  primary: '#C44200',       // Verde oscuro para aprobados
+  accent: '#047857',        // Verde principal
+  background: '#F6F7F9',    // Fondo verde muy claro
   surface: '#ffffff',
-  success: '#2E7D32',
+  success: '#C44200',
   warning: '#f39c12',
   info: '#3498db',
   purple: '#9b59b6',

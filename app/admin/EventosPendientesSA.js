@@ -31,10 +31,10 @@ const TOKEN_KEY = 'adminAuthToken';
 
 // Paleta de colores actualizada con tu naranja principal
 const COLORS = {
-  accent: '#FF6B35',        // Tu color naranja principal
-  secondary: '#F7931E',     // Naranja secundario
-  primary: '#FF6B35',       // Tu color como primario
-  background: '#FFF8F5',    // Fondo cálido naranja muy claro
+  accent: '#C44200',        // Tu color naranja principal
+  secondary: '#C44200',     // Naranja secundario
+  primary: '#C44200',       // Tu color como primario
+  background: '#F6F7F9',    // Fondo cálido naranja muy claro
   surface: '#ffffff',
   success: '#27ae60',
   warning: '#f39c12',

@@ -20,12 +20,12 @@ import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLORS = {
-  primary: '#C44B0A',
-  background: '#F9FAFB',
+  primary: '#C44200',
+  background: '#F6F7F9',
   surface: '#FFFFFF',
   textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
+  textSecondary: '#64748B',
+  border: '#E6E9EF',
   danger: '#EF4444',
   success: '#047857',
 };
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6F7F9',
     borderRadius: 10,
     padding: 14,
     marginBottom: 10,

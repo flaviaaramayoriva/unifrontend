@@ -137,7 +137,7 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
-const SectionHeader = ({ icon, title, color = '#C44B0A' }) => (
+const SectionHeader = ({ icon, title, color = '#C44200' }) => (
   <View style={styles.sectionHeaderRow}>
     <Ionicons name={icon} size={20} color={color} />
     <Text style={styles.sectionTitle}>{title}</Text>
@@ -244,7 +244,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
                 }}
                 style={styles.datePickerButton}
               >
-                <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
+                <Ionicons name="calendar-outline" size={20} color="#C44200" style={styles.inputIcon} />
                 <Text style={styles.datePickerText}>{formatToISODate(actividad.fechaInicio).split('-').reverse().join('/')}</Text>
               </TouchableOpacity>
               {actividad.showDatePickerInicio && (
@@ -282,7 +282,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
                 }}
                 style={styles.datePickerButton}
               >
-                <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
+                <Ionicons name="calendar-outline" size={20} color="#C44200" style={styles.inputIcon} />
                 <Text style={styles.datePickerText}>{formatToISODate(actividad.fechaFin).split('-').reverse().join('/')}</Text>
               </TouchableOpacity>
               {actividad.showDatePickerFin && (
@@ -299,7 +299,7 @@ const SeccionActividades = ({ titulo, actividades, setActividades, handleActivid
         </View>
       ))}
       <TouchableOpacity onPress={agregarActividad} style={styles.addButton}>
-        <Ionicons name="add-circle" size={26} color="#C44B0A" />
+        <Ionicons name="add-circle" size={26} color="#C44200" />
         <Text style={styles.addButtonText}>Añadir Actividad</Text>
       </TouchableOpacity>
     </View>
@@ -348,7 +348,7 @@ const programacionEvento = () => {
   const calendarMarkedDates = {
     [formatToISODate(fechaHoraSeleccionada)]: {
       selected: true,
-      selectedColor: '#C44B0A',
+      selectedColor: '#C44200',
       selectedTextColor: '#fff',
     },
   };
@@ -582,7 +582,7 @@ const programacionEvento = () => {
   if (isEditing && isLoadingEventos) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#C44B0A" />
+        <ActivityIndicator size="large" color="#C44200" />
         <Text style={{ marginTop: 10, color: '#555' }}>Cargando evento...</Text>
       </View>
     );
@@ -675,7 +675,7 @@ const programacionEvento = () => {
           <Text style={styles.pageHeaderSubtitle}>{isEditing ? 'Organiza actividades, servicios y ambientes' : 'Completa los datos de programación'}</Text>
         </View>
         <View style={styles.pageHeaderBadge}>
-          <Ionicons name="calendar-clear-outline" size={22} color="#C44B0A" />
+          <Ionicons name="calendar-clear-outline" size={22} color="#C44200" />
         </View>
       </View>
 
@@ -692,12 +692,12 @@ const programacionEvento = () => {
 
           <View style={styles.eventSummaryCard}>
             <View style={styles.eventSummaryHeader}>
-              <Ionicons name="information-circle" size={22} color="#C44B0A" />
+              <Ionicons name="information-circle" size={22} color="#C44200" />
               <Text style={styles.eventSummaryHeaderText}>Información Principal</Text>
             </View>
             <View style={styles.infoRow}>
               <View style={styles.infoIconBadge}>
-                <Ionicons name="pricetag-outline" size={17} color="#C44B0A" />
+                <Ionicons name="pricetag-outline" size={17} color="#C44200" />
               </View>
               <View style={styles.infoTextWrap}>
                 <Text style={styles.infoLabel}>Nombre del Evento</Text>
@@ -706,7 +706,7 @@ const programacionEvento = () => {
             </View>
             <View style={styles.infoRow}>
               <View style={styles.infoIconBadge}>
-                <Ionicons name="location-outline" size={17} color="#C44B0A" />
+                <Ionicons name="location-outline" size={17} color="#C44200" />
               </View>
               <View style={styles.infoTextWrap}>
                 <Text style={styles.infoLabel}>Lugar del Evento</Text>
@@ -715,7 +715,7 @@ const programacionEvento = () => {
             </View>
             <View style={styles.infoRow}>
               <View style={styles.infoIconBadge}>
-                <Ionicons name="calendar-clear-outline" size={17} color="#C44B0A" />
+                <Ionicons name="calendar-clear-outline" size={17} color="#C44200" />
               </View>
               <View style={styles.infoTextWrap}>
                 <Text style={styles.infoLabel}>Fecha</Text>
@@ -725,7 +725,7 @@ const programacionEvento = () => {
             {responsable ? (
               <View style={[styles.infoRow, { borderBottomWidth: 0, paddingBottom: 4 }]}>
                 <View style={styles.infoIconBadge}>
-                  <Ionicons name="person-outline" size={17} color="#C44B0A" />
+                  <Ionicons name="person-outline" size={17} color="#C44200" />
                 </View>
                 <View style={styles.infoTextWrap}>
                   <Text style={styles.infoLabel}>Responsable</Text>
@@ -736,16 +736,16 @@ const programacionEvento = () => {
           </View>
 
         <View style={styles.calendarCard}>
-          <SectionHeader icon="calendar-outline" title="Fecha y Hora del Evento" color="#C44B0A" />
+          <SectionHeader icon="calendar-outline" title="Fecha y Hora del Evento" color="#C44200" />
           <Calendar
             current={formatToISODate(fechaHoraSeleccionada)}
             markedDates={calendarMarkedDates}
             firstDay={1}
             disableMonthChange
             theme={{
-              todayTextColor: '#C44B0A',
-              arrowColor: '#C44B0A',
-              selectedDayBackgroundColor: '#C44B0A',
+              todayTextColor: '#C44200',
+              arrowColor: '#C44200',
+              selectedDayBackgroundColor: '#C44200',
               selectedDayTextColor: '#ffffff',
               textDayFontSize: 15,
               textMonthFontSize: 17,
@@ -757,7 +757,7 @@ const programacionEvento = () => {
             style={{ marginBottom: 16, borderRadius: 12 }}
           />
           <View style={styles.timeDisplayRow}>
-            <Ionicons name="time-outline" size={20} color="#C44B0A" />
+            <Ionicons name="time-outline" size={20} color="#C44200" />
             <Text style={styles.timeLabel}>Hora del evento:</Text>
             <Text style={styles.timeValue}>{formatToISOTime(fechaHoraSeleccionada)}</Text>
           </View>
@@ -790,7 +790,7 @@ const programacionEvento = () => {
 
         {/* Servicios */}
         <View style={styles.formSection}>
-          <SectionHeader icon="build-outline" title="Servicios Contratados" color="#2980b9" />
+          <SectionHeader icon="build-outline" title="Servicios Contratados" color="#0F172A" />
           {serviciosContratados.map((servicio, index) => (
             <View key={servicio.key} style={styles.servicioItemContainer}>
               <View style={styles.servicioItemHeader}>
@@ -843,7 +843,7 @@ const programacionEvento = () => {
                     onPress={() => actualizarServicio(index, 'showDatePickerInicio', true)}
                     style={styles.datePickerButton}
                   >
-                    <Ionicons name="calendar-outline" size={20} color="#C44B0A" style={styles.inputIcon} />
+                    <Ionicons name="calendar-outline" size={20} color="#C44200" style={styles.inputIcon} />
                     <Text style={styles.datePickerText}>
                       {formatToISODate(servicio.fechaInicio).split('-').reverse().join('/')}
                     </Text>
@@ -876,7 +876,7 @@ const programacionEvento = () => {
             </View>
           ))}
           <TouchableOpacity onPress={agregarServicio} style={styles.addButton}>
-            <Ionicons name="add-circle" size={26} color="#C44B0A" />
+            <Ionicons name="add-circle" size={26} color="#C44200" />
             <Text style={styles.addButtonText}>Añadir Servicio</Text>
           </TouchableOpacity>
         </View>
@@ -933,7 +933,7 @@ const programacionEvento = () => {
             </View>
           ))}
           <TouchableOpacity onPress={agregarAmbiente} style={styles.addButton}>
-            <Ionicons name="add-circle" size={26} color="#C44B0A" />
+            <Ionicons name="add-circle" size={26} color="#C44200" />
             <Text style={styles.addButtonText}>Añadir Ambiente</Text>
           </TouchableOpacity>
         </View>
@@ -943,7 +943,7 @@ const programacionEvento = () => {
           <SectionHeader icon="grid-outline" title="Layouts Disponibles" color="#9b59b6" />
           {cargandoLayouts ? (
             <View style={styles.centered}>
-              <ActivityIndicator size="small" color="#C44B0A" />
+              <ActivityIndicator size="small" color="#C44200" />
               <Text style={{ marginTop: 8, color: '#666' }}>Cargando layouts...</Text>
             </View>
           ) : layoutsDisponibles.length === 0 ? (
@@ -955,7 +955,7 @@ const programacionEvento = () => {
                 onPress={() => cargarLayouts(authToken)}
                 style={styles.retryButton}
               >
-                <Ionicons name="reload" size={20} color="#C44B0A" />
+                <Ionicons name="reload" size={20} color="#C44200" />
                 <Text style={styles.retryButtonText}>Reintentar carga</Text>
               </TouchableOpacity>
             </View>
@@ -983,7 +983,7 @@ const programacionEvento = () => {
                       </Text>
                       {isSelected && (
                         <View style={styles.selectedBadge}>
-                          <Ionicons name="checkmark-circle" size={18} color="#C44B0A" />
+                          <Ionicons name="checkmark-circle" size={18} color="#C44200" />
                           <Text style={styles.selectedBadgeText}>Seleccionado</Text>
                         </View>
                       )}
@@ -1020,8 +1020,8 @@ const programacionEvento = () => {
 };
 
 const styles = StyleSheet.create({
-  retryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 15, borderWidth: 1, borderColor: '#C44B0A', borderRadius: 8, alignSelf: 'center', marginTop: 10, backgroundColor: '#fff3ec' },
-  retryButtonText: { marginLeft: 8, color: '#C44B0A', fontSize: 16, fontWeight: '500' },
+  retryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 15, borderWidth: 1, borderColor: '#C44200', borderRadius: 8, alignSelf: 'center', marginTop: 10, backgroundColor: '#fff3ec' },
+  retryButtonText: { marginLeft: 8, color: '#C44200', fontSize: 16, fontWeight: '500' },
   screen: { flex: 1, backgroundColor: '#F4F7F9' },
   keyboardAvoidingContainer: { flex: 1 },
   scrollView: { flex: 1 },
@@ -1029,8 +1029,8 @@ const styles = StyleSheet.create({
   calendarCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4 },
   timeDisplayRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
   timeLabel: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginLeft: 10 },
-  timeValue: { fontSize: 16, fontWeight: '700', color: '#C44B0A', marginLeft: 8 },
-  pageHeader: { backgroundColor: '#C44B0A', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 18, paddingTop: Platform.OS === 'ios' ? 50 : 18, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }, android: { elevation: 6 } }) },
+  timeValue: { fontSize: 16, fontWeight: '700', color: '#C44200', marginLeft: 8 },
+  pageHeader: { backgroundColor: '#C44200', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 18, paddingTop: Platform.OS === 'ios' ? 50 : 18, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }, android: { elevation: 6 } }) },
   backBtn: { padding: 6, marginRight: 4 },
   pageHeaderText: { flex: 1, marginHorizontal: 8 },
   pageHeaderTitle: { color: '#fff', fontSize: 19, fontWeight: '700' },
@@ -1043,13 +1043,13 @@ const styles = StyleSheet.create({
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: '#333', marginLeft: 10, flex: 1 },
   label: { fontSize: 13, color: '#64748b', marginBottom: 6, fontWeight: '600', letterSpacing: 0.2, textTransform: 'uppercase' },
-  inputGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, marginBottom: 16 },
+  inputGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, marginBottom: 16 },
   inputIcon: { paddingHorizontal: 12, color: '#94A3B8' },
   input: { flex: 1, paddingVertical: Platform.OS === 'ios' ? 14 : 11, paddingRight: 15, fontSize: 15, color: '#1e293b' },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 10 },
   inputError: { borderColor: '#D32F2F', backgroundColor: '#FEF2F2' },
   errorText: { color: '#D32F2F', fontSize: 12, marginBottom: 10, marginLeft: 5, marginTop: -10 },
-  datePickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingVertical: Platform.OS === 'ios' ? 14 : 12, marginBottom: 16 },
+  datePickerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingVertical: Platform.OS === 'ios' ? 14 : 12, marginBottom: 16 },
   datePickerText: { fontSize: 15, color: '#1e293b', flex: 1, marginLeft: 5, fontWeight: '500' },
   webDateInput: {
     width: '100%',
@@ -1058,21 +1058,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F6F7F9',
     color: '#1e293b',
     fontSize: 15,
     marginBottom: 16,
     outlineStyle: 'none',
   },
-  button: { backgroundColor: '#C44B0A', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 10, flexDirection: 'row', shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 5 },
+  button: { backgroundColor: '#C44200', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 10, flexDirection: 'row', shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 5 },
   buttonDisabled: { backgroundColor: '#f9bda3' },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   actividadPreviaItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
   actividadItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  actividadPreviaTitle: { fontSize: 15, fontWeight: '700', color: '#C44B0A' },
+  actividadPreviaTitle: { fontSize: 15, fontWeight: '700', color: '#C44200' },
   deleteButton: { padding: 6, backgroundColor: '#FEF2F2', borderRadius: 8 },
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, backgroundColor: '#fff3ec', borderRadius: 10, borderWidth: 1.5, borderColor: '#C44B0A', borderStyle: 'dashed', marginTop: 6 },
-  addButtonText: { marginLeft: 8, color: '#C44B0A', fontSize: 15, fontWeight: '600' },
+  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, backgroundColor: '#fff3ec', borderRadius: 10, borderWidth: 1.5, borderColor: '#C44200', borderStyle: 'dashed', marginTop: 6 },
+  addButtonText: { marginLeft: 8, color: '#C44200', fontSize: 15, fontWeight: '600' },
   ambienteItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
   ambienteItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   servicioItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
@@ -1100,7 +1100,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   layoutItemSelected: {
-    borderColor: '#C44B0A',
+    borderColor: '#C44200',
     backgroundColor: '#fffaf5',
   },
   layoutImage: {
@@ -1125,7 +1125,7 @@ const styles = StyleSheet.create({
   },
   selectedBadgeText: {
     fontSize: 11,
-    color: '#C44B0A',
+    color: '#C44200',
     fontWeight: '600',
   },
 });

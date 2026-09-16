@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   StyleSheet, View, Text, ScrollView, TouchableOpacity,
   StatusBar, Alert, ActivityIndicator, Pressable, Animated,
@@ -35,61 +35,64 @@ const deleteTokenAsync = async () => {
 };
 
 const COLORS = {
-  primary: '#C44B0A', primaryLight: '#FFEDD5', secondary: '#4B5563',
-  accent: '#EF4444', success: '#047857', warning: '#F59E0B',
-  info: '#3B82F6', background: '#F9FAFB', surface: '#FFFFFF',
-  textPrimary: '#1F2937', textSecondary: '#6B7280', textTertiary: '#9CA3AF',
-  border: '#E5E7EB', divider: '#F3F4F6', white: '#FFFFFF', black: '#000000',
+  primary: '#C44200', primaryLight: '#FFF0E6', secondary: '#0F172A',
+  accent: '#EF4444', success: '#047857', warning: '#F59E0B', warningLight: '#FEF3C7',
+  info: '#3B82F6', background: '#F6F7F9', surface: '#FFFFFF',
+  textPrimary: '#1F2937', textSecondary: '#64748B', textTertiary: '#94A3B8',
+  border: '#E6E9EF', divider: '#D1D5DB', shadow: 'rgba(0,0,0,0.05)',
+  white: '#FFFFFF', black: '#000000',
 };
 
+const CARD_MARGIN = 12;
+const MIN_CARD_WIDTH_ACTIONS = 140;
+const MAX_COLUMNS_ACTIONS = 4;
+
 const DashboardCard = ({ title, value, icon, color, description, subtitle }) => (
-  <View style={[styles.kpiCard, { borderTopColor: color || COLORS.primary }]}>
-    <View style={styles.kpiTopRow}>
-      <View style={[styles.kpiIconWrap, { backgroundColor: color + '15' }]}>
-        <Ionicons name={icon} size={20} color={color} />
+  <View style={styles.dashboardCard}>
+    <View style={styles.dashboardCardTopRow}>
+      <View style={[styles.dashboardCardIconChip, { backgroundColor: (color || COLORS.primary) + '14' }]}>
+        <Ionicons name={icon} size={22} color={color || COLORS.primary} />
       </View>
-      <Text style={styles.kpiValue}>{value}</Text>
+      <Text style={[styles.dashboardCardValue, { color: color || COLORS.primary }]}>{value}</Text>
     </View>
-    <Text style={styles.kpiTitle}>{title}</Text>
-    {description && <Text style={styles.kpiDesc}>{description}</Text>}
-    {subtitle && <Text style={styles.kpiSub}>{subtitle}</Text>}
+    <View>
+      <Text style={styles.dashboardCardTitle}>{title}</Text>
+      {description && <Text style={styles.dashboardCardDescription}>{description}</Text>}
+      {subtitle && <Text style={styles.dashboardCardDescription}>{subtitle}</Text>}
+    </View>
   </View>
 );
 
-const ActionCardLarge = ({ action, onPress, index }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 350, delay: index * 70, useNativeDriver: true }).start();
-  }, []);
-
+const ManagementToolCard = ({ title, description, icon, color, badge, onPress, cardWidth }) => {
+  const safeColor = color || COLORS.secondary;
   return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={() => Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true, speed: 100 }).start()}
-      onPressOut={() => Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 100 }).start()}
-    >
-      <Animated.View style={[styles.actionCard, { transform: [{ scale: scaleAnim }], opacity: fadeAnim }]}>
-        <View style={[styles.actionIcon, { backgroundColor: action.color + '15' }]}>
-          <Ionicons name={action.iconName} size={28} color={action.color} />
+    <TouchableOpacity style={[styles.toolCard, { borderColor: safeColor + '20', width: cardWidth }]} onPress={onPress} activeOpacity={0.85}>
+      <View style={[styles.toolIcon, { backgroundColor: safeColor + '10' }]}>
+        <Ionicons name={icon || 'information-circle-outline'} size={24} color={safeColor} />
+      </View>
+      <Text style={styles.toolTitle} numberOfLines={2}>{title || 'Sin título'}</Text>
+      {description ? <Text style={styles.toolDescription} numberOfLines={2}>{description}</Text> : null}
+      {badge ? (
+        <View style={[styles.toolBadge, { backgroundColor: safeColor }]}>
+          <Text style={styles.toolBadgeText}>{badge}</Text>
         </View>
-        <View style={styles.actionContent}>
-          <View style={styles.actionTitleRow}>
-            <Text style={styles.actionTitle}>{action.title}</Text>
-            {action.badge && (
-              <View style={[styles.actionBadge, { backgroundColor: action.badgeColor || COLORS.primary }]}>
-                <Text style={styles.actionBadgeText}>{action.badge}</Text>
-              </View>
-            )}
-          </View>
-          {action.description && <Text style={styles.actionDesc}>{action.description}</Text>}
-        </View>
-        <Ionicons name="chevron-forward-outline" size={20} color={COLORS.textTertiary} />
-      </Animated.View>
-    </Pressable>
+      ) : null}
+    </TouchableOpacity>
   );
 };
+
+const Section = ({ title, subtitle, children }) => (
+  <View style={styles.section}>
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionAccent} />
+      <View style={styles.sectionHeaderText}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+      </View>
+    </View>
+    {children}
+  </View>
+);
 
 
 const EventCards = ({ data, onPrint }) => {
@@ -161,34 +164,36 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
   const rotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
 
   const quickActions = [
-    { id: 'usuarios', title: 'Usuarios', icon: 'people-outline', color: COLORS.primary, action: '/admin/UsuariosDaf' },
+    { id: 'solicitudes', title: 'Solicitudes', icon: 'document-text-outline', color: COLORS.primary, action: '/admin/Solicitudes' },
+    { id: 'usuarios', title: 'Usuarios', icon: 'people-outline', color: COLORS.warning, action: '/admin/UsuariosDaf' },
     { id: 'aprobados', title: 'Aprobados', icon: 'checkmark-circle-outline', color: COLORS.success, action: '/admin/EventosAprobados' },
+    { id: 'reportes', title: 'Reportes', icon: 'bar-chart-outline', color: COLORS.info, action: '/admin/reportes' },
   ];
 
   return (
     <Animated.View style={[styles.dock, { height: dockHeight }]}>
-      <Pressable onPress={onToggleExpanded} style={styles.dockToggle}>
-        <Animated.View style={{ transform: [{ rotate }] }}>
-          <Ionicons name="chevron-up-outline" size={20} color={COLORS.white} />
-        </Animated.View>
-        <Text style={styles.dockToggleText}>Menú</Text>
-      </Pressable>
-      {isExpanded && (
+      {isExpanded ? (
         <View style={styles.dockExpanded}>
           <View style={styles.dockActions}>
             {quickActions.map(a => (
               <TouchableOpacity key={a.id} style={styles.dockActionBtn} onPress={() => onActionPress(a.action)}>
                 <Ionicons name={a.icon} size={24} color={a.color} />
-                <Text style={[styles.dockActionText, { color: a.color }]}>{a.title}</Text>
+                <Text numberOfLines={1} style={[styles.dockActionText, { color: a.color }]}>{a.title}</Text>
               </TouchableOpacity>
             ))}
           </View>
-           <TouchableOpacity onPress={onLogout} style={styles.minimalDockLogoutButton}>
-                      <Ionicons name="log-out-outline" size={20} color={COLORS.white} />
-                      <Text style={styles.minimalDockLogoutButtonText}>Cerrar Sesión</Text>
-                    </TouchableOpacity>
+          <TouchableOpacity onPress={onLogout} style={styles.minimalDockLogoutButton}>
+            <Ionicons name="log-out-outline" size={20} color={COLORS.white} />
+            <Text style={styles.minimalDockLogoutButtonText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      ) : null}
+      <Pressable onPress={onToggleExpanded} style={styles.dockToggle}>
+        <Animated.View style={{ transform: [{ rotate }] }}>
+          <Ionicons name="chevron-up-outline" size={20} color={COLORS.white} />
+        </Animated.View>
+        <Text style={styles.dockToggleText}>{isExpanded ? 'Ocultar menú' : 'Menú rápido'}</Text>
+      </Pressable>
     </Animated.View>
   );
 };
@@ -197,68 +202,58 @@ const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificatio
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
   return (
-    <View style={styles.header}>
-      <View style={styles.headerTop}>
+    <View style={styles.hero}>
+      <View style={styles.heroHeaderRow}>
         <View style={styles.logoBadge}>
           <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerGreeting}>{greeting},</Text>
-          <Text style={styles.headerName}>{nombreUsuario}</Text>
-          <Text style={styles.headerEmail}>{emailUsuario}</Text>
+        <View style={styles.heroLeft}>
+          <Text style={styles.heroGreeting}>{greeting}</Text>
+          <Text style={styles.heroName} numberOfLines={1}>{nombreUsuario}</Text>
+          {emailUsuario ? <Text style={styles.heroEmail} numberOfLines={1}>{emailUsuario}</Text> : null}
         </View>
         <View style={styles.headerActions}>
-          {/* Botón de Telegram */}
-          <TouchableOpacity style={styles.telegramBell} onPress={onTelegramPress} accessibilityLabel="Enviar mensaje" accessibilityRole="button">
-            <Ionicons 
-              name="send" 
-              size={22} 
-              color={isTelegramLinked ? '#0088cc' : COLORS.textTertiary} 
-            />
-            {isTelegramLinked && (
-              <View style={styles.telegramLinkedDot} />
-            )}
+          <TouchableOpacity style={styles.headerIconBtn} onPress={onTelegramPress}>
+            <Ionicons name="send" size={22} color={isTelegramLinked ? '#00BFFF' : 'rgba(255,255,255,0.85)'} />
+            {isTelegramLinked ? <View style={styles.telegramDot} /> : null}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIconBtn} onPress={onRefresh} disabled={refreshing} accessibilityLabel="Actualizar" accessibilityRole="button">
-            {refreshing
-              ? <ActivityIndicator size="small" color={COLORS.primary} />
-              : <Ionicons name="refresh-outline" size={22} color={COLORS.textSecondary} />
-            }
+          <TouchableOpacity style={styles.headerIconBtn} onPress={onRefresh} disabled={refreshing}>
+            {refreshing ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="refresh-outline" size={22} color="#fff" />}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.notifBtn} onPress={onNotificationPress} accessibilityLabel="Notificaciones" accessibilityRole="button">
-            <Ionicons name="notifications-outline" size={24} color={COLORS.textSecondary} />
-            {unreadCount > 0 && (
+          <TouchableOpacity style={styles.headerIconBtn} onPress={onNotificationPress}>
+            <Ionicons name="notifications-outline" size={24} color="#fff" />
+            {unreadCount > 0 ? (
               <View style={styles.notifBadge}>
                 <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
               </View>
-            )}
+            ) : null}
           </TouchableOpacity>
         </View>
       </View>
+      <View style={styles.heroDivider} />
       <Text style={styles.headerTitle}>Panel DAF</Text>
-      {lastUpdated && (
-        <Text style={styles.lastUpdated}>
+      <Text style={styles.headerSubtitle}>Dirección Administrativa y Financiera · UFT Eventos</Text>
+      {lastUpdated ? (
+        <Text style={styles.lastUpdatedText}>
           Actualizado: {lastUpdated.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
         </Text>
-      )}
+      ) : null}
     </View>
   );
 };
-
-const Section = ({ title, subtitle, children }) => (
-  <View style={styles.section}>
-    <View style={styles.sectionHead}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {subtitle && <Text style={styles.sectionSub}>{subtitle}</Text>}
-    </View>
-    {children}
-  </View>
-);
 
 const Daf = () => {
   const params = useLocalSearchParams();
   const nombreUsuario = params.nombre || 'Administrador DAF';
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const { cardWidth: actionsCardWidth } = useMemo(() => {
+    const availableWidth = windowWidth - 40;
+    let numColumns = Math.floor(availableWidth / (MIN_CARD_WIDTH_ACTIONS + CARD_MARGIN));
+    numColumns = Math.max(1, Math.min(numColumns, MAX_COLUMNS_ACTIONS));
+    const totalGaps = CARD_MARGIN * (numColumns - 1);
+    return { cardWidth: (availableWidth - totalGaps) / numColumns };
+  }, [windowWidth]);
   const {
     colors,
     colorScheme,
@@ -569,10 +564,11 @@ const saveThemeColor = useCallback(async (color) => {
   };
 
   const adminActions = [
-    { id: '1', title: 'Gestión de Usuarios',  iconName: 'people-outline',           route: '/admin/UsuariosDaf',      color: COLORS.secondary, description: 'Administración de cuentas de usuario' },
-    { id: '3', title: 'Reportes Avanzados',    iconName: 'document-text-outline',    route: '/admin/reportes',         color: COLORS.secondary, description: 'Generación de reportes detallados', badge: 'Nuevo', badgeColor: COLORS.accent },
-    { id: '4', title: 'Creación de Recursos',  iconName: 'construct-outline',        route: '/admin/Inventario',         color: COLORS.warning,   description: 'Gestión de recursos del sistema',   badge: 'Nuevo', badgeColor: COLORS.accent },
-    { id: '5', title: 'Subida de Layouts',     iconName: 'images-outline',           route: '/admin/Layouts',          color: COLORS.info,      description: 'Administración de plantillas',       badge: 'Nuevo', badgeColor: COLORS.accent },
+    { id: 'solicitudes', title: 'Solicitudes', icon: 'document-text-outline', route: '/admin/Solicitudes', color: COLORS.primary, description: 'Aprueba o rechaza eventos en fase 2', badge: 'Nuevo' },
+    { id: 'usuarios', title: 'Gestión de Usuarios', icon: 'people-outline', route: '/admin/UsuariosDaf', color: COLORS.warning, description: 'Administración de cuentas de usuario' },
+    { id: 'reportes', title: 'Reportes Avanzados', icon: 'bar-chart-outline', route: '/admin/reportes', color: COLORS.secondary, description: 'Generación de reportes detallados' },
+    { id: 'recursos', title: 'Inventario', icon: 'construct-outline', route: '/admin/Inventario', color: COLORS.info, description: 'Gestión de recursos del sistema' },
+    { id: 'layouts', title: 'Subida de Layouts', icon: 'images-outline', route: '/admin/Layouts', color: COLORS.accent, description: 'Administración de plantillas' },
   ];
 
   return (
@@ -644,14 +640,20 @@ const saveThemeColor = useCallback(async (color) => {
         </Section>
 
         <Section title="Herramientas de Gestión" subtitle="Acceda a las funcionalidades principales">
-          {adminActions.map((action, i) => (
-            <ActionCardLarge
-              key={action.id}
-              action={action}
-              onPress={() => handleActionPress(action.route)}
-              index={i}
-            />
-          ))}
+          <View style={styles.toolsGrid}>
+            {adminActions.map((action) => (
+              <ManagementToolCard
+                key={action.id}
+                title={action.title}
+                description={action.description}
+                icon={action.icon}
+                color={action.color}
+                badge={action.badge}
+                onPress={() => handleActionPress(action.route)}
+                cardWidth={actionsCardWidth}
+              />
+            ))}
+          </View>
         </Section>
       </ScrollView>
 
@@ -924,40 +926,47 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollView: { flex: 1 },
 
-  header: {
+  hero: {
     width: '100%', paddingHorizontal: 20,
-    paddingTop: (StatusBar.currentHeight || 40) + 16, paddingBottom: 16,
-    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderColor: COLORS.border,
-    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4,
+    paddingTop: (StatusBar.currentHeight || 40) + 18, paddingBottom: 22,
+    backgroundColor: COLORS.primary,
+    borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
+    elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 10,
   },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
+  heroHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
   logoBadge: {
-    width: 54, height: 38, borderRadius: 8, backgroundColor: '#fff',
+    width: 56, height: 40, borderRadius: 8, backgroundColor: '#fff',
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-    marginRight: 12,
-    borderWidth: 2, borderColor: COLORS.primary,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4,
+    marginRight: 12, borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 4,
   },
-  logo: { width: 50, height: 34, resizeMode: 'contain' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerIconBtn: { padding: 6, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerGreeting: { fontSize: 15, color: COLORS.textSecondary },
-  headerName: { fontSize: 22, color: COLORS.textPrimary, fontWeight: '700' },
-  headerEmail: { 
-    fontSize: 13, 
-    color: COLORS.textSecondary,
-    marginTop: 2,
-    fontStyle: 'italic'
+  logo: { width: 52, height: 36, resizeMode: 'contain' },
+  heroLeft: { flex: 1 },
+  heroGreeting: { fontSize: 15, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+  heroName: { fontSize: 22, color: '#fff', fontWeight: '800', marginTop: 2 },
+  heroEmail: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2, fontStyle: 'italic' },
+  heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.25)', marginBottom: 12 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerIconBtn: {
+    width: 48, height: 48, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.14)', position: 'relative',
   },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary },
-  lastUpdated: { fontSize: 11, color: COLORS.textTertiary, marginTop: 4 },
-  notifBtn: { position: 'relative', padding: 6 },
+  telegramDot: {
+    position: 'absolute', top: 4, right: 6,
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: COLORS.success, borderWidth: 1, borderColor: COLORS.primary,
+  },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+  headerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 3, fontWeight: '500' },
+  lastUpdatedText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 6 },
   notifBadge: {
-    position: 'absolute', top: 0, right: 0, backgroundColor: COLORS.primary,
-    borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1.5, borderColor: COLORS.white,
+    position: 'absolute', top: 2, right: 2,
+    backgroundColor: COLORS.white, borderRadius: 10,
+    minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: COLORS.primary,
   },
-  notifBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: '700' },
+  notifBadgeText: { color: COLORS.primary, fontSize: 10, fontWeight: '800' },
 
   telegramBell: {
     padding: 8,
@@ -1189,22 +1198,25 @@ telegramQRCode: {
 
   // Section
   section: { width: '100%', paddingHorizontal: 20, marginTop: 28 },
-  sectionHead: { marginBottom: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  sectionHeader: { marginBottom: 16, flexDirection: 'row', alignItems: 'center' },
+  sectionAccent: { width: 4, height: 24, backgroundColor: COLORS.primary, borderRadius: 2, marginRight: 10 },
+  sectionHeaderText: { flex: 1 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 2 },
+  sectionSubtitle: { fontSize: 13, color: COLORS.textSecondary },
   sectionSub: { fontSize: 13, color: COLORS.textSecondary },
 
   // KPIs
-  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
-  kpiCard: {
-    backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, width: '48%',
-    minHeight: 120, justifyContent: 'space-between', borderTopWidth: 3,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN, justifyContent: 'space-between' },
+  dashboardCard: {
+    backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, minHeight: 140,
+    width: '48%', justifyContent: 'space-between', borderWidth: 1, borderColor: COLORS.border,
+    shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
   },
-  kpiTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  kpiIconWrap: { width: 36, height: 36, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  kpiValue: { fontSize: 24, fontWeight: '800', color: COLORS.textPrimary },
-  kpiTitle: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 2 },
-  kpiDesc: { fontSize: 11, color: COLORS.textTertiary },
+  dashboardCardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  dashboardCardIconChip: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  dashboardCardValue: { fontSize: 26, fontWeight: '800' },
+  dashboardCardTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 4 },
+  dashboardCardDescription: { fontSize: 11, color: COLORS.textTertiary },
 
   // Event Cards
   eventCard: {
@@ -1251,31 +1263,28 @@ telegramQRCode: {
   emptyTableSubText: { marginTop: 4, fontSize: 12, color: COLORS.textTertiary, fontStyle: 'italic' },
 
   // Action cards
-  actionCard: {
-    backgroundColor: COLORS.surface, borderRadius: 14, padding: 18, marginBottom: 12,
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    borderWidth: 1, borderColor: COLORS.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN, justifyContent: 'space-between' },
+  toolCard: {
+    backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, minHeight: 130,
+    borderWidth: 1, maxWidth: '100%',
+    shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 5,
   },
-  actionIcon: { width: 52, height: 52, borderRadius: 12, 
-    justifyContent: 'center', alignItems: 'center' },
-  actionContent: { flex: 1 },
-  actionTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  actionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, flex: 1 },
-  actionBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  actionBadgeText: { fontSize: 10, fontWeight: '700', color: COLORS.white },
-  actionDesc: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 18 },
+  toolIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  toolTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, lineHeight: 20, marginBottom: 4 },
+  toolDescription: { fontSize: 11, color: COLORS.textSecondary, lineHeight: 16 },
+  toolBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, position: 'absolute', top: 20, right: 20 },
+  toolBadgeText: { fontSize: 11, fontWeight: '700', color: COLORS.white },
 
   minimalDockLogoutButton: {
     flexDirection: 'row',
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.accent,
     paddingVertical: 12,
-    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 10,
-    marginTop: 10,
+    marginBottom: 4,
   },
+  minimalDockLogoutButtonText: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginLeft: 8 },
 
   dockOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -1287,14 +1296,14 @@ telegramQRCode: {
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8,
     elevation: 10, overflow: 'hidden',
   },
-  dockToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, gap: 8 },
-  dockToggleText: { color: COLORS.white, fontSize: 15, fontWeight: '600' },
-  dockExpanded: {
-    paddingHorizontal: 20, paddingBottom: 12, backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 20, borderTopRightRadius: 20
+  dockToggle: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, gap: 8,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.25)',
   },
-  dockActions: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14 },
-  dockActionBtn: { alignItems: 'center', paddingVertical: 8, width: '30%' },
+  dockToggleText: { color: COLORS.white, fontSize: 15, fontWeight: '600' },
+  dockExpanded: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8, backgroundColor: COLORS.surface, flex: 1 },
+  dockActions: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14, gap: 8 },
+  dockActionBtn: { alignItems: 'center', paddingVertical: 8, width: '22%' },
   dockActionText: { fontSize: 11, fontWeight: '600', textAlign: 'center', marginTop: 4 },
   dockLogout: {
     flexDirection: 'row', backgroundColor: COLORS.accent, paddingVertical: 12,

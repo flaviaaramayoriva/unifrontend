@@ -14,14 +14,14 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-prod
 const TOKEN_KEY = 'adminAuthToken';
 
 const COLORS = {
-  primary: '#C44B0A', primaryLight: '#FFEDD5', 
+  primary: '#C44200', primaryLight: '#FFF0E6', 
   success: '#047857', successLight: '#D1FAE5',
   warning: '#F59E0B', warningLight: '#FEF3C7',
   danger: '#EF4444',  dangerLight: '#FEE2E2',
   info: '#3B82F6',    infoLight: '#DBEAFE',
-  background: '#F9FAFB', surface: '#FFFFFF',
-  textPrimary: '#1F2937', textSecondary: '#6B7280', textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
+  background: '#F6F7F9', surface: '#FFFFFF',
+  textPrimary: '#1F2937', textSecondary: '#64748B', textTertiary: '#94A3B8',
+  border: '#E6E9EF',
 };
 
 // ─── COMPONENTES REUTILIZABLES (ESTILO DAF.JS) ───

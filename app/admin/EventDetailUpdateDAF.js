@@ -63,16 +63,16 @@ const deleteTokenAsync = async () => {
 };
 
 const COLORS = {
-  accent: '#0052A0',
-  secondary: '#2980b9',
-  primary: '#C44B0A',
-  background: '#f8fafc',
+  accent: '#C44200',
+  secondary: '#0F172A',
+  primary: '#C44200',
+  background: '#F6F7F9',
   surface: '#ffffff',
   success: '#27ae60',
   warning: '#f39c12',
   info: '#3498db',
   purple: '#9b59b6',
-  logout: '#e74c3c',
+  logout: '#EF4444',
   white: '#fff',
   grayLight: '#ecf0f1',
   grayText: '#64748b',
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   backgroundColor: COLORS.background,
 },
 header: {
-  backgroundColor: COLORS.primary, // Naranja #C44B0A
+  backgroundColor: COLORS.primary, // Naranja #C44200
   flexDirection: 'row',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -894,7 +894,7 @@ headerTitle: {
   phaseIndicator: {
   flexDirection: 'row',
   alignItems: 'center',
-  backgroundColor: COLORS.secondary, // Azul profesional (#2980b9)
+  backgroundColor: COLORS.secondary, // Azul profesional (#0F172A)
   paddingHorizontal: 14,
   paddingVertical: 6,
   borderRadius: 20,

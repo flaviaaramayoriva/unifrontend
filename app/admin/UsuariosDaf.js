@@ -60,19 +60,19 @@ const deleteTokenAsync = async () => {
 };
 
 const COLORS = {
-  primary: '#C44B0A',
-  primaryLight: '#FFEDD5',
-  secondary: '#4B5563',
+  primary: '#C44200',
+  primaryLight: '#FFF0E6',
+  secondary: '#0F172A',
   accent: '#EF4444',
   success: '#047857',
   warning: '#F59E0B',
   info: '#3B82F6',
-  background: '#F9FAFB',
+  background: '#F6F7F9',
   surface: '#FFFFFF',
   textPrimary: '#1F2937',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
   divider: '#D1D5DB',
   shadow: 'rgba(0, 0, 0, 0.05)',
   white: '#FFFFFF',
@@ -133,7 +133,7 @@ const UsuariosDaf = () => {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/users`, {
+      const response = await axios.get(`${API_BASE_URL}/users/daf`, {
         headers: { 'Authorization': `Bearer ${localToken}` }
       });
 
@@ -264,6 +264,7 @@ const UsuariosDaf = () => {
   const renderUserItem = ({ item }) => {
     // 👇 LÓGICA CLAVE: Solo mostrar botón de editar si es Admin O es su propio perfil
     const canEdit = currentUserRole === 'admin' || currentUserId === item.id;
+    const isAdmin = currentUserRole === 'admin';
 
     return (
       <View style={[styles.userItemContainer, { opacity: loading ? 0.6 : 1 }]}>
@@ -313,21 +314,25 @@ const UsuariosDaf = () => {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            onPress={() => handleDeleteUser(item.id)}
-            style={[styles.actionButton, styles.deleteButton]}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="trash-outline" size={20} color={COLORS.accent} />
-          </TouchableOpacity>
+          {isAdmin && (
+            <TouchableOpacity
+              onPress={() => handleDeleteUser(item.id)}
+              style={[styles.actionButton, styles.deleteButton]}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={20} color={COLORS.accent} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
   };
 
-  const renderUserModal = () => {
+  const isAdmin = currentUserRole === 'admin';
+const renderUserModal = () => {
     // 👇 LÓGICA CLAVE TAMBIÉN PARA EL MODAL
     const canEdit = currentUserRole === 'admin' || currentUserId === selectedUser?.id;
+    const isAdmin = currentUserRole === 'admin';
 
     return (
       <Modal
@@ -394,16 +399,18 @@ const UsuariosDaf = () => {
                     </TouchableOpacity>
                   )}
 
-                  <TouchableOpacity
-                    style={[styles.modalActionButton, styles.modalDeleteButton]}
-                    onPress={() => {
-                      setShowUserModal(false);
-                      handleDeleteUser(selectedUser.id);
-                    }}
-                  >
-                    <Ionicons name="trash" size={16} color="#fff" />
-                    <Text style={styles.modalActionButtonText}>Eliminar</Text>
-                  </TouchableOpacity>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.modalActionButton, styles.modalDeleteButton]}
+                      onPress={() => {
+                        setShowUserModal(false);
+                        handleDeleteUser(selectedUser.id);
+                      }}
+                    >
+                      <Ionicons name="trash" size={16} color="#fff" />
+                      <Text style={styles.modalActionButtonText}>Eliminar</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             )}
@@ -427,18 +434,20 @@ const UsuariosDaf = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen
-        options={{
-          title: 'Usuarios DAF',
-          headerStyle: { backgroundColor: COLORS.primary },
-          headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: 'bold' },
-          headerRight: () => (
-            <TouchableOpacity onPress={handleAddUser} style={styles.headerButton}>
-              <Ionicons name="add-circle" size={28} color="#fff" />
-            </TouchableOpacity>
-          ),
-        }}
-      />
+          options={{
+            title: 'Usuarios DAF',
+            headerStyle: { backgroundColor: COLORS.primary },
+            headerTintColor: '#fff',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerRight: () => (
+              isAdmin && (
+                <TouchableOpacity onPress={handleAddUser} style={styles.headerButton}>
+                  <Ionicons name="add-circle" size={28} color="#fff" />
+                </TouchableOpacity>
+              )
+            ),
+          }}
+        />
 
       <ScrollView
         style={styles.scrollView}
@@ -513,13 +522,15 @@ const UsuariosDaf = () => {
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handleAddUser}
-        accessibilityLabel="Añadir nuevo usuario DAF"
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+      {isAdmin && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleAddUser}
+          accessibilityLabel="Añadir nuevo usuario DAF"
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </TouchableOpacity>
+      )}
 
       {renderUserModal()}
     </SafeAreaView>

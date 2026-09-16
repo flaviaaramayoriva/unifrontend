@@ -48,7 +48,7 @@ const SettingsScreen = () => {
   const [savingTheme, setSavingTheme] = useState(false);
   const [savingColor, setSavingColor] = useState(false);
   const [user, setUser] = useState({ 
-    id: null, nombre: '', apellidopat: '', apellidomat: '', email: '', role: '', facultad: '', theme: 'light', color_acento: '#C44B0A'
+    id: null, nombre: '', apellidopat: '', apellidomat: '', email: '', role: '', facultad: '', theme: 'light', color_acento: '#C44200'
   });
 
   useEffect(() => {
@@ -72,7 +72,7 @@ const SettingsScreen = () => {
       console.log('👤 Perfil recibido del backend:', userData);
 
       const savedTheme = userData.theme || 'light';
-      const savedAccent = userData.color_acento || '#C44B0A';
+      const savedAccent = userData.color_acento || '#C44200';
       if (savedTheme)  setGlobalTheme(savedTheme);
       if (savedAccent) setGlobalAccentColor(savedAccent);
 

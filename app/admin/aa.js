@@ -111,7 +111,7 @@ const ProyectoEvento = () => {
     const onDayPressEventoPrincipal = (day) => {
         const newDate = dayjs(day.dateString).hour(fechaHoraSeleccionada.getHours()).minute(fechaHoraSeleccionada.getMinutes()).toDate();
         setFechaHoraSeleccionada(newDate);
-        setMarkedDates({ [day.dateString]: { selected: true, marked: true, selectedColor: '#C44B0A' } });
+        setMarkedDates({ [day.dateString]: { selected: true, marked: true, selectedColor: '#C44200' } });
     };
 
     const onChangeTimeEventoPrincipal = (event, selectedDate) => {
@@ -227,7 +227,7 @@ const ProyectoEvento = () => {
                 <TextInput style={[styles.rowInput, { flex: 1, textAlign: 'center' }]} value={item.cantidad} onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'cantidad', text.replace(/[^0-9.]/g, ''))} keyboardType="numeric" accessibilityLabel="Cantidad" />
                 <TextInput style={[styles.rowInput, { flex: 1, textAlign: 'center' }]} value={item.precio} onChangeText={(text) => handlePresupuestoChange(items, setItems, index, 'precio', text.replace(/[^0-9.]/g, ''))} keyboardType="numeric" accessibilityLabel="Precio" />
                 <Text style={[styles.rowText, { flex: 1.5, textAlign: 'right' }]}>{formatCurrency(totalItem)}</Text>
-                <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={styles.deleteButtonSmall} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Eliminar fila" accessibilityRole="button"><Ionicons name="close-circle" size={20} color="#e74c3c" /></TouchableOpacity>
+                <TouchableOpacity onPress={() => eliminarFilaPresupuesto(items, setItems, index)} style={styles.deleteButtonSmall} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Eliminar fila" accessibilityRole="button"><Ionicons name="close-circle" size={20} color="#EF4444" /></TouchableOpacity>
               </View>
             );
           })}
@@ -251,13 +251,13 @@ const ProyectoEvento = () => {
                     <Text style={styles.label}>Nombre del Responsable</Text>
                     <View style={styles.inputGroup}><Ionicons name="person-outline" size={20} style={styles.inputIcon} /><TextInput style={styles.input} value={nombreResponsable} onChangeText={setNombreResponsable} placeholder="Nombre del responsable" accessibilityLabel="Nombre del responsable" /></View>
                     <Text style={styles.label}>Fecha del Evento</Text>
-                    <View style={styles.calendarContainer}><Calendar onDayPress={onDayPressEventoPrincipal} markedDates={markedDates} theme={{ todayTextColor: '#C44B0A', arrowColor: '#C44B0A', selectedDayTextColor: '#ffffff' }} /></View>
+                    <View style={styles.calendarContainer}><Calendar onDayPress={onDayPressEventoPrincipal} markedDates={markedDates} theme={{ todayTextColor: '#C44200', arrowColor: '#C44200', selectedDayTextColor: '#ffffff' }} /></View>
                     <Text style={styles.label}>Hora del Evento</Text>
-                    <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.datePickerButton}><Ionicons name="time-outline" size={20} color="#C44B0A" style={{marginRight: 10}} /><Text style={styles.datePickerText}>{fechaHoraSeleccionada.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.datePickerButton}><Ionicons name="time-outline" size={20} color="#C44200" style={{marginRight: 10}} /><Text style={styles.datePickerText}>{fechaHoraSeleccionada.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</Text></TouchableOpacity>
                     {showTimePicker && <DateTimePicker value={fechaHoraSeleccionada} mode="time" is24Hour={true} display="default" onChange={onChangeTimeEventoPrincipal} />}
                     <Text style={styles.label}>Tipo de Evento</Text>
-                    {[{ key: 'curricular', label: 'Curricular' }, { key: 'extracurricular', label: 'Extracurricular' }, { key: 'marketing', label: 'Marketing' }, { key: 'internacionalizacion', label: 'Internacionalización' }].map((item) => (<TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setTipoEvento, item.key)}><Ionicons name={tipoEvento[item.key] ? "checkbox" : "square-outline"} size={24} color={tipoEvento[item.key] ? "#C44B0A" : "#888"} /><Text style={styles.checkboxLabel}>{item.label}</Text></TouchableOpacity>))}
-                    <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setTipoEvento, 'otro')}><Ionicons name={tipoEvento.otro ? "checkbox" : "square-outline"} size={24} color={tipoEvento.otro ? "#C44B0A" : "#888"} /><Text style={styles.checkboxLabel}>Otro</Text></TouchableOpacity>
+                    {[{ key: 'curricular', label: 'Curricular' }, { key: 'extracurricular', label: 'Extracurricular' }, { key: 'marketing', label: 'Marketing' }, { key: 'internacionalizacion', label: 'Internacionalización' }].map((item) => (<TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setTipoEvento, item.key)}><Ionicons name={tipoEvento[item.key] ? "checkbox" : "square-outline"} size={24} color={tipoEvento[item.key] ? "#C44200" : "#888"} /><Text style={styles.checkboxLabel}>{item.label}</Text></TouchableOpacity>))}
+                    <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setTipoEvento, 'otro')}><Ionicons name={tipoEvento.otro ? "checkbox" : "square-outline"} size={24} color={tipoEvento.otro ? "#C44200" : "#888"} /><Text style={styles.checkboxLabel}>Otro</Text></TouchableOpacity>
                     {tipoEvento.otro && (<View style={styles.otroInputContainer}><TextInput style={styles.input} value={tipoEvento.otroTexto} onChangeText={(text) => handleOtroTextChange(setTipoEvento, text)} placeholder="¿Cuál?" accessibilityLabel="Tipo de evento" /></View>)}
                 </View>
 
@@ -265,8 +265,8 @@ const ProyectoEvento = () => {
                 <View style={styles.formSection}>
                     <Text style={styles.sectionTitle}>II. Objetivos del Evento</Text>
                     <Text style={styles.label}>Seleccione uno o más objetivos:</Text>
-                    {[{ key: 'modeloPedagogico', label: 'Modelo Pedagógico' }, { key: 'posicionamiento', label: 'Posicionamiento' }, { key: 'internacionalizacion', label: 'Internacionalización' }, { key: 'rsu', label: 'RSU' }, { key: 'fidelizacion', label: 'Fidelización' }].map((item) => (<TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}><Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44B0A" : "#888"} /><Text style={styles.checkboxLabel}>{item.label}</Text></TouchableOpacity>))}
-                    <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, 'otro')}><Ionicons name={objetivos.otro ? "checkbox" : "square-outline"} size={24} color={objetivos.otro ? "#C44B0A" : "#888"} /><Text style={styles.checkboxLabel}>Otro</Text></TouchableOpacity>
+                    {[{ key: 'modeloPedagogico', label: 'Modelo Pedagógico' }, { key: 'posicionamiento', label: 'Posicionamiento' }, { key: 'internacionalizacion', label: 'Internacionalización' }, { key: 'rsu', label: 'RSU' }, { key: 'fidelizacion', label: 'Fidelización' }].map((item) => (<TouchableOpacity key={item.key} style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, item.key)}><Ionicons name={objetivos[item.key] ? "checkbox" : "square-outline"} size={24} color={objetivos[item.key] ? "#C44200" : "#888"} /><Text style={styles.checkboxLabel}>{item.label}</Text></TouchableOpacity>))}
+                    <TouchableOpacity style={styles.checkboxRow} onPress={() => handleCheckboxChange(setObjetivos, 'otro')}><Ionicons name={objetivos.otro ? "checkbox" : "square-outline"} size={24} color={objetivos.otro ? "#C44200" : "#888"} /><Text style={styles.checkboxLabel}>Otro</Text></TouchableOpacity>
                     {objetivos.otro && (<View style={styles.otroInputContainer}><TextInput style={styles.input} value={objetivos.otroTexto} onChangeText={(text) => handleOtroTextChange(setObjetivos, text)} placeholder="¿Cuál?" accessibilityLabel="Otro objetivo" /></View>)}
                     <Text style={styles.label}>Argumentación</Text>
                     <View style={[styles.inputGroup, {alignItems: 'flex-start'}]}><Ionicons name="text-outline" size={20} style={[styles.inputIcon,{paddingTop:14 }]} /><TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={4} placeholder="Breve descripción..." value={argumentacion} onChangeText={setArgumentacion} accessibilityLabel="Argumentación" /></View>
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     formSection: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3.84, elevation: 5 },
     sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 20, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 10, textAlign:'center' },
     label: { fontSize: 14, color: '#555', marginBottom: 8, fontWeight: '500' },
-    inputGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, marginBottom: 15 },
+    inputGroup: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, marginBottom: 15 },
     inputIcon: { paddingHorizontal: 12, color: '#888' },
     input: { flex: 1, paddingVertical: Platform.OS === 'ios' ? 14 : 10, paddingRight: 15, fontSize: 16, color: '#333' },
     textArea: { height: 100, textAlignVertical: 'top' },
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     datePickerText: { fontSize: 16, color: '#333' },
     checkboxRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
     checkboxLabel: { marginLeft: 12, fontSize: 16, color: '#333' },
-    otroInputContainer: { marginLeft: 36, marginTop: 5, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F8F9FA' },
+    otroInputContainer: { marginLeft: 36, marginTop: 5, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, backgroundColor: '#F6F7F9' },
     resultadoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
     resultadoLabel: { fontSize: 16, color: '#333', flex: 1 },
     resultadoInput: { flex: 2, backgroundColor: '#F4F7F9', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16, fontSize: 16, color: '#333' },
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     balanceContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#e0e0e0', padding: 12, borderRadius: 8, marginTop: 10 },
     balanceText: { fontWeight: 'bold', fontSize: 16 },
     balanceAmount: { fontWeight: 'bold', fontSize: 16 },
-    submitButton: { backgroundColor: '#C44B0A', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 20 },
+    submitButton: { backgroundColor: '#C44200', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 20 },
     buttonDisabled: { backgroundColor: '#f9bda3' },
     submitButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 });
