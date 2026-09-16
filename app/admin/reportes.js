@@ -420,6 +420,11 @@ const ReportesAvanzadosScreen = () => {
   const [listaFacultades, setListaFacultades] = useState([]);
   const [comparacionTipo, setComparacionTipo] = useState('prev'); // 'prev' | 'anio'
 
+  // Alcance por usuario: académicos solo ven sus propios eventos; admin/DAF + selector por académico
+  const [usuarioMe, setUsuarioMe] = useState(null); // { role, id, nombre }
+  const [listaAcademicos, setListaAcademicos] = useState([]);
+  const [academicoFiltro, setAcademicoFiltro] = useState(null); // idacademico | null
+
   // Datos
   const [repRecursos, setRepRecursos] = useState(null);
   const [repInscripciones, setRepInscripciones] = useState(null);
@@ -431,14 +436,26 @@ const ReportesAvanzadosScreen = () => {
 
   const showError = (msg) => Alert.alert('Error', msg, [{ text: 'OK' }]);
 
+  const esAcademico = usuarioMe?.role === 'academico';
+
   const paramsReportes = useMemo(() => {
     const p = {};
     if (reporteDesde) p.desde = reporteDesde;
     if (reporteHasta) p.hasta = reporteHasta;
     if (facultadFiltro) p.facultad_id = facultadFiltro;
     if (tipoFiltro) p.tipo = tipoFiltro;
+    if (!esAcademico && academicoFiltro) p.idacademico = academicoFiltro;
     return p;
-  }, [reporteDesde, reporteHasta, facultadFiltro, tipoFiltro]);
+  }, [reporteDesde, reporteHasta, facultadFiltro, tipoFiltro, esAcademico, academicoFiltro]);
+
+  // Solo los filtros de alcance (sin rango), para reutilizar en reportes con fechas propias
+  const paramsAlcance = useMemo(() => {
+    const p = {};
+    if (facultadFiltro) p.facultad_id = facultadFiltro;
+    if (tipoFiltro) p.tipo = tipoFiltro;
+    if (!esAcademico && academicoFiltro) p.idacademico = academicoFiltro;
+    return p;
+  }, [facultadFiltro, tipoFiltro, esAcademico, academicoFiltro]);
 
   const fetchDatos = useCallback(async (params) => {
     const token = await getTokenAsync();
@@ -450,7 +467,7 @@ const ReportesAvanzadosScreen = () => {
       axios.get(`${API_BASE_URL}/reportes/operacionales`, { params, headers }).catch(() => null),
       axios.get(`${API_BASE_URL}/reportes/economicos`, { params, headers }).catch(() => null),
       axios.get(`${API_BASE_URL}/reportes/tipos`, { params, headers }).catch(() => null),
-      axios.get(`${API_BASE_URL}/dashboard/mensual`, { params, headers }).catch(() => null),
+      axios.get(`${API_BASE_URL}/reportes/mensual`, { params, headers }).catch(() => null),
       axios.get(`${API_BASE_URL}/reportes/gestion`, { params, headers }).catch(() => null),
     ]);
     const datos = {
@@ -518,10 +535,11 @@ const ReportesAvanzadosScreen = () => {
         const token = await getTokenAsync();
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
         const rangoComp = comparacionTipo === 'anio' ? rangoAnteriorAnio : rangoAnterior;
+        const paramsComp = { ...paramsReportes, ...rangoComp };
         const [prevRec, prevInsc, prevGes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/reportes/recursos`, { params: { periodo: 'mes', ...rangoComp }, headers }).catch(() => null),
-          axios.get(`${API_BASE_URL}/reportes/inscripciones`, { params: rangoComp, headers }).catch(() => null),
-          axios.get(`${API_BASE_URL}/reportes/gestion`, { params: rangoComp, headers }).catch(() => null),
+          axios.get(`${API_BASE_URL}/reportes/recursos`, { params: { periodo: 'mes', ...paramsComp }, headers }).catch(() => null),
+          axios.get(`${API_BASE_URL}/reportes/inscripciones`, { params: paramsComp, headers }).catch(() => null),
+          axios.get(`${API_BASE_URL}/reportes/gestion`, { params: paramsComp, headers }).catch(() => null),
         ]);
         setPrevData(prevRec?.data ? {
           solicitudes: prevRec.data.totalSolicitudes || 0,
@@ -555,8 +573,16 @@ const ReportesAvanzadosScreen = () => {
       try {
         const token = await getTokenAsync();
         if (!token) return;
-        const res = await axios.get(`${API_BASE_URL}/facultades`, { headers: { Authorization: `Bearer ${token}` } });
-        if (activo && Array.isArray(res.data)) setListaFacultades(res.data);
+        const [facRes, meRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/facultades`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_BASE_URL}/users/me`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        ]);
+        if (activo && Array.isArray(facRes.data)) setListaFacultades(facRes.data);
+        if (activo && meRes?.data) setUsuarioMe(meRes.data);
+        if (activo && meRes?.data && meRes.data.role !== 'academico') {
+          const acRes = await axios.get(`${API_BASE_URL}/reportes/academicos`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+          if (activo && Array.isArray(acRes?.data)) setListaAcademicos(acRes.data);
+        }
       } catch (e) { /* lista opcional */ }
     })();
     return () => { activo = false; };
@@ -851,7 +877,7 @@ const ReportesAvanzadosScreen = () => {
     try {
       const desde = `${anio}-01-01`;
       const hasta = `${anio}-12-31`;
-      const datos = await fetchDatos({ desde, hasta });
+      const datos = await fetchDatos({ desde, hasta, ...paramsAlcance });
       if (!datos) { showError('Sesión no encontrada. Vuelve a iniciar sesión.'); return; }
       const anioActual = new Date().getFullYear();
       const hastaTxt = anio === anioActual ? 'hoy' : '31 de diciembre';
@@ -887,7 +913,7 @@ const ReportesAvanzadosScreen = () => {
       const mes = parseInt(mesKey.slice(5, 7), 10);
       const desde = `${anio}-${String(mes).padStart(2, '0')}-01`;
       const hasta = `${anio}-${String(mes).padStart(2, '0')}-${String(lastDayOfMonth(anio, mes)).padStart(2, '0')}`;
-      const datos = await fetchDatos({ desde, hasta });
+      const datos = await fetchDatos({ desde, hasta, ...paramsAlcance });
       if (!datos) { showError('Sesión no encontrada. Vuelve a iniciar sesión.'); return; }
       const html = buildReporteHtml({
         recursos: datos.recursos,
@@ -1125,8 +1151,49 @@ const ReportesAvanzadosScreen = () => {
           ) : null}
         </View>
 
+        {/* Banner de alcance para académicos */}
+        {usuarioMe && esAcademico ? (
+          <View style={styles.scopeBanner}>
+            <Ionicons name="person-circle-outline" size={16} color={COLORS.purple} />
+            <Text style={styles.scopeBannerText}>
+              Estás viendo solo tus propios eventos, {usuarioMe.nombre?.split(' ')[0] || 'docente'}.
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Selector por académico (solo admin/DAF) */}
+        {!esAcademico && listaAcademicos.length > 0 ? (
+          <View style={styles.segWrap}>
+            <View style={styles.segGroup}>
+              <Text style={styles.segLabel}><Ionicons name="person-outline" size={12} color={COLORS.primary} /> Ver reportes de</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segChipsRow}>
+                <TouchableOpacity
+                  style={[styles.segChip, !academicoFiltro && styles.segChipActivo]}
+                  onPress={() => setAcademicoFiltro(null)}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.segChipText, !academicoFiltro && styles.segChipTextActivo]}>Todos</Text>
+                </TouchableOpacity>
+                {listaAcademicos.map(a => (
+                  <TouchableOpacity
+                    key={a.idacademico}
+                    style={[styles.segChip, academicoFiltro === a.idacademico && styles.segChipActivo]}
+                    onPress={() => setAcademicoFiltro(academicoFiltro === a.idacademico ? null : a.idacademico)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver reportes de ${a.nombre}`}
+                  >
+                    <Text style={[styles.segChipText, academicoFiltro === a.idacademico && styles.segChipTextActivo]} numberOfLines={1}>
+                      {a.nombre}{a.facultad && a.facultad !== 'Sin facultad' ? ` · ${a.facultad}` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        ) : null}
+
         {/* Segmentar por facultad y tipo de evento */}
-        {listaFacultades.length > 0 || repTipos.length > 0 ? (
+        {!esAcademico && (listaFacultades.length > 0 || repTipos.length > 0) ? (
           <View style={styles.segWrap}>
             {listaFacultades.length > 0 ? (
               <View style={styles.segGroup}>
@@ -1920,6 +1987,12 @@ const styles = StyleSheet.create({
   segChipActivo: { backgroundColor: COLORS.purple, borderColor: COLORS.purple },
   segChipText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
   segChipTextActivo: { color: COLORS.white },
+  scopeBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 12,
+    paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10,
+    backgroundColor: COLORS.purple + '12', borderWidth: 1, borderColor: COLORS.purple + '35',
+  },
+  scopeBannerText: { flex: 1, fontSize: 12.5, fontWeight: '600', color: COLORS.textSecondary, lineHeight: 17 },
   compareRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginTop: 12,
     flexWrap: 'wrap',
