@@ -51,7 +51,8 @@ const LayoutsScreen = () => {
   const router = useRouter();
   const [nombreLayout, setNombreLayout] = useState('');
   const [imagenUri, setImagenUri] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [promptIA, setPromptIA] = useState('');
+  const [generandoIA, setGenerandoIA] = useState(false);
   const [layouts, setLayouts] = useState([]);
   const [loadingLayouts, setLoadingLayouts] = useState(true);
   const [layoutSeleccionado, setLayoutSeleccionado] = useState(null);
@@ -115,13 +116,13 @@ const eliminarLayout = async (layout) => {
     const msg = Platform.OS === 'web' ? window.alert('No se pudo eliminar el layout.') : Alert.alert('Error', 'No se pudo eliminar el layout.');
   }
   };
-  const subirLayout = async () => {
+const subirLayout = async () => {
     if (!nombreLayout.trim()) {
       Alert.alert('Error', 'Por favor ingresa un nombre para el layout.');
       return;
     }
     if (!imagenUri) {
-      Alert.alert('Error', 'Por favor selecciona una imagen.');
+      Alert.alert('Error', 'Por favor selecciona una imagen o genera con IA.');
       return;
     }
 
@@ -156,13 +157,43 @@ const eliminarLayout = async (layout) => {
       Alert.alert('Éxito', 'Layout subido correctamente.');
       setNombreLayout('');
       setImagenUri(null);
-      cargarLayouts(); 
+      cargarLayouts();
 
     } catch (error) {
       console.error('Error al subir layout:', error);
       Alert.alert('Error', 'No se pudo subir el layout. Verifica que el servidor esté activo.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generarConIA = async () => {
+    if (!promptIA.trim()) {
+      Alert.alert('Error', 'Por favor ingresa un prompt para la IA.');
+      return;
+    }
+    setGenerandoIA(true);
+    try {
+      const token = await getTokenAsync();
+      if (!token) {
+        Alert.alert('Error', 'No estás autenticado.');
+        return;
+      }
+
+      await axios.post(`${API_BASE_URL}/layouts/ia`, { prompt: promptIA }, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      Alert.alert('Éxito', 'Layout generado con IA. Ahora puedes subirlo o usarlo directamente.');
+      setPromptIA('');
+      setGenerandoIA(false);
+      cargarLayouts();
+
+    } catch (error) {
+      console.error('Error al generar layout con IA:', error);
+      Alert.alert('Error', 'No se pudo generar el layout con IA.');
+    } finally {
+      setGenerandoIA(false);
     }
   };
 
@@ -208,6 +239,37 @@ const eliminarLayout = async (layout) => {
             onChangeText={setNombreLayout}
           />
         </View>
+
+        <Text style={st.label}>Generar con IA</Text>
+        <View style={st.inputWrap}>
+          <Ionicons name="magic-wand-outline" size={17} color={C.primary} />
+          <TextInput
+            style={st.input}
+            placeholder="Ej: Layout con mesas en forma de U, 50 personas"
+            placeholderTextColor={C.t3}
+            accessibilityLabel="Prompt para IA"
+            value={promptIA}
+            onChangeText={setPromptIA}
+          />
+        </View>
+
+        {generandoIA ? (
+          <View style={st.inputWrap}>
+            <ActivityIndicator color={C.primary} size="small" />
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={st.dropZone}
+            onPress={generarConIA}
+            activeOpacity={0.7}
+          >
+            <View style={st.dropIconWrap}>
+              <Ionicons name="sparkles-outline" size={26} color={C.primary} />
+            </View>
+            <Text style={st.dropTitle}>Generar layout con IA</Text>
+            <Text style={st.dropSub}>Describe el layout deseado</Text>
+          </TouchableOpacity>
+        )}
 
         <Text style={st.label}>Imagen del layout</Text>
 

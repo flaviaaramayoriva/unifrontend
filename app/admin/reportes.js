@@ -169,14 +169,38 @@ const EstadoBadge = ({ estado }) => {
 };
 
 // ── Constructor de reportes HTML (período y anual) ─────────────
-const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, tipos, mensual, rangoTxt, titulo, anio, tipo }) => {
+const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, tipos, mensual, gestion, contexto, rangoTxt, titulo, anio, tipo }) => {
   const r = recursos || {};
   const eco = (economicos && economicos.resumen) || null;
   const bal = eco ? Number(eco.balance_real) : null;
+  const g = gestion || null;
+  const asisMap = {};
+  (g?.asistenciaPorEvento || []).forEach(ev => { asisMap[String(ev.idevento)] = ev; });
+  const ejeMap = {};
+  (g?.ejecucionPorEvento || []).forEach(ev => { ejeMap[String(ev.idevento)] = ev; });
   const porEstado = Array.isArray(operacionales?.porEstado) ? operacionales.porEstado : [];
   const estadoColor = { aprobado: '#047857', completado: '#1d4ed8', finalizado: '#1d4ed8', pendiente: '#F59E0B', rechazado: '#EF4444', cancelado: '#94A3B8', vencido: '#EA580C' };
   const porEvento = Array.isArray(economicos?.porEvento) ? economicos.porEvento : [];
   const porMerode = Array.isArray(economicos?.porMoneda) ? economicos.porMoneda : [];
+
+  const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : null);
+
+  const eventRows = (ev) => {
+    const e = String(ev.estado || '').toLowerCase();
+    const col = estadoBadgeStyles[e] || estadoBadgeFallback;
+    const asis = asisMap[String(ev.id)] || null;
+    const eje = ejeMap[String(ev.id)] || null;
+    const asisTxt = asis && asis.tasa !== null && asis.tasa !== undefined ? `${asis.tasa}%` : '–';
+    const ejeTxt = eje && eje.porcentaje !== null && eje.porcentaje !== undefined ? `${eje.porcentaje}%` : '–';
+    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(ev.nombre)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${ev.fecha ? String(ev.fecha).slice(0, 10) : '–'}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.lugar)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.solicitante)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(ev.recursos)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${asisTxt}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${ejeTxt}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;"><span style="background:${col.bg};color:${col.text};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">${capStr(ev.estado)}</span></td></tr>`;
+  };
 
   const economicoRows = porMerode.map(m => {
     const git = m.tipo === 'gasto' ? m.total : null;
@@ -186,17 +210,6 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
       `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:right;">${fmtBs(git)}</td>` +
       `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:right;${(bal || 0) >= 0 ? 'color:#047857;' : 'color:#dc2626;'};font-weight:700;">${fmtBs(bal)}</td></tr>`;
   }).join('');
-
-  const eventRows = (ev) => {
-    const e = String(ev.estado || '').toLowerCase();
-    const col = estadoBadgeStyles[e] || estadoBadgeFallback;
-    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(ev.nombre)}</td>` +
-      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${ev.fecha ? String(ev.fecha).slice(0, 10) : '–'}</td>` +
-      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.lugar)}</td>` +
-      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.solicitante)}</td>` +
-      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(ev.recursos)}</td>` +
-      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;"><span style="background:${col.bg};color:${col.text};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">${capStr(ev.estado)}</span></td></tr>`;
-  };
 
   // Evolución mensual para el anual
   let monthlyHtml = '';
@@ -269,6 +282,25 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(x.tipo)}</td>` +
       `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(x.total)}</td></tr>`;
   }).join('');
+
+  const solRows = (g?.topSolicitantes || []).slice(0, 10).map(x =>
+    `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(x.nombre)}</td>` +
+    `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(x.total)}</td>` +
+    `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;color:#047857;font-weight:700;">${fmtNum(x.aprobados)}</td></tr>`
+  ).join('');
+
+  const tasaAceptGlobal = g ? pct(g.aprobados, g.totalEventos) : null;
+  const hayGestion = g && (g.tasaAsistencia !== null || g.diasPromedioAprobacion !== null || g.ejecucionPresupuestaria?.porcentaje !== null || tasaAceptGlobal !== null);
+  const gestionHtml = hayGestion ? `
+    <div class="section-h">Indicadores de gestión</div>
+    <div class="stats-grid">
+      <div class="stat-card" style="border-left-color:#8b5cf6"><div class="stat-label">Asistencia</div><div class="stat-value" style="color:#8b5cf6">${g.tasaAsistencia !== null && g.tasaAsistencia !== undefined ? g.tasaAsistencia + '%' : '–'}</div><div style="font-size:10px;color:#64748b;">${fmtNum(g.asistentes)} de ${fmtNum(g.inscritos)} inscritos</div></div>
+      <div class="stat-card" style="border-left-color:#3B82F6"><div class="stat-label">Días hasta aprobación</div><div class="stat-value" style="color:#1d4ed8">${g.diasPromedioAprobacion !== null && g.diasPromedioAprobacion !== undefined ? g.diasPromedioAprobacion + ' d' : '–'}</div><div style="font-size:10px;color:#64748b;">promedio del período</div></div>
+      <div class="stat-card" style="border-left-color:#C44200"><div class="stat-label">Ejecución presupuesto</div><div class="stat-value" style="color:#C44200">${g.ejecucionPresupuestaria?.porcentaje !== null && g.ejecucionPresupuestaria?.porcentaje !== undefined ? g.ejecucionPresupuestaria.porcentaje + '%' : '–'}</div><div style="font-size:10px;color:#64748b;">Egresos reales Bs ${fmtNum(g.ejecucionPresupuestaria?.real_egresos || 0)}</div></div>
+      <div class="stat-card" style="border-left-color:#f59e0b"><div class="stat-label">Aceptación por facultad</div><div class="stat-value" style="color:#f59e0b">${tasaAceptGlobal !== null ? tasaAceptGlobal + '%' : '–'}</div><div style="font-size:10px;color:#64748b;">${fmtNum(g.aprobados)} aprobados de ${fmtNum(g.totalEventos)} eventos</div></div>
+    </div>
+    <div class="section-h">Top solicitantes</div>
+    <table class="main-table"><thead><tr><th style="text-align:left;">Solicitante</th><th style="width:18%;text-align:center;">Eventos</th><th style="width:22%;text-align:center;">Aprobados</th></tr></thead><tbody>${solRows || '<tr><td colspan="3" style="padding:12px;color:#94A3B8;text-align:center;">Sin datos</td></tr>'}</tbody></table>` : '';
 
   const listaEventos = (r.eventoRecientes || []).slice(0, 80).map(ev => {
     const econ = porEvento.find(x => String(x.idevento) === String(ev.id));
@@ -343,11 +375,13 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
       <div class="meta-chip">📅 ${rangoTxt}</div>
       <div class="meta-chip">🗂 ${fmtNum(r.totalSolicitudes)} solicitudes</div>
       ${tipo === 'anual' && anio ? `<div class="meta-chip">🗓 Año ${anio}</div>` : ''}
+      ${contexto ? `<div class="meta-chip">🎯 ${contexto}</div>` : ''}
     </div>
     <div class="accent-bar"></div>
   </div>
   <div class="content">
     ${kpiGrid}
+    ${gestionHtml}
     ${monthlyHtml}
     <div class="section-h">Distribución por estado</div>
     <table class="main-table"><thead><tr><th style="text-align:left;">Estado</th><th style="width:20%;text-align:center;">Cantidad</th></tr></thead><tbody>${estadosHtml || '<tr><td colspan="2" style="padding:12px;color:#94A3B8;text-align:center;">Sin datos</td></tr>'}</tbody></table>
@@ -361,8 +395,8 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     <div class="page-break"></div>
     <div class="section-h">Detalle de eventos</div>
     <table class="main-table">
-      <thead><tr><th style="text-align:left;">Evento</th><th style="width:11%;">Fecha</th><th style="width:17%;">Lugar</th><th style="width:17%;">Solicitante</th><th style="width:9%;text-align:center;">Recursos</th><th style="width:13%;text-align:center;">Estado</th></tr></thead>
-      <tbody>${listaEventos || '<tr><td colspan="6" style="padding:12px;color:#94A3B8;text-align:center;">Sin eventos</td></tr>'}</tbody>
+      <thead><tr><th style="text-align:left;">Evento</th><th style="width:10%;">Fecha</th><th style="width:14%;">Lugar</th><th style="width:14%;">Solicitante</th><th style="width:7%;text-align:center;">Recursos</th><th style="width:9%;text-align:center;">Asist.</th><th style="width:9%;text-align:center;">Presup.</th><th style="width:12%;text-align:center;">Estado</th></tr></thead>
+      <tbody>${listaEventos || '<tr><td colspan="8" style="padding:12px;color:#94A3B8;text-align:center;">Sin eventos</td></tr>'}</tbody>
     </table>
     <div class="footer"><strong>Panel de Administración UFT</strong> · Sistema de Gestión de Eventos · Generado el ${new Date().toLocaleDateString('es-BO', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
   </div>
@@ -814,7 +848,7 @@ const ReportesAvanzadosScreen = () => {
   const exportarCSV = async () => {
     try {
       if (!tablaEventos.length) { showError('No hay eventos para exportar.'); return; }
-      const head = ['ID', 'Evento', 'Fecha', 'Lugar', 'Solicitante', 'Recursos', 'Estado', 'Balance'];
+      const head = ['ID', 'Evento', 'Fecha', 'Lugar', 'Solicitante', 'Recursos', 'Asistencia %', 'Ejecución %', 'Estado', 'Balance'];
       const rows = tablaEventos.map(r => [
         r.id,
         `"${(r.nombre || '').replace(/"/g, '""')}"`,
@@ -822,6 +856,8 @@ const ReportesAvanzadosScreen = () => {
         `"${(r.lugar || '').replace(/"/g, '""')}"`,
         `"${(r.solicitante || '').replace(/"/g, '""')}"`,
         r.recursos,
+        r.tasaAsistencia !== null && r.tasaAsistencia !== undefined ? r.tasaAsistencia : '',
+        r.ejecucion !== null && r.ejecucion !== undefined ? r.ejecucion : '',
         r.estado || '',
         r.balance !== null && r.balance !== undefined ? r.balance : '',
       ]);
@@ -847,7 +883,25 @@ const ReportesAvanzadosScreen = () => {
     }
   };
 
-  // ── Exportación PDF (resumen del período filtrado) ────────
+  // ── Contexto de filtros activos (para reportes) ─────────
+  const contextoFiltros = () => {
+    const parts = [];
+    if (!esAcademico && academicoFiltro) {
+      const a = listaAcademicos.find(x => String(x.idacademico) === String(academicoFiltro));
+      if (a) parts.push(`Académico: ${a.nombre}`);
+    }
+    if (facultadFiltro) {
+      const f = listaFacultades.find(x => String(x.facultad_id) === String(facultadFiltro));
+      if (f) parts.push(`Facultad: ${f.nombre_facultad}`);
+    }
+    if (tipoFiltro) {
+      const t = repTipos.find(x => String(x.idtipoevento) === String(tipoFiltro));
+      if (t) parts.push(`Tipo: ${t.tipo}`);
+    }
+    return parts.join(' · ') || null;
+  };
+
+  // ── Exportación PDF (resumen de la vista filtrada actual) ────────
   const generarPDF = async () => {
     try {
       const rangoTxt = (reporteDesde || reporteHasta)
@@ -860,6 +914,8 @@ const ReportesAvanzadosScreen = () => {
         economicos: repEconomicos,
         tipos: repTipos,
         mensual: repMensual,
+        gestion: repGestion,
+        contexto: contextoFiltros(),
         rangoTxt,
         titulo: 'Reporte de Eventos y Recursos',
         tipo: 'periodo',
@@ -891,6 +947,8 @@ const ReportesAvanzadosScreen = () => {
         economicos: datos.economicos,
         tipos: datos.tipos,
         mensual: datos.mensual,
+        gestion: datos.gestion,
+        contexto: contextoFiltros(),
         rangoTxt: `01 de enero al ${hastaTxt}`,
         titulo: `Reporte Anual de Gestión`,
         anio,
@@ -925,6 +983,8 @@ const ReportesAvanzadosScreen = () => {
         economicos: datos.economicos,
         tipos: datos.tipos,
         mensual: datos.mensual,
+        gestion: datos.gestion,
+        contexto: contextoFiltros(),
         rangoTxt: `${MONTH_NAMES_FULL[mes - 1]} ${anio}`,
         titulo: `Reporte Mensual · ${MONTH_NAMES_FULL[mes - 1]} ${anio}`,
         tipo: 'mensual',
@@ -1366,8 +1426,8 @@ const ReportesAvanzadosScreen = () => {
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuExportAbierto(false); generarPDF(); }} accessibilityRole="button">
               <View style={[styles.menuIconWrap, { backgroundColor: '#ECFEFF' }]}><Ionicons name="print-outline" size={20} color={COLORS.cyan} /></View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.menuItemTitle}>PDF del período filtrado</Text>
-                <Text style={styles.menuItemSub}>Reporte con el rango de fechas elegido</Text>
+                <Text style={styles.menuItemTitle}>Imprimir vista actual (PDF)</Text>
+                <Text style={styles.menuItemSub}>Todo lo que ves en pantalla, con filtros y gestión</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
             </TouchableOpacity>
