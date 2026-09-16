@@ -433,7 +433,7 @@ const EventDetailScreen = () => {
       <div class="section">
         <div class="section-title">Layout del Evento</div>
         ${event.layout.url_imagen ? `
-          <img src="${API_BASE_URL}/uploads/${event.layout.url_imagen}" style="width:100%; max-width:500px; border-radius:8px; margin-bottom:0.3cm;" />
+          <img src="https://unibackend-production-a0f8.up.railway.app/uploads/${event.layout.url_imagen}" style="width:100%; max-width:500px; border-radius:8px; margin-bottom:0.3cm;" />
         ` : ''}
         <div>${event.layout.nombre || `Layout ID: ${event.layout.idlayout}`}</div>
       </div>` : '';
@@ -878,7 +878,7 @@ const EventDetailScreen = () => {
             <Text style={styles.sectionTitle}>Layout del Evento</Text>
             {event.layout.url_imagen ? (
               <Image
-                source={{ uri: `${API_BASE_URL}/uploads/${event.layout.url_imagen}` }}
+                source={{ uri: `https://unibackend-production-a0f8.up.railway.app/uploads/${event.layout.url_imagen}` }}
                 style={styles.layoutImage}
                 resizeMode="contain"
               />

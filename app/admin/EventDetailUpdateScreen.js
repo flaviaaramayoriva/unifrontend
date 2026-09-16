@@ -616,7 +616,7 @@ const EventDetailScreen = () => {
           <View style={styles.sectionCard}>
             <SectionHeader icon="grid-outline" title="Layout del Evento" />
             {event.layout.url_imagen ? (
-              <Image source={{ uri: `${API_BASE_URL}/uploads/${event.layout.url_imagen}` }} style={styles.layoutImage} resizeMode="contain" />
+              <Image source={{ uri: `https://unibackend-production-a0f8.up.railway.app/uploads/${event.layout.url_imagen}` }} style={styles.layoutImage} resizeMode="contain" />
             ) : (
               <View style={styles.layoutPlaceholder}>
                 <Ionicons name="image-outline" size={50} color={COLORS.grayText} />

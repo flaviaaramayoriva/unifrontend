@@ -963,7 +963,7 @@ const programacionEvento = () => {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.layoutsGrid}>
                 {layoutsDisponibles.map((layout) => {
-                  const imageUrl = layout.imagenUrl || `${API_BASE_URL}/uploads/${layout.url_imagen}`;
+                  const imageUrl = layout.imagenUrl || `https://unibackend-production-a0f8.up.railway.app/uploads/${layout.url_imagen}`;
                   const isSelected = layoutSeleccionado?.idlayout === layout.idlayout;
 
                   return (
