@@ -785,7 +785,7 @@ const ReportesAvanzadosScreen = () => {
       const eje = ejeMap[String(ev.id)] || null;
       return {
         id: ev.id,
-        nombre: ev.nombre || 'Sin nombre',
+        nombre: ev.nombreEvento || ev.nombre || 'Sin nombre',
         fecha: ev.fecha || ev.fechaevento || null,
         lugar: ev.lugar || null,
         solicitante: ev.solicitante || null,
