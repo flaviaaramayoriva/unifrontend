@@ -424,6 +424,7 @@ const ReportesAvanzadosScreen = () => {
   const [usuarioMe, setUsuarioMe] = useState(null); // { role, id, nombre }
   const [listaAcademicos, setListaAcademicos] = useState([]);
   const [academicoFiltro, setAcademicoFiltro] = useState(null); // idacademico | null
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false); // panel de filtros plegable
 
   // Datos
   const [repRecursos, setRepRecursos] = useState(null);
@@ -437,6 +438,8 @@ const ReportesAvanzadosScreen = () => {
   const showError = (msg) => Alert.alert('Error', msg, [{ text: 'OK' }]);
 
   const esAcademico = usuarioMe?.role === 'academico';
+
+  const filtrosActivos = (facultadFiltro ? 1 : 0) + (tipoFiltro ? 1 : 0) + (!esAcademico && academicoFiltro ? 1 : 0);
 
   const paramsReportes = useMemo(() => {
     const p = {};
@@ -1149,6 +1152,23 @@ const ReportesAvanzadosScreen = () => {
               <Text style={styles.drillChipText}>Mes {drillMes.slice(0, 4)}-{drillMes.slice(5, 7)}</Text>
             </TouchableOpacity>
           ) : null}
+          {!esAcademico && (listaAcademicos.length > 0 || listaFacultades.length > 0 || repTipos.length > 0) ? (
+            <TouchableOpacity
+              style={[styles.presetChip, styles.filtrosToggle, filtrosAbiertos && styles.presetChipActivo]}
+              onPress={() => setFiltrosAbiertos(v => !v)}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir o cerrar filtros avanzados"
+            >
+              <Ionicons name="funnel-outline" size={13} color={filtrosAbiertos ? COLORS.white : COLORS.textSecondary} />
+              <Text style={[styles.presetChipText, filtrosActivos > 0 && styles.presetChipTextConFiltro, filtrosAbiertos && styles.presetChipTextActivo]}>Filtros</Text>
+              {filtrosActivos > 0 ? (
+                <View style={[styles.filtrosBadge, filtrosAbiertos && { backgroundColor: COLORS.white }]}>
+                  <Text style={[styles.filtrosBadgeText, filtrosAbiertos && { color: COLORS.primary }]}>{filtrosActivos}</Text>
+                </View>
+              ) : null}
+              <Ionicons name={filtrosAbiertos ? 'chevron-up' : 'chevron-down'} size={12} color={filtrosAbiertos ? COLORS.white : COLORS.textTertiary} />
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* Banner de alcance para académicos */}
@@ -1161,40 +1181,36 @@ const ReportesAvanzadosScreen = () => {
           </View>
         ) : null}
 
-        {/* Selector por académico (solo admin/DAF) */}
-        {!esAcademico && listaAcademicos.length > 0 ? (
+        {/* Filtros avanzados: académico, facultad y tipo (colapsados por defecto) */}
+        {filtrosAbiertos && !esAcademico && (listaAcademicos.length > 0 || listaFacultades.length > 0 || repTipos.length > 0) ? (
           <View style={styles.segWrap}>
-            <View style={styles.segGroup}>
-              <Text style={styles.segLabel}><Ionicons name="person-outline" size={12} color={COLORS.primary} /> Ver reportes de</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segChipsRow}>
-                <TouchableOpacity
-                  style={[styles.segChip, !academicoFiltro && styles.segChipActivo]}
-                  onPress={() => setAcademicoFiltro(null)}
-                  accessibilityRole="button"
-                >
-                  <Text style={[styles.segChipText, !academicoFiltro && styles.segChipTextActivo]}>Todos</Text>
-                </TouchableOpacity>
-                {listaAcademicos.map(a => (
+            {listaAcademicos.length > 0 ? (
+              <View style={styles.segGroup}>
+                <Text style={styles.segLabel}><Ionicons name="person-outline" size={12} color={COLORS.primary} /> Ver reportes de</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segChipsRow}>
                   <TouchableOpacity
-                    key={a.idacademico}
-                    style={[styles.segChip, academicoFiltro === a.idacademico && styles.segChipActivo]}
-                    onPress={() => setAcademicoFiltro(academicoFiltro === a.idacademico ? null : a.idacademico)}
+                    style={[styles.segChip, !academicoFiltro && styles.segChipActivo]}
+                    onPress={() => setAcademicoFiltro(null)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Ver reportes de ${a.nombre}`}
                   >
-                    <Text style={[styles.segChipText, academicoFiltro === a.idacademico && styles.segChipTextActivo]} numberOfLines={1}>
-                      {a.nombre}{a.facultad && a.facultad !== 'Sin facultad' ? ` · ${a.facultad}` : ''}
-                    </Text>
+                    <Text style={[styles.segChipText, !academicoFiltro && styles.segChipTextActivo]}>Todos</Text>
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          </View>
-        ) : null}
-
-        {/* Segmentar por facultad y tipo de evento */}
-        {!esAcademico && (listaFacultades.length > 0 || repTipos.length > 0) ? (
-          <View style={styles.segWrap}>
+                  {listaAcademicos.map(a => (
+                    <TouchableOpacity
+                      key={a.idacademico}
+                      style={[styles.segChip, academicoFiltro === a.idacademico && styles.segChipActivo]}
+                      onPress={() => setAcademicoFiltro(academicoFiltro === a.idacademico ? null : a.idacademico)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ver reportes de ${a.nombre}`}
+                    >
+                      <Text style={[styles.segChipText, academicoFiltro === a.idacademico && styles.segChipTextActivo]} numberOfLines={1}>
+                        {a.nombre}{a.facultad && a.facultad !== 'Sin facultad' ? ` · ${a.facultad}` : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
             {listaFacultades.length > 0 ? (
               <View style={styles.segGroup}>
                 <Text style={styles.segLabel}><Ionicons name="school-outline" size={12} color={COLORS.purple} /> Facultad</Text>
@@ -1973,6 +1989,13 @@ const styles = StyleSheet.create({
   presetChipTextActivo: { color: COLORS.white },
   drillChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.purple, borderColor: COLORS.purple },
   drillChipText: { fontSize: 12, fontWeight: '800', color: COLORS.white },
+  filtrosToggle: { flexDirection: 'row', alignItems: 'center', gap: 5, marginLeft: 'auto', paddingVertical: 7 },
+  filtrosBadge: {
+    minWidth: 17, height: 17, borderRadius: 99, paddingHorizontal: 4,
+    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
+  },
+  filtrosBadgeText: { fontSize: 10.5, fontWeight: '800', color: COLORS.white },
+  presetChipTextConFiltro: { color: COLORS.primary },
   segWrap: { paddingHorizontal: 16, marginTop: 12 },
   segGroup: { marginBottom: 9 },
   segLabel: {
