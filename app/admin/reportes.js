@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, useWindowDimensions, Platform,
-  Modal
+  Modal, TextInput, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import axios from 'axios';
@@ -111,15 +112,31 @@ const RankBar = ({ rows }) => {
   );
 };
 
-const KpiCard = ({ label, value, icon, color, sub }) => (
-  <View style={[styles.kpiCard, { borderTopColor: color }]}>
+const KpiCard = ({ label, value, icon, color, sub, delta, onPress, active }) => (
+  <TouchableOpacity
+    style={[styles.kpiCard, { borderTopColor: color }, active && { borderColor: color, backgroundColor: color + '0A' }]}
+    onPress={onPress}
+    disabled={!onPress}
+    activeOpacity={0.75}
+    accessibilityRole="button"
+    accessibilityLabel={label}
+  >
     <View style={[styles.kpiIconWrap, { backgroundColor: color + '15' }]}>
       <Ionicons name={icon} size={20} color={color} />
     </View>
     <Text style={styles.kpiValue}>{value}</Text>
     <Text style={styles.kpiLabel}>{label}</Text>
     {sub ? <Text style={styles.kpiSub}>{sub}</Text> : null}
-  </View>
+    {delta !== null && delta !== undefined ? (
+      <View style={styles.kpiDelta}>
+        <Ionicons name={delta >= 0 ? 'trending-up' : 'trending-down'} size={13} color={delta >= 0 ? COLORS.success : COLORS.error} />
+        <Text style={[styles.kpiDeltaText, { color: delta >= 0 ? COLORS.success : COLORS.error }]}>
+          {delta >= 0 ? '+' : ''}{delta}%
+        </Text>
+        <Text style={styles.kpiDeltaSub}>vs ant.</Text>
+      </View>
+    ) : null}
+  </TouchableOpacity>
 );
 
 const SectionHeader = ({ title, subtitle, icon, action }) => (
@@ -365,20 +382,32 @@ const emitirDocumento = async (html, nombre, ventanaPrevia) => {
 
 const ReportesAvanzadosScreen = () => {
   const { width: windowWidth } = useWindowDimensions();
+  const router = useRouter();
   const chartWidth = Math.max(windowWidth - 56, 240);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [generando, setGenerando] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Filtro de fechas
   const [reporteDesde, setReporteDesde] = useState('');
   const [reporteHasta, setReporteHasta] = useState('');
+  const [periodoPreset, setPeriodoPreset] = useState('mes');
+  const [drillMes, setDrillMes] = useState(null); // 'YYYY-MM' al tocar un punto del gráfico
   const [pickerTarget, setPickerTarget] = useState(null); // 'desde' | 'hasta' | null
   const [anioModalAbierto, setAnioModalAbierto] = useState(false);
   const [menuExportAbierto, setMenuExportAbierto] = useState(false);
   const [mesModalAbierto, setMesModalAbierto] = useState(false);
   const [eventoExpandido, setEventoExpandido] = useState(null);
+
+  // Interactividad
+  const [tendenciaMetrica, setTendenciaMetrica] = useState('eventos');
+  const [busqueda, setBusqueda] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState(null);
+  const [ordenRecursos, setOrdenRecursos] = useState('desc');
+  const [ordenTipos, setOrdenTipos] = useState('desc');
+  const [prevData, setPrevData] = useState(null); // período anterior para comparar
 
   // Datos
   const [repRecursos, setRepRecursos] = useState(null);
@@ -421,46 +450,125 @@ const ReportesAvanzadosScreen = () => {
     return { ...datos, ok: !!ok };
   }, []);
 
-  const cargarDatos = useCallback(async () => {
-    setLoading(true);
+  // Ventana anterior (misma duración, inmediatamente antes) para comparación
+  const rangoAnterior = useMemo(() => {
+    const hoy = new Date();
+    let ini, fin;
+    if (reporteDesde || reporteHasta) {
+      ini = reporteDesde ? new Date(reporteDesde + 'T00:00:00') : new Date(hoy);
+      fin = reporteHasta ? new Date(reporteHasta + 'T00:00:00') : new Date(hoy);
+      if (fin < ini) fin = new Date(ini);
+    } else {
+      ini = new Date(hoy); ini.setDate(ini.getDate() - 30);
+      fin = new Date(hoy);
+    }
+    const dias = Math.round((fin - ini) / 86400000) + 1;
+    const iniPrev = new Date(ini);
+    iniPrev.setDate(iniPrev.getDate() - dias);
+    const finPrev = new Date(ini);
+    finPrev.setDate(finPrev.getDate() - 1);
+    return { desde: fmtLocalDate(iniPrev), hasta: fmtLocalDate(finPrev) };
+  }, [reporteDesde, reporteHasta]);
+
+  const cargarDatos = useCallback(async (silent) => {
+    if (silent) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
       const datos = await fetchDatos(paramsReportes);
-      if (!datos) { setError('Sesión no encontrada.'); return; }
+      if (!datos) { if (!silent) setError('Sesión no encontrada.'); return; }
       setRepRecursos(datos.recursos);
       setRepInscripciones(datos.inscripciones);
       setRepOperacionales(datos.operacionales);
       setRepEconomicos(datos.economicos);
       setRepTipos(datos.tipos);
       setRepMensual(datos.mensual);
-      if (!datos.ok) setError('No se pudo contactar el servidor.');
+      if (!datos.ok && !silent) setError('No se pudo contactar el servidor.');
+
+      try {
+        const token = await getTokenAsync();
+        const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+        const [prevRec, prevInsc] = await Promise.all([
+          axios.get(`${API_BASE_URL}/reportes/recursos`, { params: { periodo: 'mes', ...rangoAnterior }, headers }).catch(() => null),
+          axios.get(`${API_BASE_URL}/reportes/inscripciones`, { params: rangoAnterior, headers }).catch(() => null),
+        ]);
+        setPrevData(prevRec?.data ? {
+          solicitudes: prevRec.data.totalSolicitudes || 0,
+          aprobados: prevRec.data.aprobadas || 0,
+          inscritos: prevInsc?.data?.total || 0,
+        } : null);
+      } catch (e) { /* comparación opcional */ }
     } catch (err) {
       console.error(err);
-      setError('No se pudieron cargar los datos.');
+      if (!silent) setError('No se pudieron cargar los datos.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [fetchDatos, paramsReportes]);
+  }, [fetchDatos, paramsReportes, rangoAnterior]);
 
   useEffect(() => { cargarDatos(); }, [cargarDatos]);
 
   const limpiarFiltro = () => { setReporteDesde(''); setReporteHasta(''); };
+  const limpiarDrill = () => { setDrillMes(null); setReporteDesde(''); setReporteHasta(''); setPeriodoPreset('todo'); };
+
+  // Presets rápidos de período
+  const PERIODOS = [
+    { id: '7d', label: '7 días' },
+    { id: 'mes', label: 'Este mes' },
+    { id: '3m', label: '3 meses' },
+    { id: 'anio', label: 'Año' },
+    { id: 'todo', label: 'Todo' },
+  ];
+  const aplicarPeriodo = (id) => {
+    setPeriodoPreset(id);
+    setDrillMes(null);
+    const hoy = new Date();
+    if (id === 'todo') { setReporteDesde(''); setReporteHasta(''); return; }
+    if (id === '7d') { const d = new Date(hoy); d.setDate(d.getDate() - 6); setReporteDesde(fmtLocalDate(d)); setReporteHasta(fmtLocalDate(hoy)); return; }
+    if (id === 'mes') { setReporteDesde(`${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`); setReporteHasta(fmtLocalDate(hoy)); return; }
+    if (id === '3m') { const d = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1); setReporteDesde(fmtLocalDate(d)); setReporteHasta(fmtLocalDate(hoy)); return; }
+    if (id === 'anio') { setReporteDesde(`${hoy.getFullYear()}-01-01`); setReporteHasta(fmtLocalDate(hoy)); }
+  };
+  const presetActivo = useMemo(() => {
+    if (drillMes) return 'drill';
+    if (!reporteDesde && !reporteHasta) return 'todo';
+    return periodoPreset;
+  }, [drillMes, reporteDesde, reporteHasta, periodoPreset]);
+
+  // Drill-down: tocar un mes en la tendencia
+  const aplicarMes = (mesKey) => {
+    const anio = parseInt(mesKey.slice(0, 4), 10);
+    const mes = parseInt(mesKey.slice(5, 7), 10);
+    setReporteDesde(`${anio}-${String(mes).padStart(2, '0')}-01`);
+    setReporteHasta(`${anio}-${String(mes).padStart(2, '0')}-${String(lastDayOfMonth(anio, mes)).padStart(2, '0')}`);
+    setDrillMes(mesKey);
+    setPeriodoPreset(null);
+  };
+
+  const deltaPct = (v, pv) => {
+    if (pv === null || pv === undefined) return null;
+    if (pv <= 0) return v > 0 ? 100 : 0;
+    return Math.round(((v - pv) / pv) * 100);
+  };
 
   // ── Derivados para gráficos ──────────────────────────────
   const kpis = useMemo(() => {
     const r = repRecursos || {};
     const eco = repEconomicos?.resumen || null;
     const bal = eco ? Number(eco.balance_real) : null;
+    const PV = prevData || null;
+    const d = (v, pv) => (PV ? deltaPct(v, pv) : null);
+    const onEstado = (f) => () => setEstadoFiltro(estadoFiltro === f ? null : f);
     return [
-      { label: 'Solicitudes', value: fmtNum(r.totalSolicitudes), icon: 'file-tray-full-outline', color: COLORS.cyan, sub: 'total de recursos' },
-      { label: 'Aprobados', value: fmtNum(r.aprobadas), icon: 'checkmark-done-outline', color: COLORS.success, sub: 'eventos aprobados' },
-      { label: 'Pendientes', value: fmtNum(r.pendientes), icon: 'time-outline', color: COLORS.warning, sub: 'en revisión' },
-      { label: 'Rechazados', value: fmtNum((r.rechazadas || 0) + (r.canceladas || 0)), icon: 'close-circle-outline', color: COLORS.error, sub: 'rechazados + cancelados' },
-      { label: 'Inscritos', value: fmtNum(repInscripciones?.total), icon: 'person-add-outline', color: COLORS.purple, sub: 'participantes' },
+      { label: 'Solicitudes', value: fmtNum(r.totalSolicitudes), icon: 'file-tray-full-outline', color: COLORS.cyan, sub: 'total de recursos', delta: d(r.totalSolicitudes || 0, PV?.solicitudes), onPress: onEstado(null), active: estadoFiltro === null },
+      { label: 'Aprobados', value: fmtNum(r.aprobadas), icon: 'checkmark-done-outline', color: COLORS.success, sub: 'eventos aprobados', delta: d(r.aprobadas || 0, PV?.aprobados), onPress: onEstado('aprobado'), active: estadoFiltro === 'aprobado' },
+      { label: 'Pendientes', value: fmtNum(r.pendientes), icon: 'time-outline', color: COLORS.warning, sub: 'en revisión', onPress: onEstado('pendiente'), active: estadoFiltro === 'pendiente' },
+      { label: 'Rechazados', value: fmtNum((r.rechazadas || 0) + (r.canceladas || 0)), icon: 'close-circle-outline', color: COLORS.error, sub: 'rechazados + cancelados', onPress: onEstado('rechazado'), active: estadoFiltro === 'rechazado' },
+      { label: 'Inscritos', value: fmtNum(repInscripciones?.total), icon: 'person-add-outline', color: COLORS.purple, sub: 'participantes', delta: d(repInscripciones?.total || 0, PV?.inscritos) },
       { label: 'Balance real', value: bal === null || bal === undefined ? '–' : fmtBs(bal), icon: 'wallet-outline', color: bal >= 0 ? COLORS.success : COLORS.error, sub: 'informes de cierre' },
       { label: 'Tasa aprobación', value: r.totalSolicitudes ? Math.round((r.aprobadas / r.totalSolicitudes) * 100) + '%' : '–', icon: 'analytics-outline', color: COLORS.info, sub: 'sobre solicitudes' },
     ];
-  }, [repRecursos, repInscripciones, repEconomicos]);
+  }, [repRecursos, repInscripciones, repEconomicos, prevData, estadoFiltro, deltaPct]);
 
   const pieEstados = useMemo(() => {
     const colorMap = {
@@ -484,6 +592,7 @@ const ReportesAvanzadosScreen = () => {
     const mes = repMensual;
     return {
       labels: mes.map(m => monthLabel(m.mes)),
+      meses: mes.map(m => m.mes),
       total: mes.map(m => m.totalEvents || 0),
       aprob: mes.map(m => m.aprobado || 0),
     };
@@ -493,21 +602,24 @@ const ReportesAvanzadosScreen = () => {
     const porMes = Array.isArray(repInscripciones?.porMes) ? repInscripciones.porMes : [];
     return {
       labels: porMes.map(r => monthLabel(r.mes)),
+      meses: porMes.map(r => r.mes),
       values: porMes.map(r => r.inscritos || 0),
     };
   }, [repInscripciones]);
 
-  const rankingRecursos = useMemo(() =>
-    (repRecursos?.recursosMasUsados || []).map(r => ({ name: r.nombre, value: r.usos })),
-  [repRecursos]);
+  const rankingRecursos = useMemo(() => {
+    const arr = (repRecursos?.recursosMasUsados || []).map(r => ({ name: r.nombre, value: r.usos }));
+    return ordenRecursos === 'asc' ? [...arr].sort((a, b) => a.value - b.value) : arr;
+  }, [repRecursos, ordenRecursos]);
 
   const rankingFacultades = useMemo(() =>
     (repInscripciones?.porFacultad || []).map(r => ({ name: r.facultad, value: r.inscritos })),
   [repInscripciones]);
 
-  const rankingTipos = useMemo(() =>
-    repTipos.map(r => ({ name: r.tipo, value: r.total })),
-  [repTipos]);
+  const rankingTipos = useMemo(() => {
+    const arr = repTipos.map(r => ({ name: r.tipo, value: r.total }));
+    return ordenTipos === 'asc' ? [...arr].sort((a, b) => a.value - b.value) : arr;
+  }, [repTipos, ordenTipos]);
 
   const tablaEventos = useMemo(() => {
     const recientes = repRecursos?.eventoRecientes || [];
@@ -753,6 +865,40 @@ const ReportesAvanzadosScreen = () => {
     return lista;
   }, []);
 
+  // ── Filtros de búsqueda y estado aplicados a las listas ──
+  const coincideEstado = (est) => {
+    const e = String(est || '').toLowerCase();
+    if (!estadoFiltro) return true;
+    if (estadoFiltro === 'rechazado') return e === 'rechazado' || e === 'cancelado';
+    return e === estadoFiltro;
+  };
+  const coincideBusqueda = (nombre, solicitante) => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return true;
+    return String(nombre || '').toLowerCase().includes(q) || String(solicitante || '').toLowerCase().includes(q);
+  };
+  const tablaEventosFiltrados = useMemo(() =>
+    tablaEventos.filter(r => coincideEstado(r.estado) && coincideBusqueda(r.nombre, r.solicitante)),
+  [tablaEventos, estadoFiltro, busqueda]);
+
+  const detalleEventosFiltrados = useMemo(() =>
+    detalleEventos.filter(r => coincideEstado(r.estado) && coincideBusqueda(r.nombre, r.solicitante)),
+  [detalleEventos, estadoFiltro, busqueda]);
+
+  const ESTADOS_FILTRO = [
+    { id: null, label: 'Todos' },
+    { id: 'aprobado', label: 'Aprobado' },
+    { id: 'pendiente', label: 'Pendiente' },
+    { id: 'rechazado', label: 'Rechazado' },
+    { id: 'cancelado', label: 'Cancelado' },
+    { id: 'vencido', label: 'Vencido' },
+  ];
+
+  const irDetalleEvento = (id) => {
+    if (!id && id !== 0) return;
+    router.push({ pathname: '/admin/EventDetailScreen', params: { eventId: String(id) } });
+  };
+
   const fechaTxt = (v) => {
     if (!v) return '–';
     const d = new Date(String(v).slice(0, 10) + 'T00:00:00');
@@ -772,7 +918,7 @@ const ReportesAvanzadosScreen = () => {
               <TouchableOpacity style={styles.iconBtnPrimary} onPress={() => setMenuExportAbierto(true)} accessibilityRole="button" accessibilityLabel="Generar documentos">
                 <Ionicons name="document-text-outline" size={18} color={COLORS.white} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconBtn} onPress={cargarDatos} accessibilityRole="button" accessibilityLabel="Actualizar datos">
+              <TouchableOpacity style={styles.iconBtn} onPress={() => cargarDatos(true)} accessibilityRole="button" accessibilityLabel="Actualizar datos">
                 <Ionicons name="refresh" size={18} color={COLORS.primary} />
               </TouchableOpacity>
             </View>
@@ -816,6 +962,8 @@ const ReportesAvanzadosScreen = () => {
                     onChange={(ev, date) => {
                       if (ev.type === 'set' && date) {
                         const val = fmtLocalDate(date);
+                        setPeriodoPreset(null);
+                        setDrillMes(null);
                         if (pickerTarget === 'desde') {
                           if (reporteHasta && val > reporteHasta) setReporteHasta(val);
                           setReporteDesde(val);
@@ -831,8 +979,8 @@ const ReportesAvanzadosScreen = () => {
                     <TouchableOpacity style={styles.modalBtnGhost} onPress={() => setPickerTarget(null)}>
                       <Text style={styles.modalBtnGhostText}>Cancelar</Text>
                     </TouchableOpacity>
-                    {reporteDesde || reporteHasta ? (
-                      <TouchableOpacity style={styles.modalBtnGhost} onPress={() => { limpiarFiltro(); setPickerTarget(null); }}>
+                    {reporteDesde || reporteHasta || drillMes ? (
+                      <TouchableOpacity style={styles.modalBtnGhost} onPress={() => { limpiarDrill(); setPickerTarget(null); }}>
                         <Text style={styles.modalBtnGhostText}>Limpiar</Text>
                       </TouchableOpacity>
                     ) : null}
@@ -840,6 +988,27 @@ const ReportesAvanzadosScreen = () => {
                 </TouchableOpacity>
               </TouchableOpacity>
             </Modal>
+          ) : null}
+        </View>
+
+        {/* Presets rápidos de período */}
+        <View style={styles.presetsRow}>
+          {PERIODOS.map(p => (
+            <TouchableOpacity
+              key={p.id}
+              style={[styles.presetChip, presetActivo === p.id && styles.presetChipActivo]}
+              onPress={() => aplicarPeriodo(p.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Período ${p.label}`}
+            >
+              <Text style={[styles.presetChipText, presetActivo === p.id && styles.presetChipTextActivo]}>{p.label}</Text>
+            </TouchableOpacity>
+          ))}
+          {drillMes ? (
+            <TouchableOpacity style={[styles.presetChip, styles.drillChip]} onPress={limpiarDrill} accessibilityRole="button" accessibilityLabel="Quitar filtro de mes">
+              <Ionicons name="close-circle" size={13} color={COLORS.white} />
+              <Text style={styles.drillChipText}>Mes {drillMes.slice(0, 4)}-{drillMes.slice(5, 7)}</Text>
+            </TouchableOpacity>
           ) : null}
         </View>
       </View>
@@ -981,7 +1150,13 @@ const ReportesAvanzadosScreen = () => {
         </View>
       </Modal>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => cargarDatos(true)} tintColor={COLORS.primary} colors={[COLORS.primary]} />
+        }
+      >
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={COLORS.primary} />
@@ -991,7 +1166,7 @@ const ReportesAvanzadosScreen = () => {
           <View style={styles.centered}>
             <Ionicons name="cloud-offline-outline" size={44} color={COLORS.textTertiary} />
             <Text style={styles.loadingText}>{error}</Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={cargarDatos}>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => cargarDatos(false)}>
               <Text style={styles.retryBtnText}>Reintentar</Text>
             </TouchableOpacity>
           </View>
@@ -1002,38 +1177,67 @@ const ReportesAvanzadosScreen = () => {
               <SectionHeader
                 icon="pulse-outline"
                 title="Métricas del período"
-                subtitle={reporteDesde || reporteHasta ? `${reporteDesde || '…'} → ${reporteHasta || 'hoy'}` : 'Sin filtro'}
+                subtitle={drillMes ? `Filtrado a ${MONTH_NAMES_FULL[parseInt(drillMes.slice(5, 7), 10) - 1]} ${drillMes.slice(0, 4)}` : (reporteDesde || reporteHasta ? `${reporteDesde || '…'} → ${reporteHasta || 'hoy'}` : 'Sin filtro')}
                 action={
-                  <TouchableOpacity onPress={exportarCSV} accessibilityRole="button" accessibilityLabel="Exportar CSV">
-                    <Ionicons name="download-outline" size={18} color={COLORS.primary} />
-                  </TouchableOpacity>
+                  drillMes ? (
+                    <TouchableOpacity style={styles.exportBtn} onPress={limpiarDrill} accessibilityRole="button" accessibilityLabel="Quitar filtro de mes">
+                      <Ionicons name="close" size={14} color={COLORS.primary} />
+                      <Text style={styles.exportBtnText}>Quitar mes</Text>
+                    </TouchableOpacity>
+                  ) : null
                 }
               />
               <View style={styles.kpiGrid}>
                 {kpis.slice(0, 4).map(k => (
-                  <KpiCard key={k.label} label={k.label} value={k.value} icon={k.icon} color={k.color} sub={k.sub} />
+                  <KpiCard key={k.label} label={k.label} value={k.value} icon={k.icon} color={k.color} sub={k.sub} delta={k.delta} onPress={k.onPress} active={k.active} />
                 ))}
               </View>
               <View style={styles.kpiGrid}>
                 {kpis.slice(4).map(k => (
-                  <KpiCard key={k.label} label={k.label} value={k.value} icon={k.icon} color={k.color} sub={k.sub} />
+                  <KpiCard key={k.label} label={k.label} value={k.value} icon={k.icon} color={k.color} sub={k.sub} delta={k.delta} onPress={k.onPress} active={k.active} />
                 ))}
               </View>
+              {estadoFiltro ? (
+                <TouchableOpacity style={styles.filtroActivoChip} onPress={() => setEstadoFiltro(null)} accessibilityRole="button">
+                  <Ionicons name="funnel-outline" size={14} color={COLORS.white} />
+                  <Text style={styles.filtroActivoText}>Filtrando eventos: {ESTADOS_FILTRO.find(e => e.id === estadoFiltro)?.label}: toca para quitar</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             {/* Tendencia mensual */}
             <View style={styles.section}>
-              <SectionHeader icon="trending-up-outline" title="Tendencia mensual" subtitle="Eventos vs aprobados" />
+              <SectionHeader
+                icon="trending-up-outline"
+                title="Tendencia mensual"
+                subtitle="Toca un punto para filtrar al mes"
+                action={(
+                  <View style={styles.segment}>
+                    <TouchableOpacity style={[styles.segmentBtn, tendenciaMetrica === 'eventos' && styles.segmentBtnActivo]} onPress={() => setTendenciaMetrica('eventos')} accessibilityRole="button">
+                      <Text style={[styles.segmentText, tendenciaMetrica === 'eventos' && styles.segmentTextActivo]}>Eventos</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.segmentBtn, tendenciaMetrica === 'aprobados' && styles.segmentBtnActivo]} onPress={() => setTendenciaMetrica('aprobados')} accessibilityRole="button">
+                      <Text style={[styles.segmentText, tendenciaMetrica === 'aprobados' && styles.segmentTextActivo]}>Aprobados</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
               <View style={styles.card}>
                 {trendData.labels.length ? (
                   <LineChart
                     data={{
                       labels: trendData.labels,
                       datasets: [
-                        { data: trendData.total, color: (o = 1) => `rgba(59, 130, 246, ${o})`, strokeWidth: 2.5 },
-                        { data: trendData.aprob, color: (o = 1) => `rgba(22, 163, 74, ${o})`, strokeWidth: 2.5 },
+                        {
+                          data: tendenciaMetrica === 'aprobados' ? trendData.aprob : trendData.total,
+                          color: (o = 1) => `rgba(${tendenciaMetrica === 'aprobados' ? '22, 163, 74' : '59, 130, 246'}, ${o})`,
+                          strokeWidth: 2.5,
+                        },
                       ],
-                      legend: ['Eventos', 'Aprobados'],
+                    }}
+                    onDataPointClick={({ index }) => {
+                      const mesKey = trendData.meses[index];
+                      if (mesKey) aplicarMes(mesKey);
                     }}
                     width={chartWidth}
                     height={230}
@@ -1045,10 +1249,14 @@ const ReportesAvanzadosScreen = () => {
                       color: (o = 1) => `rgba(196, 75, 10, ${o})`,
                       labelColor: (o = 1) => `rgba(100, 116, 139, ${o})`,
                       propsForBackgroundLines: { stroke: COLORS.border, strokeWidth: 0.5 },
+                      propsForDots: { r: '5', strokeWidth: '1.5', stroke: '#ffffff' },
                     }}
                     bezier
                   />
                 ) : <Text style={styles.emptyNote}>Sin datos mensuales para este rango.</Text>}
+                <Text style={styles.chartHint}>
+                  <Ionicons name="finger-print" size={11} color={COLORS.textTertiary} /> Toca un punto de la línea para filtrar KPIs y listas a ese mes.
+                </Text>
               </View>
             </View>
 
@@ -1076,13 +1284,17 @@ const ReportesAvanzadosScreen = () => {
 
             {/* Inscritos por mes */}
             <View style={styles.section}>
-              <SectionHeader icon="bar-chart-outline" title="Inscritos por mes" subtitle="Asistencias registradas" />
+              <SectionHeader icon="bar-chart-outline" title="Inscritos por mes" subtitle="Toca una barra para filtrar" />
               <View style={styles.card}>
                 {inscritosPorMes.labels.length ? (
                   <BarChart
                     data={{
                       labels: inscritosPorMes.labels,
                       datasets: [{ data: inscritosPorMes.values }],
+                    }}
+                    onDataPointClick={({ index }) => {
+                      const mesKey = inscritosPorMes.meses[index];
+                      if (mesKey) aplicarMes(mesKey);
                     }}
                     width={chartWidth}
                     height={220}
@@ -1104,7 +1316,16 @@ const ReportesAvanzadosScreen = () => {
             {/* Rankings */}
             <View style={styles.rankGrid}>
               <View style={styles.cardFull}>
-                <SectionHeader icon="cube-outline" title="Recursos más solicitados" />
+                <SectionHeader
+                  icon="cube-outline"
+                  title="Recursos más solicitados"
+                  action={(
+                    <TouchableOpacity style={styles.orderBtn} onPress={() => setOrdenRecursos(ordenRecursos === 'desc' ? 'asc' : 'desc')} accessibilityRole="button" accessibilityLabel="Cambiar orden de recursos">
+                      <Text style={styles.orderBtnText}>{ordenRecursos === 'desc' ? 'Más usados' : 'Menos usados'}</Text>
+                      <Ionicons name={ordenRecursos === 'desc' ? 'arrow-down' : 'arrow-up'} size={13} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  )}
+                />
                 <RankBar rows={rankingRecursos} />
               </View>
               <View style={styles.cardFull}>
@@ -1112,17 +1333,26 @@ const ReportesAvanzadosScreen = () => {
                 <RankBar rows={rankingFacultades} />
               </View>
               <View style={styles.cardFull}>
-                <SectionHeader icon="pricetags-outline" title="Tipos de evento" />
+                <SectionHeader
+                  icon="pricetags-outline"
+                  title="Tipos de evento"
+                  action={(
+                    <TouchableOpacity style={styles.orderBtn} onPress={() => setOrdenTipos(ordenTipos === 'desc' ? 'asc' : 'desc')} accessibilityRole="button" accessibilityLabel="Cambiar orden de tipos">
+                      <Text style={styles.orderBtnText}>{ordenTipos === 'desc' ? 'Más usados' : 'Menos usados'}</Text>
+                      <Ionicons name={ordenTipos === 'desc' ? 'arrow-down' : 'arrow-up'} size={13} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  )}
+                />
                 <RankBar rows={rankingTipos} />
               </View>
             </View>
 
-            {/* Tabla exportable */}
+            {/* Tabla exportable y filtrable */}
             <View style={styles.section}>
               <SectionHeader
                 icon="list-outline"
                 title="Eventos recientes"
-                subtitle="Exportable"
+                subtitle={`${tablaEventosFiltrados.length} de ${tablaEventos.length}`}
                 action={
                   <TouchableOpacity style={styles.exportBtn} onPress={exportarCSV} accessibilityRole="button" accessibilityLabel="Exportar eventos">
                     <Ionicons name="download-outline" size={14} color={COLORS.primary} />
@@ -1130,8 +1360,39 @@ const ReportesAvanzadosScreen = () => {
                   </TouchableOpacity>
                 }
               />
+              <View style={styles.searchWrap}>
+                <Ionicons name="search" size={16} color={COLORS.textTertiary} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar por evento o solicitante…"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={busqueda}
+                  onChangeText={setBusqueda}
+                  autoCorrect={false}
+                />
+                {busqueda ? (
+                  <TouchableOpacity onPress={() => setBusqueda('')} accessibilityRole="button" accessibilityLabel="Limpiar búsqueda">
+                    <Ionicons name="close-circle" size={16} color={COLORS.textTertiary} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.estadoChipsWrap}>
+                <View style={styles.estadoChips}>
+                  {ESTADOS_FILTRO.map(e => (
+                    <TouchableOpacity
+                      key={e.label}
+                      style={[styles.estadoChip, estadoFiltro === e.id && styles.estadoChipActivo]}
+                      onPress={() => setEstadoFiltro(estadoFiltro === e.id ? null : e.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filtrar por ${e.label}`}
+                    >
+                      <Text style={[styles.estadoChipText, estadoFiltro === e.id && styles.estadoChipTextActivo]}>{e.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
               <View style={styles.card}>
-                {tablaEventos.length ? (
+                {tablaEventosFiltrados.length ? (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View>
                       <View style={styles.tableHeader}>
@@ -1141,24 +1402,29 @@ const ReportesAvanzadosScreen = () => {
                         <Text style={[styles.tCell, styles.tHead, { width: 140 }]}>Solicitante</Text>
                         <Text style={[styles.tCell, styles.tHead, { width: 80, textAlign: 'right' }]}>Recursos</Text>
                         <Text style={[styles.tCell, styles.tHead, { width: 110, textAlign: 'center' }]}>Estado</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 100, textAlign: 'right' }]}>Balance</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 40, textAlign: 'center' }]}>Ver</Text>
                       </View>
-                      {tablaEventos.slice(0, 25).map((r, i) => (
-                        <View key={`${i}-${r.id || r.nombre}`} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]}>
+                      {tablaEventosFiltrados.slice(0, 25).map((r, i) => (
+                        <TouchableOpacity key={`${i}-${r.id || r.nombre}`} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]} onPress={() => irDetalleEvento(r.id)} activeOpacity={0.6}>
                           <Text style={[styles.tCell, { width: 220, fontWeight: '600' }]} numberOfLines={1}>{r.nombre || 'Sin nombre'}</Text>
                           <Text style={[styles.tCell, { width: 100 }]}>{fechaTxt(r.fecha)}</Text>
                           <Text style={[styles.tCell, { width: 140, color: COLORS.textSecondary }]} numberOfLines={1}>{r.lugar || '–'}</Text>
                           <Text style={[styles.tCell, { width: 140, color: COLORS.textSecondary }]} numberOfLines={1}>{r.solicitante || '–'}</Text>
                           <Text style={[styles.tCell, { width: 80, textAlign: 'right' }]}>{fmtNum(r.recursos)}</Text>
                           <View style={[styles.tCell, { width: 110, alignItems: 'center' }]}><EstadoBadge estado={r.estado} /></View>
-                          <Text style={[styles.tCell, { width: 100, textAlign: 'right' }]}>
-                            {r.balance === null || r.balance === undefined ? '–' : fmtBs(r.balance)}
-                          </Text>
-                        </View>
+                          <View style={[styles.tCell, { width: 40, alignItems: 'center' }]}>
+                            <Ionicons name="open-outline" size={15} color={COLORS.primary} />
+                          </View>
+                        </TouchableOpacity>
                       ))}
                     </View>
                   </ScrollView>
-                ) : <Text style={styles.emptyNote}>No hay eventos recientes en este rango.</Text>}
+                ) : (
+                  <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                    <Ionicons name="search-outline" size={26} color={COLORS.textTertiary} />
+                    <Text style={styles.emptyNote}>Sin coincidencias con el filtro actual.</Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -1171,7 +1437,7 @@ const ReportesAvanzadosScreen = () => {
                 action={
                   <TouchableOpacity
                     style={[styles.exportBtn, eventoExpandido !== null && { backgroundColor: COLORS.primary }]}
-                    onPress={() => setEventoExpandido(eventoExpandido !== null ? null : detalleEventos[0]?.id ?? null)}
+                    onPress={() => setEventoExpandido(eventoExpandido !== null ? null : detalleEventosFiltrados[0]?.id ?? null)}
                     accessibilityRole="button"
                     accessibilityLabel={eventoExpandido !== null ? 'Contraer todos' : 'Expandir primero'}
                   >
@@ -1181,8 +1447,8 @@ const ReportesAvanzadosScreen = () => {
                   </TouchableOpacity>
                 }
               />
-              {detalleEventos.length ? (
-                detalleEventos.map(ev => {
+              {detalleEventosFiltrados.length ? (
+                detalleEventosFiltrados.map(ev => {
                   const abierto = eventoExpandido === ev.id;
                   const bal = ev.economia ? Number(ev.economia.balance_real) : null;
                   return (
@@ -1194,7 +1460,7 @@ const ReportesAvanzadosScreen = () => {
                         accessibilityLabel={`Detalle de ${ev.nombre}`}
                       >
                         <View style={styles.detHeaderLeft}>
-                          <View style={styles.detNumero}><Text style={styles.detNumeroText}>{detalleEventos.indexOf(ev) + 1}</Text></View>
+                          <View style={styles.detNumero}><Text style={styles.detNumeroText}>{detalleEventosFiltrados.indexOf(ev) + 1}</Text></View>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.detNombre} numberOfLines={2}>{ev.nombre}</Text>
                             <Text style={styles.detMeta}>
@@ -1231,6 +1497,10 @@ const ReportesAvanzadosScreen = () => {
                               </Text>
                             </View>
                           </View>
+                          <TouchableOpacity style={styles.detVerBtn} onPress={() => irDetalleEvento(ev.id)} accessibilityRole="button" accessibilityLabel={`Ver detalle completo de ${ev.nombre}`}>
+                            <Ionicons name="open-outline" size={15} color={COLORS.white} />
+                            <Text style={styles.detVerBtnText}>Ver ficha completa del evento</Text>
+                          </TouchableOpacity>
                         </View>
                       ) : null}
                     </View>
@@ -1392,6 +1662,49 @@ const styles = StyleSheet.create({
   detEcoCol: { flex: 1 },
   detEcoTitulo: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4, color: COLORS.textTertiary, marginBottom: 3 },
   detEcoValor: { fontSize: 12, fontWeight: '700', marginBottom: 2 },
+  kpiDelta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 6 },
+  kpiDeltaText: { fontSize: 12.5, fontWeight: '800' },
+  kpiDeltaSub: { fontSize: 10, color: COLORS.textTertiary, marginLeft: 2 },
+  filtroActivoChip: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: COLORS.primary, borderRadius: 9, paddingVertical: 8, marginTop: 4,
+  },
+  filtroActivoText: { color: COLORS.white, fontSize: 12, fontWeight: '700' },
+  presetsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginTop: 10 },
+  presetChip: {
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99,
+    backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
+  },
+  presetChipActivo: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  presetChipText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
+  presetChipTextActivo: { color: COLORS.white },
+  drillChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.purple, borderColor: COLORS.purple },
+  drillChipText: { fontSize: 12, fontWeight: '800', color: COLORS.white },
+  segment: { flexDirection: 'row', backgroundColor: COLORS.divider, borderRadius: 9, padding: 3 },
+  segmentBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 7 },
+  segmentBtnActivo: { backgroundColor: COLORS.white },
+  segmentText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
+  segmentTextActivo: { color: COLORS.primary },
+  chartHint: { fontSize: 11, color: COLORS.textTertiary, marginTop: 8, textAlign: 'center', flexDirection: 'row' },
+  orderBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6, backgroundColor: COLORS.primaryLight },
+  orderBtnText: { fontSize: 11, fontWeight: '700', color: COLORS.primary },
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: COLORS.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 10,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.textPrimary, paddingVertical: 0 },
+  estadoChipsWrap: { marginBottom: 10 },
+  estadoChips: { flexDirection: 'row', gap: 8, paddingRight: 8 },
+  estadoChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border },
+  estadoChipActivo: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  estadoChipText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
+  estadoChipTextActivo: { color: COLORS.white },
+  detVerBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: COLORS.primary, borderRadius: 9, paddingVertical: 10, marginTop: 12,
+  },
+  detVerBtnText: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
 });
 
 export default ReportesAvanzadosScreen;
