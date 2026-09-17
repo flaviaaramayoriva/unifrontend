@@ -164,6 +164,20 @@ const EventCards = ({ data, onPrint }) => {
   );
 };
 
+const FilterChip = ({ label, count, active, color, onPress }) => (
+  <TouchableOpacity
+    style={[styles.filterChip, active && { backgroundColor: color || COLORS.primary, borderColor: color || COLORS.primary }]}
+    onPress={onPress}
+    activeOpacity={0.75}
+    accessibilityRole="button"
+  >
+    <Text style={[styles.filterChipText, active && { color: '#fff' }]}>{label}</Text>
+    <View style={[styles.filterChipCount, active && { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+      <Text style={[styles.filterChipCountText, active && { color: '#fff' }]}>{count}</Text>
+    </View>
+  </TouchableOpacity>
+);
+
 const WEEK_DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const pad2 = (n) => String(n).padStart(2, '0');
 const toDayKey = (date) => `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
@@ -430,6 +444,7 @@ const Daf = () => {
     const d = new Date();
     return { y: d.getFullYear(), m: d.getMonth() };
   });
+  const [filtroEventos, setFiltroEventos] = useState('todos');
 
   const daysMap = useMemo(() => {
     const map = {};
@@ -449,9 +464,14 @@ const Daf = () => {
     return map;
   }, [allEvents, viewMonth.y, viewMonth.m]);
 
-  const displayedEvents = selectedDay
-    ? allEvents.filter(e => e.date === selectedDay)
-    : allEvents;
+  const displayedEvents = useMemo(() => {
+    const byDay = selectedDay
+      ? allEvents.filter(e => e.date === selectedDay)
+      : allEvents;
+    if (filtroEventos === 'aprobados') return byDay.filter(e => e.state === 'Aprobado');
+    if (filtroEventos === 'pendientes') return byDay.filter(e => e.state !== 'Aprobado');
+    return byDay;
+  }, [allEvents, selectedDay, filtroEventos]);
 
     const cargarInfoUsuario = useCallback(async () => {
     try {
@@ -830,6 +850,24 @@ const saveThemeColor = useCallback(async (color) => {
                   onSelectDay={setSelectedDay}
                 />
               )}
+
+              <View style={styles.filterRow}>
+                <FilterChip label="Todos" count={allEvents.length} active={filtroEventos === 'todos'} onPress={() => setFiltroEventos('todos')} />
+                <FilterChip
+                  label="Aprobados"
+                  count={allEvents.filter(e => e.state === 'Aprobado').length}
+                  active={filtroEventos === 'aprobados'}
+                  color={COLORS.success}
+                  onPress={() => setFiltroEventos('aprobados')}
+                />
+                <FilterChip
+                  label="Pendientes"
+                  count={allEvents.filter(e => e.state !== 'Aprobado').length}
+                  active={filtroEventos === 'pendientes'}
+                  color={COLORS.warning}
+                  onPress={() => setFiltroEventos('pendientes')}
+                />
+              </View>
 
               {selectedDay && (
                 <TouchableOpacity style={styles.selectedDayRow} onPress={() => setSelectedDay(null)} activeOpacity={0.7}>
@@ -1542,6 +1580,15 @@ telegramQRCode: {
     borderWidth: 1, borderColor: COLORS.primary,
   },
   selectedDayRowText: { flex: 1, fontSize: 12, fontWeight: '600', color: COLORS.primary },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  filterChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.surface, borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  filterChipText: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
+  filterChipCount: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  filterChipCountText: { fontSize: 11, fontWeight: '800', color: COLORS.textSecondary },
 
   // Action cards
   toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN, justifyContent: 'space-between' },
