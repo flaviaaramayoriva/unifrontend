@@ -950,7 +950,7 @@ const styles = StyleSheet.create({
   phaseBadgeText: { color: COLORS.white, fontSize: 14, fontWeight: '600', marginLeft: 6 },
   container: { flex: 1, backgroundColor: COLORS.background },
   screenContainer: { flex: 1, backgroundColor: COLORS.background },
-  contentContainer: { padding: 14, paddingBottom: 40, flexGrow: 1, maxWidth: 900, width: '100%', alignSelf: 'center' },
+  contentContainer: { padding: 14, paddingBottom: 40, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
   loadingText: { marginTop: 15, fontSize: 16, color: COLORS.grayText },
   errorText: { marginTop: 15, fontSize: 16, color: COLORS.accent, textAlign: 'center', marginHorizontal: 20 },
