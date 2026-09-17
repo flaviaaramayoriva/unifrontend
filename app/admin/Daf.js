@@ -268,6 +268,65 @@ const Fase2Calendar = ({ viewMonth, setViewMonth, daysMap, selectedDay, onSelect
   );
 };
 
+const EventTable = ({ data, onPrint }) => {
+  if (!data?.length) {
+    return (
+      <View style={styles.emptyTable}>
+        <Ionicons name="calendar-outline" size={32} color={COLORS.textTertiary} />
+        <Text style={styles.emptyTableText}>No hay eventos para mostrar</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.tableWrap}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+        <View>
+          <View style={styles.tableHead}>
+            <Text style={[styles.tableTh, styles.colFecha]}>Fecha</Text>
+            <Text style={[styles.tableTh, styles.colHora]}>Hora</Text>
+            <Text style={[styles.tableTh, styles.colEvento]}>Evento</Text>
+            <Text style={[styles.tableTh, styles.colSolicitante]}>Solicitante</Text>
+            <Text style={[styles.tableTh, styles.colEstado]}>Estado</Text>
+            <Text style={[styles.tableTh, styles.colAccion]}>Acción</Text>
+          </View>
+          {data.map((row, idx) => {
+            const approved = row.state === 'Aprobado';
+            return (
+              <View key={row.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]}>
+                <Text style={[styles.tableTd, styles.colFecha]} numberOfLines={1}>{row.date}</Text>
+                <Text style={[styles.tableTd, styles.colHora]} numberOfLines={1}>{row.time}</Text>
+                <Text style={[styles.tableTd, styles.colEvento]} numberOfLines={2}>{row.title}</Text>
+                <Text style={[styles.tableTd, styles.colSolicitante]} numberOfLines={1}>
+                  <Text style={styles.tableTdStrong}>{row.creator}</Text>
+                </Text>
+                <View style={[styles.tableTd, styles.colEstado]}>
+                  <View style={[styles.cellChip, { backgroundColor: approved ? '#D1FAE5' : '#FEF3C7' }]}>
+                    <View style={[styles.cellChipDot, { backgroundColor: approved ? COLORS.success : COLORS.warning }]} />
+                    <Text style={[styles.cellChipText, { color: approved ? COLORS.success : COLORS.warning }]}>
+                      {approved ? 'Aprobado' : 'Pendiente'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={[styles.tableTd, styles.colAccion]}>
+                  {approved ? (
+                    <TouchableOpacity style={styles.cellPrintBtn} onPress={() => onPrint(row.id)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`Imprimir ${row.title}`}>
+                      <Ionicons name="print-outline" size={15} color={COLORS.primary} />
+                      <Text style={styles.cellPrintBtnText}>Imprimir</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.cellMuted}>—</Text>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
 const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpanded }) => {
   const dockHeight = useRef(new Animated.Value(60)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -888,7 +947,7 @@ const saveThemeColor = useCallback(async (color) => {
                   </TouchableOpacity>
                 </View>
               ) : (
-                <EventCards data={displayedEvents} onPrint={handlePrintEvent} />
+                <EventTable data={displayedEvents} onPrint={handlePrintEvent} />
               )}
             </>
           )}
@@ -1589,6 +1648,42 @@ telegramQRCode: {
   filterChipText: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
   filterChipCount: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
   filterChipCountText: { fontSize: 11, fontWeight: '800', color: COLORS.textSecondary },
+
+  // Tabla de eventos
+  tableWrap: {
+    backgroundColor: COLORS.surface, borderRadius: 14, overflow: 'hidden',
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 12,
+  },
+  tableHead: {
+    flexDirection: 'row', backgroundColor: COLORS.primary,
+    paddingVertical: 9, paddingHorizontal: 10, gap: 8,
+  },
+  tableTh: { fontSize: 11, fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.4 },
+  tableRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: 8, paddingHorizontal: 10,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  tableRowAlt: { backgroundColor: '#FAFAFB' },
+  tableTd: { fontSize: 12, color: COLORS.textSecondary },
+  tableTdStrong: { color: COLORS.textPrimary, fontWeight: '600' },
+  colFecha: { width: 92 },
+  colHora: { width: 52 },
+  colEvento: { width: 220 },
+  colSolicitante: { width: 160 },
+  colEstado: { width: 108 },
+  colAccion: { width: 104 },
+  cellChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
+  cellChipDot: { width: 6, height: 6, borderRadius: 3 },
+  cellChipText: { fontSize: 11, fontWeight: '700' },
+  cellPrintBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: COLORS.primaryLight, borderRadius: 7,
+    borderWidth: 1, borderColor: COLORS.primary,
+    paddingHorizontal: 9, paddingVertical: 5,
+  },
+  cellPrintBtnText: { color: COLORS.primary, fontSize: 11, fontWeight: '700' },
+  cellMuted: { fontSize: 13, color: COLORS.textTertiary },
 
   // Action cards
   toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN, justifyContent: 'space-between' },
