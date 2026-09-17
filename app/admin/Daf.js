@@ -220,12 +220,18 @@ const Fase2Calendar = ({ viewMonth, setViewMonth, daysMap, selectedDay, onSelect
               accessibilityRole="button"
               accessibilityLabel={`Día ${c.day}`}
             >
-              <View style={[styles.calNumCircle, c.isToday && styles.calNumCircleToday, selectedDay === c.key && styles.calNumCircleSelected]}>
-                <Text style={[styles.calCellNum, (c.isToday || selectedDay === c.key) && styles.calCellNumActive]}>{c.day}</Text>
-              </View>
-              <View style={styles.calDots}>
-                {c.pendientes > 0 && <View style={[styles.calDot, { backgroundColor: COLORS.warning }]} />}
-                {c.aprobados > 0 && <View style={[styles.calDot, { backgroundColor: COLORS.success }]} />}
+              <View style={[
+                styles.calNumCircle,
+                c.isToday && styles.calNumCircleToday,
+                selectedDay === c.key && styles.calNumCircleSelected,
+                (!c.isToday && selectedDay !== c.key && c.aprobados > 0) && styles.calNumCircleApproved,
+              ]}>
+                <Text style={[
+                  styles.calCellNum,
+                  (c.isToday || selectedDay === c.key) && styles.calCellNumActive,
+                  (!c.isToday && selectedDay !== c.key && c.aprobados > 0) && styles.calCellNumApproved,
+                  (!c.isToday && selectedDay !== c.key && c.aprobados === 0 && c.pendientes > 0) && styles.calCellNumPending,
+                ]}>{c.day}</Text>
               </View>
             </TouchableOpacity>
           ) : (
@@ -236,12 +242,12 @@ const Fase2Calendar = ({ viewMonth, setViewMonth, daysMap, selectedDay, onSelect
 
       <View style={styles.calLegend}>
         <View style={styles.calLegendItem}>
-          <View style={[styles.calDot, { backgroundColor: COLORS.warning }]} />
-          <Text style={styles.calLegendText}>Pendiente</Text>
+          <View style={styles.legendRingSample} />
+          <Text style={styles.calLegendText}>Aprobado</Text>
         </View>
         <View style={styles.calLegendItem}>
-          <View style={[styles.calDot, { backgroundColor: COLORS.success }]} />
-          <Text style={styles.calLegendText}>Aprobado</Text>
+          <Text style={[styles.calLegendText, { color: COLORS.warning, fontWeight: '800' }]}>17</Text>
+          <Text style={styles.calLegendText}>Pendiente</Text>
         </View>
       </View>
     </View>
@@ -805,12 +811,12 @@ const saveThemeColor = useCallback(async (color) => {
                     </Text>
                     <Text style={[styles.metricPillLabel, { color: COLORS.warning }]}>Pend.</Text>
                   </View>
-                  <View style={[styles.metricPill, { backgroundColor: '#D1FAE5' }]}>
-                    <Ionicons name="checkmark-circle-outline" size={13} color={COLORS.success} />
-                    <Text style={[styles.metricPillValue, { color: COLORS.success }]}>
+                  <View style={[styles.metricPill, { backgroundColor: COLORS.primaryLight }]}>
+                    <Ionicons name="checkmark-circle-outline" size={13} color={COLORS.primary} />
+                    <Text style={[styles.metricPillValue, { color: COLORS.primary }]}>
                       {displayedEvents.filter(e => e.state === 'Aprobado').length}
                     </Text>
-                    <Text style={[styles.metricPillLabel, { color: COLORS.success }]}>Aprob.</Text>
+                    <Text style={[styles.metricPillLabel, { color: COLORS.primary }]}>Aprob.</Text>
                   </View>
                 </View>
               </View>
@@ -1505,28 +1511,30 @@ telegramQRCode: {
 
   // Calendario Fase 2
   calCard: {
-    backgroundColor: COLORS.surface, borderRadius: 16, padding: 14,
-    borderWidth: 1, borderColor: COLORS.border, marginBottom: 14,
+    backgroundColor: COLORS.surface, borderRadius: 14, padding: 10,
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
   },
-  calHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  calNav: { width: 32, height: 32, borderRadius: 9, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border },
-  calTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, textTransform: 'capitalize' },
-  calWeekRow: { flexDirection: 'row', marginBottom: 6 },
-  calWeekLabel: { width: '14.28%', textAlign: 'center', fontSize: 11, fontWeight: '700', color: COLORS.textTertiary },
+  calHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  calNav: { width: 26, height: 26, borderRadius: 7, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border },
+  calTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary, textTransform: 'capitalize' },
+  calWeekRow: { flexDirection: 'row', marginBottom: 3 },
+  calWeekLabel: { width: '14.28%', textAlign: 'center', fontSize: 10, fontWeight: '700', color: COLORS.textTertiary },
   calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calCell: { width: '14.28%', alignItems: 'center', paddingVertical: 4 },
-  calNumCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  calCell: { width: '14.28%', alignItems: 'center', paddingVertical: 2 },
+  calNumCircle: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   calNumCircleToday: { backgroundColor: COLORS.primary },
   calNumCircleSelected: { backgroundColor: COLORS.textPrimary },
-  calCellNum: { fontSize: 12, fontWeight: '600', color: COLORS.textPrimary },
+  calNumCircleApproved: { backgroundColor: COLORS.primaryLight, borderWidth: 1.5, borderColor: COLORS.primary },
+  calCellNum: { fontSize: 11, fontWeight: '600', color: COLORS.textPrimary },
   calCellNumActive: { color: '#fff', fontWeight: '800' },
-  calDots: { flexDirection: 'row', gap: 3, marginTop: 4, height: 6 },
-  calDot: { width: 6, height: 6, borderRadius: 3 },
-  calLegend: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10 },
-  calLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  calLegendText: { fontSize: 11, color: COLORS.textSecondary },
+  calCellNumApproved: { color: COLORS.primary, fontWeight: '800' },
+  calCellNumPending: { color: COLORS.warning, fontWeight: '700' },
+  calLegend: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 8 },
+  calLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  calLegendText: { fontSize: 10, color: COLORS.textSecondary, fontWeight: '600' },
+  legendRingSample: { width: 13, height: 13, borderRadius: 7, borderWidth: 1.5, borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
   selectedDayRow: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: COLORS.primaryLight, borderRadius: 10,
