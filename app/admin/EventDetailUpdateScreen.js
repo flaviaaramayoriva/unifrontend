@@ -9,7 +9,8 @@ import {
   Image,
   TouchableOpacity,
   Platform,
-  TextInput
+  TextInput,
+  useWindowDimensions
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,6 +60,13 @@ const COLORS = {
   notificationUnread: '#e6f0ff',
   notificationRead: '#ffffff',
   border: '#e2e8f0',
+  ink: '#0F172A',
+  ink2: '#475569',
+  mute: '#94A3B8',
+  ok: '#047857',
+  warn: '#B45309',
+  okBg: '#D1FAE5',
+  warnBg: '#FEF3C7',
 };
 const DIAS_MINIMOS_APROBACION = 7;
 const MESES_ES = [
@@ -162,6 +170,17 @@ const SectionHeader = ({ icon, title, color = COLORS.primary, subtitle }) => (
     <View style={styles.sectionHeaderTextWrap}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {subtitle ? <Text style={styles.sectionHeaderSubtitle}>{subtitle}</Text> : null}
+    </View>
+  </View>
+);
+
+const ActivityItem = ({ act, icon, color }) => (
+  <View style={styles.activityItem}>
+    <View style={styles.activityHeader}><Ionicons name={icon} size={20} color={color} /><Text style={styles.activityTitle}>{act.nombre || 'Actividad'}</Text></View>
+    <View style={styles.activityDetails}>
+      <View style={styles.activityDetailRow}><Ionicons name="person-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Responsable: {act.responsable || 'No especificado'}</Text></View>
+      <View style={styles.activityDetailRow}><Ionicons name="calendar-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Inicio: {formatDate(act.fecha_inicio)}</Text></View>
+      <View style={styles.activityDetailRow}><Ionicons name="calendar-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Fin: {formatDate(act.fecha_fin)}</Text></View>
     </View>
   </View>
 );
@@ -408,36 +427,93 @@ const EventDetailScreen = () => {
   const isTodayOrPast = daysRemaining !== null && daysRemaining <= 0;
   const canFinalize = isTodayOrPast && event.status === 'aprobado' && event.idfase === 2;
 
+  const aprobado = event.status === 'aprobado';
+  const phaseNow = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
+  const diasParaAprobar = daysRemaining === null ? '—' : daysRemaining <= 0 ? 'Hoy' : `${daysRemaining} día${daysRemaining === 1 ? '' : 's'}`;
+
+  const allSegReal = (event.objetivos || [])
+    .filter(o => o.segmentos && Array.isArray(o.segmentos))
+    .flatMap(o => o.segmentos);
+  const segMap = new Map();
+  allSegReal.forEach(sg => segMap.set(sg.idsegmento || sg.nombre_segmento || JSON.stringify(sg), sg));
+  const segmentCount = segMap.size;
+
+  const recTec = (event.recursos || []).filter(r => r.recurso_tipo === 'tecnologico').length;
+  const recMob = (event.recursos || []).filter(r => r.recurso_tipo === 'mobiliario').length;
+  const recVaj = (event.recursos || []).filter(r => r.recurso_tipo === 'vajilla').length;
+
+  const infoItems = [
+    !!event.title,
+    !!event.date && event.date !== 'No especificada',
+    !!event.location && event.location !== 'Ubicación no especificada',
+    !!event.responsable,
+    !!event.Clasificacion,
+    (event.tiposEvento || []).length > 0,
+    !!event.resultados && Object.values(event.resultados).some(v => v),
+    (event.recursos || []).length > 0,
+    (event.comite || []).length > 0,
+    (event.actividadesPrevias || []).length > 0,
+    (event.actividadesDurante || []).length > 0,
+    (event.actividadesPost || []).length > 0,
+    (event.serviciosContratados || []).length > 0,
+    !!event.presupuesto,
+    (event.objetivosPDI || []).length > 0,
+  ];
+  const pctInfo = Math.round((infoItems.filter(Boolean).length / infoItems.length) * 100);
+
+  const { width: winW } = useWindowDimensions();
+  const isWide = winW >= 640;
+  const gridCard = isWide ? styles.gridCardTwo : styles.gridCardFull;
+
   return (
     <View style={styles.screenContainer}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="arrow-back" size={24} color={COLORS.white} /></TouchableOpacity>
-        <Text style={styles.headerTitle}>Detalles del Evento</Text>
-        <TouchableOpacity onPress={fetchEventDetails} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="refresh" size={24} color={COLORS.white} /></TouchableOpacity>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.topBarBtnLeft} accessibilityRole="button" accessibilityLabel="Volver">
+          <Ionicons name="arrow-back" size={20} color={COLORS.ink2} />
+          <Text style={styles.topBarBtnText}>Volver</Text>
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>Detalle del evento</Text>
+        <TouchableOpacity onPress={fetchEventDetails} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.topBarBtnRight} accessibilityRole="button" accessibilityLabel="Actualizar">
+          <Ionicons name="refresh" size={20} color={COLORS.ink2} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {event.imageUrl && <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />}
+        {event.imageUrl && <Image source={{ uri: event.imageUrl }} style={styles.bannerImage} resizeMode="cover" />}
 
-        <View style={styles.card}>
-          <View style={styles.accentBar} />
-          <Text style={styles.eventTitle}>{event.title}</Text>
-          {event && (() => {
-            const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
-            return (
-              <View style={[styles.phaseBadge, { backgroundColor: phaseInfo.color }]}>
-                <Ionicons name={phaseInfo.icon} size={16} color={COLORS.white} />
-                <Text style={styles.phaseBadgeText}>Fase {phaseInfo.number}: {phaseInfo.label}</Text>
-              </View>
-            );
-          })()}
+        {/* Resumen ejecutivo */}
+        <View style={styles.summ}>
+          <Text style={styles.summKicker}>Fase {phaseNow.number} · {phaseNow.label}</Text>
+          <Text style={styles.summTitle}>{event.title}</Text>
+          <View style={styles.summRow}>
+            <View style={styles.summStat}>
+              <Text style={styles.summStatVal} numberOfLines={1}>{event.date}</Text>
+              <Text style={styles.summStatLbl}>Fecha evento</Text>
+            </View>
+            <View style={styles.summStat}>
+              <Text style={styles.summStatVal} numberOfLines={1}>{event.time}</Text>
+              <Text style={styles.summStatLbl}>Hora</Text>
+            </View>
+            <View style={styles.summStat}>
+              <Text style={styles.summStatVal} numberOfLines={1}>{event.location}</Text>
+              <Text style={styles.summStatLbl}>Ubicación</Text>
+            </View>
+            <View style={styles.summStat}>
+              <Text style={styles.summStatVal} numberOfLines={1}>{diasParaAprobar}</Text>
+              <Text style={styles.summStatLbl}>Para aprobar</Text>
+            </View>
+          </View>
         </View>
 
-        <View style={styles.sectionCard}>
-          <View style={styles.detailRow}>
-            <Ionicons name={event.status === 'aprobado' ? 'checkmark-circle-outline' : 'time-outline'} size={20} color={event.status === 'aprobado' ? COLORS.success : COLORS.warning} style={styles.detailIcon} />
-            <Text style={[styles.detailText, { color: event.status === 'aprobado' ? COLORS.success : COLORS.warning }]}>Estado: {event.status}</Text>
-          </View>
+        {/* Estado */}
+        <View style={[styles.statePill, { backgroundColor: aprobado ? COLORS.okBg : COLORS.warnBg }]}>
+          <Ionicons name={aprobado ? 'checkmark-circle' : 'time-outline'} size={16} color={aprobado ? COLORS.ok : COLORS.warn} />
+          <Text style={[styles.statePillText, { color: aprobado ? COLORS.ok : COLORS.warn }]}>
+            {aprobado ? 'Aprobado' : 'Pendiente'}
+          </Text>
+          {!aprobado && daysRemaining !== null && daysRemaining < DIAS_MINIMOS_APROBACION && !isEventExpiredDetail(event.fechaEventoRaw) && (
+            <Text style={[styles.statePillHint, { color: COLORS.warn }]}>· Faltan menos de {DIAS_MINIMOS_APROBACION} días</Text>
+          )}
         </View>
 
         {/* Proceso del evento */}
@@ -445,44 +521,46 @@ const EventDetailScreen = () => {
           <EventProcessTimeline estado={event.status} idfase={event.idfase} fases={event.fases} />
         </View>
 
-        {/* 1. Datos Generales */}
-        <View style={styles.sectionCard}>
-            <SectionHeader icon="document-text-outline" title="Datos Generales" />
-          <View style={styles.detailRow}><Ionicons name="calendar-outline" size={20} color={COLORS.primary} style={styles.detailIcon} /><Text style={styles.detailText}>Fecha: {event.date}</Text></View>
-          <View style={styles.detailRow}><Ionicons name="time-outline" size={20} color={COLORS.primary} style={styles.detailIcon} /><Text style={styles.detailText}>Hora: {event.time}</Text></View>
-          <View style={styles.detailRow}><Ionicons name="location-outline" size={20} color={COLORS.primary} style={styles.detailIcon} /><Text style={styles.detailText}>Ubicación: {event.location}</Text></View>
+        {/* Grilla de resumen */}
+        <View style={styles.gridWrap}>
+          {/* Datos generales */}
+          <View style={gridCard}>
+            <SectionHeader icon="document-text-outline" title="Datos generales" />
+            <View style={styles.kv}><Text style={styles.kvL}>Estado</Text><View style={[styles.kvPill, { backgroundColor: aprobado ? COLORS.okBg : COLORS.warnBg }]}><Ionicons name={aprobado ? 'checkmark' : 'time'} size={13} color={aprobado ? COLORS.ok : COLORS.warn} /><Text style={[styles.kvPillText, { color: aprobado ? COLORS.ok : COLORS.warn }]}>{aprobado ? 'Aprobado' : 'Pendiente'}</Text></View></View>
+            {event.responsable ? (<View style={styles.kv}><Text style={styles.kvL}>Responsable</Text><Text style={styles.kvV} numberOfLines={2}>{event.responsable}</Text></View>) : null}
+            {event.creador ? (<View style={styles.kv}><Text style={styles.kvL}>Propuesto por</Text><Text style={styles.kvV} numberOfLines={2}>{event.creador.nombre}</Text></View>) : null}
+            <View style={styles.kv}><Text style={styles.kvL}>Segmentos</Text><Text style={styles.kvV} numberOfLines={2}>{segmentCount > 0 ? `${segmentCount} segmento(s)` : 'No definidos'}</Text></View>
+          </View>
+
+          {/* Clasificación */}
+          <View style={gridCard}>
+            <SectionHeader icon="layers-outline" title="Clasificación" />
+            {event.Clasificacion ? (<View style={styles.kv}><Text style={styles.kvL}>Principal</Text><Text style={styles.kvV} numberOfLines={2}>{event.Clasificacion.nombreClasificacion}</Text></View>) : null}
+            {(event.tiposEvento || []).length > 0 ? (<View style={styles.kv}><Text style={styles.kvL}>Tipo</Text><Text style={styles.kvV} numberOfLines={2}>{event.tiposEvento.map(t => t.nombretipo).join(', ')}</Text></View>) : null}
+            {(event.objetivosPDI || []).length > 0 ? (<View style={styles.kv}><Text style={styles.kvL}>PDI</Text><Text style={styles.kvV} numberOfLines={2}>{event.objetivosPDI[0]}</Text></View>) : null}
+            <View style={styles.bar}><View style={[styles.barFill, { width: `${pctInfo}%` }]} /></View>
+            <Text style={styles.barLbl}>{pctInfo}% de la información completa</Text>
+          </View>
+
+          {/* Actividades */}
+          <View style={gridCard}>
+            <SectionHeader icon="list-circle-outline" title="Actividades" />
+            <View style={styles.kv}><Text style={styles.kvL}>Previas</Text><Text style={styles.kvV}>{event.actividadesPrevias?.length || 0}</Text></View>
+            <View style={styles.kv}><Text style={styles.kvL}>Durante</Text><Text style={styles.kvV}>{event.actividadesDurante?.length || 0}</Text></View>
+            <View style={styles.kv}><Text style={styles.kvL}>Post</Text><Text style={styles.kvV}>{event.actividadesPost?.length || 0}</Text></View>
+          </View>
+
+          {/* Recursos y servicios */}
+          <View style={gridCard}>
+            <SectionHeader icon="cube-outline" title="Recursos y servicios" />
+            <View style={styles.kv}><Text style={styles.kvL}>Tecnológicos</Text><Text style={styles.kvV}>{recTec || '—'}</Text></View>
+            <View style={styles.kv}><Text style={styles.kvL}>Mobiliario</Text><Text style={styles.kvV}>{recMob || '—'}</Text></View>
+            <View style={styles.kv}><Text style={styles.kvL}>Vajilla</Text><Text style={styles.kvV}>{recVaj || '—'}</Text></View>
+            <View style={styles.kv}><Text style={styles.kvL}>Servicios</Text><Text style={styles.kvV}>{event.serviciosContratados?.length || '—'}</Text></View>
+          </View>
         </View>
 
-        {/* 2. Responsable del Evento */}
-        {event.idfase >= 2 && event.responsable && (
-          <View style={styles.sectionCard}>
-            <SectionHeader icon="person-outline" title="Responsable del Evento" />
-            <View style={styles.detailRow}><Ionicons name="person-outline" size={20} color={COLORS.primary} style={styles.detailIcon} /><Text style={styles.detailText}>{event.responsable}</Text></View>
-          </View>
-        )}
-
-        {/* 3. Clasificación Estratégica */}
-        {event.Clasificacion && (
-          <View style={styles.sectionCard}>
-            <SectionHeader icon="layers-outline" title="Clasificación Estratégica" />
-            <Text style={styles.detailText}>• {event.Clasificacion.nombreClasificacion} - {event.Clasificacion.nombresubcategoria}</Text>
-          </View>
-        )}
-
-        {/* 4. Tipos de Evento */}
-        {event.tiposEvento && event.tiposEvento.length > 0 && (
-          <View style={styles.sectionCard}>
-            <SectionHeader icon="pricetag-outline" title="Tipos de Evento" />
-            {event.tiposEvento.map((tipo, index) => (
-              <View key={index} style={styles.listItem}>
-                <Ionicons name="pricetag-outline" size={16} color={COLORS.grayText} style={styles.listIcon} />
-                <Text style={styles.listText}>{tipo.nombretipo || `Tipo ID ${tipo.idtipoevento}`}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* 5. Resultados Esperados */}
+        {/* Resultados Esperados */}
         {event.resultados && (
           <View style={styles.sectionCard}>
             <SectionHeader icon="flag-outline" title="Resultados Esperados" />
@@ -498,98 +576,48 @@ const EventDetailScreen = () => {
           </View>
         )}
 
-        {/* 6. Recursos Solicitados */}
-        {event.recursos && event.recursos.length > 0 && (
-          <View style={styles.sectionCard}>
-            <SectionHeader icon="cube-outline" title="Recursos Solicitados" />
-            {event.recursos.filter(r => r.recurso_tipo === 'tecnologico').length > 0 && (
-              <View style={styles.resourceCategory}>
-                <Text style={styles.resourceCategoryTitle}>Tecnológicos</Text>
-                {event.recursos.filter(r => r.recurso_tipo === 'tecnologico').map((r, i) => (
-                  <View key={`tec-${i}`} style={styles.listItem}><Ionicons name="hardware-chip-outline" size={16} color={COLORS.grayText} style={styles.listIcon} /><Text style={styles.listText}>{r.cantidad || 1} x {r.nombre_recurso}</Text></View>
-                ))}
-              </View>
-            )}
-            {event.recursos.filter(r => r.recurso_tipo === 'mobiliario').length > 0 && (
-              <View style={styles.resourceCategory}>
-                <Text style={styles.resourceCategoryTitle}>Mobiliario</Text>
-                {event.recursos.filter(r => r.recurso_tipo === 'mobiliario').map((r, i) => (
-                  <View key={`mob-${i}`} style={styles.listItem}><Ionicons name="home-outline" size={16} color={COLORS.grayText} style={styles.listIcon} /><Text style={styles.listText}>{r.cantidad || 1} x {r.nombre_recurso}</Text></View>
-                ))}
-              </View>
-            )}
-            {event.recursos.filter(r => r.recurso_tipo === 'vajilla').length > 0 && (
-              <View style={styles.resourceCategory}>
-                <Text style={styles.resourceCategoryTitle}>Vajilla</Text>
-                {event.recursos.filter(r => r.recurso_tipo === 'vajilla').map((r, i) => (
-                  <View key={`vaj-${i}`} style={styles.listItem}><Ionicons name="restaurant-outline" size={16} color={COLORS.grayText} style={styles.listIcon} /><Text style={styles.listText}>{r.cantidad || 1} x {r.nombre_recurso}</Text></View>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* 7. Comité del Evento */}
+        {/* Comité del Evento */}
         {event.comite && event.comite.length > 0 && (
           <View style={styles.sectionCard}>
             <SectionHeader icon="people-outline" title="Comité del Evento" />
-            {event.comite.map((miembro, index) => (
-              <View key={index} style={styles.committeeMember}>
-                <Text style={styles.committeeName}>{[miembro.nombre, miembro.apellidopat, miembro.apellidomat].filter(Boolean).join(' ') || 'Miembro sin nombre'}</Text>
-                <Text style={styles.committeeRole}>Rol: {miembro.role === 'academico' ? 'Académico' : miembro.role}</Text>
-                <Text style={styles.committeeEmail}>Email: {miembro.email}</Text>
-              </View>
-            ))}
+            <View style={styles.gridWrap}>
+              {event.comite.map((miembro, index) => (
+                <View key={index} style={gridCard}>
+                  <Text style={styles.committeeName}>{[miembro.nombre, miembro.apellidopat, miembro.apellidomat].filter(Boolean).join(' ') || 'Miembro sin nombre'}</Text>
+                  <Text style={styles.committeeRole}>Rol: {miembro.role === 'academico' ? 'Académico' : miembro.role}</Text>
+                  <Text style={styles.committeeEmail}>Email: {miembro.email}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
-        {/* 8. Actividades Previas */}
-        {event.idfase >= 2 && event.actividadesPrevias && event.actividadesPrevias.length > 0 && (
+        {/* Actividades Previas */}
+        {event.actividadesPrevias && event.actividadesPrevias.length > 0 && (
           <View style={styles.sectionCard}>
             <SectionHeader icon="calendar-outline" title="Actividades Previas" />
             {event.actividadesPrevias.map((act, index) => (
-              <View key={index} style={styles.activityItem}>
-                <View style={styles.activityHeader}><Ionicons name="list-circle-outline" size={20} color={COLORS.primary} /><Text style={styles.activityTitle}>{act.nombre || `Actividad ${index + 1}`}</Text></View>
-                <View style={styles.activityDetails}>
-                  <View style={styles.activityDetailRow}><Ionicons name="person-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Responsable: {act.responsable || 'No especificado'}</Text></View>
-                  <View style={styles.activityDetailRow}><Ionicons name="calendar-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Inicio: {formatDate(act.fecha_inicio)}</Text></View>
-                  <View style={styles.activityDetailRow}><Ionicons name="calendar-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Fin: {formatDate(act.fecha_fin)}</Text></View>
-                </View>
-              </View>
+              <ActivityItem key={index} act={act} icon="list-circle-outline" color={COLORS.primary} />
             ))}
           </View>
         )}
 
-        {/* 9. Actividades Durante el Evento */}
-        {event.idfase >= 2 && event.actividadesDurante && event.actividadesDurante.length > 0 && (
+        {/* Actividades Durante el Evento */}
+        {event.actividadesDurante && event.actividadesDurante.length > 0 && (
           <View style={styles.sectionCard}>
             <SectionHeader icon="play-circle-outline" title="Actividades Durante el Evento" />
             {event.actividadesDurante.map((act, index) => (
-              <View key={index} style={styles.activityItem}>
-                <View style={styles.activityHeader}><Ionicons name="play-circle-outline" size={20} color={COLORS.success} /><Text style={styles.activityTitle}>{act.nombre || `Actividad ${index + 1}`}</Text></View>
-                <View style={styles.activityDetails}>
-                  <View style={styles.activityDetailRow}><Ionicons name="person-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Responsable: {act.responsable || 'No especificado'}</Text></View>
-                  <View style={styles.activityDetailRow}><Ionicons name="calendar-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Inicio: {formatDate(act.fecha_inicio)}</Text></View>
-                  <View style={styles.activityDetailRow}><Ionicons name="calendar-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Fin: {formatDate(act.fecha_fin)}</Text></View>
-                </View>
-              </View>
+              <ActivityItem key={index} act={act} icon="play-circle-outline" color={COLORS.success} />
             ))}
           </View>
         )}
 
-        {/* 10. Actividades Después del Evento */}
-        {event.idfase >= 2 && event.actividadesPost && event.actividadesPost.length > 0 && (
+        {/* Actividades Después del Evento */}
+        {event.actividadesPost && event.actividadesPost.length > 0 && (
           <View style={styles.sectionCard}>
             <SectionHeader icon="checkmark-done-outline" title="Actividades Después del Evento" />
             {event.actividadesPost.map((act, index) => (
-              <View key={index} style={styles.activityItem}>
-                <View style={styles.activityHeader}><Ionicons name="checkmark-done-outline" size={20} color={COLORS.info} /><Text style={styles.activityTitle}>{act.nombre || `Actividad ${index + 1}`}</Text></View>
-                <View style={styles.activityDetails}>
-                  <View style={styles.activityDetailRow}><Ionicons name="person-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Responsable: {act.responsable || 'No especificado'}</Text></View>
-                  <View style={styles.activityDetailRow}><Ionicons name="calendar-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Inicio: {formatDate(act.fecha_inicio)}</Text></View>
-                  <View style={styles.activityDetailRow}><Ionicons name="calendar-outline" size={16} color={COLORS.grayText} /><Text style={styles.activityDetailText}>Fin: {formatDate(act.fecha_fin)}</Text></View>
-                </View>
-              </View>
+              <ActivityItem key={index} act={act} icon="checkmark-done-outline" color={COLORS.info} />
             ))}
           </View>
         )}
@@ -825,11 +853,54 @@ const EventDetailScreen = () => {
 EventDetailScreen.options = { headerShown: false };
 
 const styles = StyleSheet.create({
-  sectionCard: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 20, marginBottom: 16, ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 }, android: { elevation: 8 } }) },
+  sectionCard: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  sectionHeaderIconWrap: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  sectionHeaderTextWrap: { flex: 1 },
+  sectionHeaderSubtitle: { fontSize: 12, color: COLORS.mute, marginTop: 1 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.darkText },
+
+  // Top bar clara (Opción B)
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: Platform.OS === 'ios' ? 50 : 14, paddingBottom: 12, backgroundColor: COLORS.background },
+  topBarBtnLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6 },
+  topBarBtnRight: { paddingVertical: 6, paddingHorizontal: 4 },
+  topBarBtnText: { fontSize: 13, fontWeight: '600', color: COLORS.ink2 },
+  topBarTitle: { fontSize: 16, fontWeight: '700', color: COLORS.darkText },
+
+  // Banner
+  bannerImage: { width: '100%', height: 190, borderRadius: 16, marginBottom: 16, backgroundColor: COLORS.grayLight },
+
+  // Resumen ejecutivo (tarjeta oscura)
+  summ: { backgroundColor: COLORS.ink, borderRadius: 18, padding: 18, marginBottom: 12, overflow: 'hidden' },
+  summKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: '#FDBA74', textTransform: 'uppercase', marginBottom: 8 },
+  summTitle: { fontSize: 22, fontWeight: '800', color: COLORS.white, lineHeight: 27, marginBottom: 16 },
+  summRow: { flexDirection: 'row', marginHorizontal: -4, flexWrap: 'wrap' },
+  summStat: { flex: 1, minWidth: 100, margin: 4, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
+  summStatVal: { color: COLORS.white, fontSize: 15, fontWeight: '800' },
+  summStatLbl: { color: '#D6D3D1', fontSize: 10.5, marginTop: 3 },
+
+  // Pill estado
+  statePill: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, marginBottom: 16, gap: 6 },
+  statePillText: { fontSize: 13, fontWeight: '700' },
+  statePillHint: { fontSize: 11, fontWeight: '600' },
+
+  // Grilla de resumen
+  gridWrap: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 },
+  gridCardTwo: { width: '50%', paddingHorizontal: 6, marginBottom: 6 },
+  gridCardFull: { width: '100%', paddingHorizontal: 6, marginBottom: 6 },
+  kv: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  kvL: { width: 96, fontSize: 12, color: COLORS.mute, fontWeight: '600' },
+  kvV: { flex: 1, fontSize: 13.5, color: COLORS.darkText, fontWeight: '600' },
+  kvPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  kvPillText: { fontSize: 12, fontWeight: '700' },
+  bar: { height: 8, backgroundColor: COLORS.grayLight, borderRadius: 99, overflow: 'hidden', marginTop: 6 },
+  barFill: { height: '100%', borderRadius: 99, backgroundColor: COLORS.primary },
+  barLbl: { fontSize: 11, color: COLORS.mute, marginTop: 6, fontWeight: '600' },
+
   listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   activityItem: { backgroundColor: COLORS.grayLight, borderRadius: 12, padding: 15, marginBottom: 12 },
   activityHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  activityTitle: { fontSize: 16, fontWeight: '600', color: COLORS.darkText, marginLeft: 10, flex: 1 },
+  activityTitle: { fontSize: 15, fontWeight: '600', color: COLORS.darkText, marginLeft: 10, flex: 1 },
   activityDetails: { paddingLeft: 5 },
   modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: 20 },
   modalContent: { backgroundColor: COLORS.white, borderRadius: 20, width: '100%', maxWidth: 400, maxHeight: '80%', overflow: 'hidden', ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 }, android: { elevation: 10 } }) },
@@ -851,7 +922,7 @@ const styles = StyleSheet.create({
   activityDetailText: { fontSize: 14, color: COLORS.grayText, marginLeft: 8, flex: 1 },
   serviceItem: { backgroundColor: COLORS.grayLight, borderRadius: 12, padding: 15, marginBottom: 12 },
   serviceHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  serviceTitle: { fontSize: 16, fontWeight: '600', color: COLORS.darkText, marginLeft: 10, flex: 1 },
+  serviceTitle: { fontSize: 15, fontWeight: '600', color: COLORS.darkText, marginLeft: 10, flex: 1 },
   serviceDetails: { paddingLeft: 5 },
   serviceDetailRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
   serviceDetailText: { fontSize: 14, color: COLORS.grayText, marginLeft: 8, flex: 1 },
@@ -860,7 +931,7 @@ const styles = StyleSheet.create({
   layoutPlaceholderText: { fontSize: 14, color: COLORS.grayText, marginTop: 10, textAlign: 'center' },
   layoutName: { fontSize: 15, fontWeight: '600', color: COLORS.darkText, textAlign: 'center' },
   listIcon: { marginRight: 12, marginTop: 4 },
-  listText: { fontSize: 15, color: COLORS.darkText, flex: 1, lineHeight: 20 },
+  listText: { fontSize: 14, color: COLORS.darkText, flex: 1, lineHeight: 20 },
   segmentItem: { marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.grayLight },
   segmentHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   segmentIcon: { marginRight: 8 },
@@ -868,7 +939,7 @@ const styles = StyleSheet.create({
   segmentDescription: { fontSize: 14, color: COLORS.grayText, fontStyle: 'italic', paddingLeft: 24 },
   resourceCategory: { marginBottom: 12 },
   resourceCategoryTitle: { fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 8, marginLeft: 28 },
-  committeeMember: { padding: 12, backgroundColor: COLORS.grayLight, borderRadius: 12, marginBottom: 12 },
+  committeeMember: { backgroundColor: COLORS.grayLight, borderRadius: 12, padding: 12, marginBottom: 12 },
   committeeName: { fontSize: 15, fontWeight: '600', color: COLORS.darkText, marginBottom: 4 },
   committeeRole: { fontSize: 14, color: COLORS.grayText, marginBottom: 4 },
   committeeEmail: { fontSize: 14, color: COLORS.grayText, fontStyle: 'italic' },
@@ -876,9 +947,7 @@ const styles = StyleSheet.create({
   phaseBadgeText: { color: COLORS.white, fontSize: 14, fontWeight: '600', marginLeft: 6 },
   container: { flex: 1, backgroundColor: COLORS.background },
   screenContainer: { flex: 1, backgroundColor: COLORS.background },
-  header: { backgroundColor: COLORS.primary, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 50 : 20, paddingBottom: 15 },
-  headerTitle: { color: COLORS.white, fontSize: 18, fontWeight: 'bold' },
-  contentContainer: { padding: 16, paddingBottom: 40, flexGrow: 1 },
+  contentContainer: { padding: 14, paddingBottom: 40, flexGrow: 1, maxWidth: 900, width: '100%', alignSelf: 'center' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
   loadingText: { marginTop: 15, fontSize: 16, color: COLORS.grayText },
   errorText: { marginTop: 15, fontSize: 16, color: COLORS.accent, textAlign: 'center', marginHorizontal: 20 },
@@ -889,13 +958,9 @@ const styles = StyleSheet.create({
   creatorName: { fontSize: 16, color: COLORS.darkText, fontWeight: '500', marginBottom: 3 },
   creatorRole: { fontSize: 14, color: COLORS.grayText, marginBottom: 3 },
   creatorEmail: { fontSize: 14, color: COLORS.grayText, fontStyle: 'italic' },
-  eventImage: { width: '100%', height: 250, resizeMode: 'cover', marginBottom: 20 },
-  card: { width: '90%', backgroundColor: COLORS.surface, borderRadius: 16, padding: 20, ...Platform.select({ ios: { shadowColor: COLORS.cardShadow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 }, android: { elevation: 8 } }) },
-  eventTitle: { fontSize: 28, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 10 },
   detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   detailIcon: { marginRight: 10 },
-  detailText: { fontSize: 16, color: COLORS.darkText, flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.darkText, marginBottom: 8 },
+  detailText: { fontSize: 15, color: COLORS.darkText, flex: 1 },
   actionButtonsContainer: { marginTop: 20, marginBottom: 20 },
   editButton: { flexDirection: 'row', backgroundColor: COLORS.success, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
   editButtonText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
