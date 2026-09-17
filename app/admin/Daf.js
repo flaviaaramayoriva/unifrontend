@@ -95,6 +95,8 @@ const Section = ({ title, subtitle, children }) => (
 );
 
 
+const MONTHS_SHORT = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+
 const EventCards = ({ data, onPrint }) => {
   if (!data?.length) {
     return (
@@ -107,42 +109,54 @@ const EventCards = ({ data, onPrint }) => {
   }
 
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: 12 }}>
       {data.map((row) => {
         const approved = row.state === 'Aprobado';
+        const [day, month] = (row.date || '').split('/');
+        const monthLabel = MONTHS_SHORT[parseInt(month, 10) - 1] || '';
+        const initials = row.creator === 'Desconocido'
+          ? '?'
+          : row.creator.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
         return (
-          <View key={row.id} style={styles.eventCard}>
-            <View style={styles.eventCardTop}>
-              <View style={[styles.stateBadge, { backgroundColor: approved ? '#D1FAE5' : '#FEF3C7' }]}>
-                <Text style={[styles.stateBadgeText, { color: approved ? COLORS.success : COLORS.warning }]}>
-                  {approved ? 'Aprobado' : 'Pendiente'}
-                </Text>
+          <View key={row.id} style={[styles.eventCard, approved ? styles.eventCardApproved : styles.eventCardPending]}>
+            <View style={[styles.eventDateBlock, approved ? styles.eventDateBlockApproved : styles.eventDateBlockPending]}>
+              <Text style={styles.eventDateDay}>{day || '–'}</Text>
+              <Text style={styles.eventDateMonth}>{monthLabel}</Text>
+            </View>
+
+            <View style={styles.eventCardBody}>
+              <View style={styles.eventCardTop}>
+                <View style={[styles.stateBadge, { backgroundColor: approved ? '#D1FAE5' : '#FEF3C7' }]}>
+                  <Text style={[styles.stateBadgeText, { color: approved ? COLORS.success : COLORS.warning }]}>
+                    {approved ? 'Aprobado' : 'Pendiente'}
+                  </Text>
+                </View>
+                <Text style={styles.eventCardId}>#{row.id}</Text>
               </View>
+
+              <Text style={styles.eventCardTitle} numberOfLines={2}>{row.title}</Text>
+
+              <View style={styles.eventCardMeta}>
+                <View style={styles.eventCardMetaItem}>
+                  <Ionicons name="time-outline" size={13} color={COLORS.textTertiary} />
+                  <Text style={styles.eventCardMetaText}>{row.time}</Text>
+                </View>
+                <View style={styles.eventCardMetaDivider} />
+                <View style={[styles.eventCardMetaItem, { flex: 1 }]}>
+                  <View style={[styles.creatorAvatar, { backgroundColor: approved ? COLORS.success + '1F' : COLORS.warning + '2E' }]}>
+                    <Text style={[styles.creatorAvatarText, { color: approved ? COLORS.success : COLORS.warning }]}>{initials}</Text>
+                  </View>
+                  <Text style={[styles.eventCardMetaText, { flexShrink: 1 }]} numberOfLines={1}>{row.creator}</Text>
+                </View>
+              </View>
+
               {approved && (
                 <TouchableOpacity style={styles.printBtn} onPress={() => onPrint(row.id)}>
                   <Ionicons name="print-outline" size={13} color={COLORS.primary} />
-                  <Text style={styles.printBtnText}>Imprimir</Text>
+                  <Text style={styles.printBtnText}>Imprimir evento</Text>
                 </TouchableOpacity>
               )}
             </View>
-            <Text style={styles.eventCardTitle}>{row.title}</Text>
-            <View style={styles.eventCardMeta}>
-              <View style={styles.eventCardMetaItem}>
-                <Ionicons name="calendar-outline" size={13} color={COLORS.textTertiary} />
-                <Text style={styles.eventCardMetaText}>{row.date}</Text>
-              </View>
-              <View style={styles.eventCardMetaItem}>
-                <Ionicons name="time-outline" size={13} color={COLORS.textTertiary} />
-                <Text style={styles.eventCardMetaText}>{row.time}</Text>
-              </View>
-              <View style={styles.eventCardMetaItem}>
-                <Ionicons name="person-outline" size={13} color={COLORS.textTertiary} />
-                <Text style={[styles.eventCardMetaText, row.creator === 'Desconocido' && { fontStyle: 'italic', color: COLORS.textTertiary }]}>
-                  {row.creator}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.eventCardId}>ID #{row.id}</Text>
           </View>
         );
       })}
@@ -668,13 +682,25 @@ const saveThemeColor = useCallback(async (color) => {
               )}
 
               <View style={styles.tableInfo}>
-                <View style={styles.tableInfoBadge}>
-                  <Text style={styles.tableInfoText}>{allEvents.length} eventos próximos</Text>
-                </View>
-                <Text style={styles.tableInfoSub}>
-                  {allEvents.filter(e => e.state === 'Aprobado').length} aprobados ·{' '}
-                  {allEvents.filter(e => e.state !== 'Aprobado').length} pendientes
+                <Text style={styles.tableInfoText}>
+                  {allEvents.length} próximo{allEvents.length !== 1 ? 's' : ''}
                 </Text>
+                <View style={styles.metricPills}>
+                  <View style={[styles.metricPill, { backgroundColor: '#FEF3C7' }]}>
+                    <Ionicons name="hourglass-outline" size={13} color={COLORS.warning} />
+                    <Text style={[styles.metricPillValue, { color: COLORS.warning }]}>
+                      {allEvents.filter(e => e.state !== 'Aprobado').length}
+                    </Text>
+                    <Text style={[styles.metricPillLabel, { color: COLORS.warning }]}>Pend.</Text>
+                  </View>
+                  <View style={[styles.metricPill, { backgroundColor: '#D1FAE5' }]}>
+                    <Ionicons name="checkmark-circle-outline" size={13} color={COLORS.success} />
+                    <Text style={[styles.metricPillValue, { color: COLORS.success }]}>
+                      {allEvents.filter(e => e.state === 'Aprobado').length}
+                    </Text>
+                    <Text style={[styles.metricPillLabel, { color: COLORS.success }]}>Aprob.</Text>
+                  </View>
+                </View>
               </View>
               <EventCards data={allEvents} onPrint={handlePrintEvent} />
             </>
@@ -1272,29 +1298,52 @@ telegramQRCode: {
 
   // Event Cards
   eventCard: {
-    backgroundColor: COLORS.surface, borderRadius: 12, padding: 14,
-    borderWidth: 1, borderColor: COLORS.border, marginBottom: 10,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+    backgroundColor: COLORS.surface, borderRadius: 16, padding: 12,
+    flexDirection: 'row', gap: 12,
+    borderWidth: 1, marginBottom: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
   },
+  eventCardApproved: { borderColor: '#A7F3D0' },
+  eventCardPending: { borderColor: '#FDE68A' },
+  eventDateBlock: {
+    width: 58, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 10, alignSelf: 'flex-start',
+  },
+  eventDateBlockApproved: { backgroundColor: '#065F46' },
+  eventDateBlockPending: { backgroundColor: '#9A3300' },
+  eventDateDay: { fontSize: 22, fontWeight: '800', color: '#fff', lineHeight: 26 },
+  eventDateMonth: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 2 },
+  eventCardBody: { flex: 1 },
   eventCardTop: {
     flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 8,
+    alignItems: 'center', marginBottom: 6,
   },
   eventCardTitle: {
     fontSize: 15, fontWeight: '700', color: COLORS.textPrimary,
     marginBottom: 8, lineHeight: 20,
   },
-  eventCardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 6 },
-  eventCardMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  eventCardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 8 },
+  eventCardMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  eventCardMetaDivider: { width: 1, height: 12, backgroundColor: COLORS.border },
   eventCardMetaText: { fontSize: 12, color: COLORS.textSecondary },
-  eventCardId: { fontSize: 11, color: COLORS.textTertiary, marginTop: 2 },
+  eventCardId: { fontSize: 11, color: COLORS.textTertiary, fontWeight: '600' },
+  creatorAvatar: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  creatorAvatarText: { fontSize: 10, fontWeight: '800' },
+  printBtn: {
+    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
+    paddingVertical: 6, paddingHorizontal: 12,
+    backgroundColor: COLORS.primaryLight, borderRadius: 8, borderWidth: 1, borderColor: COLORS.primary, gap: 5,
+  },
+  printBtnText: { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
 
   // Table info bar
-  tableInfo: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  tableInfoBadge: { backgroundColor: COLORS.primaryLight, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  tableInfoText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
-  tableInfoSub: { fontSize: 12, color: COLORS.textSecondary },
+  tableInfo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  tableInfoText: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary },
+  metricPills: { flexDirection: 'row', gap: 8 },
+  metricPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
+  metricPillValue: { fontSize: 13, fontWeight: '800' },
+  metricPillLabel: { fontSize: 11, fontWeight: '600' },
 
   hiddenPastBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -1305,11 +1354,6 @@ telegramQRCode: {
 
   stateBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   stateBadgeText: { fontSize: 11, fontWeight: '700' },
-  printBtn: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 5, paddingHorizontal: 10,
-    backgroundColor: COLORS.primaryLight, borderRadius: 6, borderWidth: 1, borderColor: COLORS.primary, gap: 4,
-  },
-  printBtnText: { color: COLORS.primary, fontSize: 11, fontWeight: '600' },
   emptyTable: { alignItems: 'center', paddingVertical: 40 },
   emptyTableText: { marginTop: 10, fontSize: 14, color: COLORS.textTertiary },
   emptyTableSubText: { marginTop: 4, fontSize: 12, color: COLORS.textTertiary, fontStyle: 'italic' },
