@@ -388,22 +388,44 @@ export default function Solicitudes() {
   });
 
   const pendientesCount = solicitudes.filter(s => s.estado.toLowerCase() === 'pendiente').length;
+  const aprobadasCount = solicitudes.filter(s => s.estado.toLowerCase() === 'aprobado').length;
+  const rechazadasCount = solicitudes.filter(s => s.estado.toLowerCase() === 'rechazado').length;
+
+  const HeroStat = ({ label, value, color }) => (
+    <View style={s.heroStat}>
+      <Text style={[s.heroStatValue, { color }]}>{value}</Text>
+      <Text style={s.heroStatLabel}>{label}</Text>
+    </View>
+  );
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={20} color={C.t1} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.hTitle}>Solicitudes de recursos</Text>
-          <Text style={s.hSub}>{solicitudes.length} total · {pendientesCount} pendientes</Text>
+      <View style={s.hero}>
+        <View style={s.heroTopRow}>
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={20} color="#fff" />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={s.hTitle}>Solicitudes de recursos</Text>
+            <Text style={s.hSub}>Fase 2 · Recursos de eventos</Text>
+          </View>
+          <TouchableOpacity style={s.refreshBtn} onPress={fetchSolicitudes}>
+            {loading
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="refresh-outline" size={20} color="#fff" />}
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={s.refreshBtn} onPress={fetchSolicitudes}>
-          <Ionicons name="refresh-outline" size={20} color={C.primary} />
-        </TouchableOpacity>
+        <View style={s.heroStatsRow}>
+          <HeroStat label="Total" value={solicitudes.length} color="#fff" />
+          <View style={s.heroStatDivider} />
+          <HeroStat label="Pendientes" value={pendientesCount} color="#FDE68A" />
+          <View style={s.heroStatDivider} />
+          <HeroStat label="Aprobadas" value={aprobadasCount} color="#A7F3D0" />
+          <View style={s.heroStatDivider} />
+          <HeroStat label="Rechazadas" value={rechazadasCount} color="#FECACA" />
+        </View>
       </View>
 
       <View style={s.searchWrap}>
@@ -514,15 +536,26 @@ export default function Solicitudes() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  header: {
-    backgroundColor: C.surface, flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: (StatusBar.currentHeight || 40) + 12,
-    paddingBottom: 14, borderBottomWidth: 0.5, borderColor: C.border, gap: 10,
+  hero: {
+    backgroundColor: C.primary, paddingHorizontal: 16,
+    paddingTop: (StatusBar.currentHeight || 40) + 12, paddingBottom: 16,
+    borderBottomLeftRadius: 20, borderBottomRightRadius: 20,
+    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8,
   },
-  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.bg, justifyContent: 'center', alignItems: 'center', borderWidth: 0.5, borderColor: C.border },
-  hTitle: { fontSize: 18, fontWeight: '800', color: C.t1 },
-  hSub:   { fontSize: 12, color: C.t2, marginTop: 1 },
-  refreshBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.primaryLight, justifyContent: 'center', alignItems: 'center' },
+  heroTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' },
+  hTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  hSub:   { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  refreshBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' },
+  heroStatsRow: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 14,
+    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 14,
+    paddingVertical: 12, paddingHorizontal: 6,
+  },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatValue: { fontSize: 18, fontWeight: '800' },
+  heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.85)', marginTop: 2, textTransform: 'uppercase', fontWeight: '600' },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.25)' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, marginHorizontal: 16, marginTop: 14, borderRadius: 12, borderWidth: 0.5, borderColor: C.border, paddingHorizontal: 12, paddingVertical: 10 },
   searchInput: { flex: 1, fontSize: 14, color: C.t1, padding: 0 },
   chipsRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },

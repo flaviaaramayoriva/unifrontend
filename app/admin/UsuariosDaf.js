@@ -15,7 +15,7 @@ import {
   Pressable,
   ScrollView
 } from 'react-native';
-import { useRouter, Stack, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
@@ -23,6 +23,29 @@ import * as SecureStore from 'expo-secure-store';
 const { width } = Dimensions.get('window');
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
+
+const COLORS = {
+  primary: '#C44200',
+  primaryDark: '#9A3300',
+  primaryLight: '#FFF0E6',
+  secondary: '#0F172A',
+  accent: '#EF4444',
+  success: '#047857',
+  warning: '#F59E0B',
+  warningLight: '#FEF3C7',
+  info: '#3B82F6',
+  background: '#F6F7F9',
+  surface: '#FFFFFF',
+  textPrimary: '#1F2937',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
+  divider: '#D1D5DB',
+  shadow: 'rgba(0, 0, 0, 0.05)',
+  white: '#FFFFFF',
+  black: '#000000',
+};
+
 const getTokenAsync = async () => {
   const TOKEN_KEY = 'adminAuthToken';
   if (Platform.OS === 'web') {
@@ -59,25 +82,54 @@ const deleteTokenAsync = async () => {
   }
 };
 
-const COLORS = {
-  primary: '#C44200',
-  primaryLight: '#FFF0E6',
-  secondary: '#0F172A',
-  accent: '#EF4444',
-  success: '#047857',
-  warning: '#F59E0B',
-  info: '#3B82F6',
-  background: '#F6F7F9',
-  surface: '#FFFFFF',
-  textPrimary: '#1F2937',
-  textSecondary: '#64748B',
-  textTertiary: '#94A3B8',
-  border: '#E6E9EF',
-  divider: '#D1D5DB',
-  shadow: 'rgba(0, 0, 0, 0.05)',
-  white: '#FFFFFF',
-  black: '#000000',
+const isUserActive = (user) =>
+  !(user.habilitado === 0 ||
+    user.habilitado === false ||
+    user.habilitado === '0' ||
+    user.habilitado === 'false');
+
+const getIniciales = (user) => {
+  const n = (user.nombre || '').trim();
+  const a = (user.apellidopat || '').trim();
+  const u = (user.username || '').trim();
+  if (n && a) return (n[0] + a[0]).toUpperCase();
+  if (n) return n[0].toUpperCase();
+  return (u[0] || 'D').toUpperCase();
 };
+
+const ESTADO_FILTERS = [
+  { key: 'all', label: 'Todos' },
+  { key: 'activo', label: 'Activos' },
+  { key: 'inactivo', label: 'Inactivos' },
+];
+
+const StatTile = ({ icon, label, value, color, tint }) => (
+  <View style={[styles.statTile, { backgroundColor: tint }]}>
+    <View style={[styles.statIconWrap, { backgroundColor: color + '22' }]}>
+      <Ionicons name={icon} size={18} color={color} />
+    </View>
+    <View style={styles.statInfo}>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
+    </View>
+  </View>
+);
+
+const FilterChip = ({ label, active, onPress }) => (
+  <TouchableOpacity
+    style={[styles.filterChip, active && styles.filterChipActive]}
+    onPress={onPress}
+    activeOpacity={0.7}
+    accessibilityRole="button"
+    accessibilityState={{ selected: active }}
+    accessibilityLabel={`Filtrar ${label}`}
+  >
+    {active && <Ionicons name="checkmark" size={14} color={COLORS.white} style={{ marginRight: 5 }} />}
+    <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+      {label}
+    </Text>
+  </TouchableOpacity>
+);
 
 const UsuariosDaf = () => {
   const router = useRouter();
@@ -86,16 +138,17 @@ const UsuariosDaf = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
-  
-  // 👇 NUEVO: Estado para guardar la información del usuario que inició sesión
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState(null);
 
   const params = useLocalSearchParams();
+  const totalUsers = users.length;
+  const activeUsers = users.filter(isUserActive).length;
+  const isAdmin = currentUserRole === 'admin';
 
-  // 👇 NUEVO: Decodificar el token al cargar para saber quién está logueado
   useEffect(() => {
     const loadUserInfo = async () => {
       const token = await getTokenAsync();
@@ -141,11 +194,11 @@ const UsuariosDaf = () => {
       console.log('Total de usuarios recibidos:', response.data.length);
 
       const usersData = Array.isArray(response.data) ? response.data : (response.data.data || []);
-      
-      const dafUsers = usersData.filter(user => 
+
+      const dafUsers = usersData.filter(user =>
         user.role?.toLowerCase() === 'daf'
       );
-      
+
       console.log('Usuarios DAF filtrados:', dafUsers.length);
 
       const processedUsers = dafUsers.map(user => ({
@@ -208,15 +261,24 @@ const UsuariosDaf = () => {
 
     let filtered = users;
 
+    if (estadoFiltro === 'activo') {
+      filtered = filtered.filter(isUserActive);
+    } else if (estadoFiltro === 'inactivo') {
+      filtered = filtered.filter(u => !isUserActive(u));
+    }
+
     if (searchTerm !== '') {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(user =>
-        (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        (user.nombre && user.nombre.toLowerCase().includes(term)) ||
+        (user.apellidopat && user.apellidopat.toLowerCase().includes(term)) ||
+        (user.username && user.username.toLowerCase().includes(term)) ||
+        (user.email && user.email.toLowerCase().includes(term))
       );
     }
 
     setFilteredUsers(filtered);
-  }, [searchTerm, users]);
+  }, [searchTerm, estadoFiltro, users]);
 
   const handleAddUser = () => {
     router.push('/admin/CrearUsuarioDaf');
@@ -258,39 +320,64 @@ const UsuariosDaf = () => {
     );
   };
 
-  const getRoleColor = () => COLORS.warning;
-  const getRoleIcon = () => 'people-outline';
+  const getNivelAcceso = (user) => {
+    const nivel = user?.daf?.nivelAcceso ?? user?.nivelAcceso;
+    return nivel !== null && nivel !== undefined ? `Nivel ${nivel}` : null;
+  };
 
-  const renderUserItem = ({ item }) => {
-    // 👇 LÓGICA CLAVE: Solo mostrar botón de editar si es Admin O es su propio perfil
+  const renderUserItem = (item) => {
     const canEdit = currentUserRole === 'admin' || currentUserId === item.id;
-    const isAdmin = currentUserRole === 'admin';
+    const active = isUserActive(item);
+    const iniciales = getIniciales(item);
+    const nivel = getNivelAcceso(item);
 
     return (
-      <View style={[styles.userItemContainer, { opacity: loading ? 0.6 : 1 }]}>
-        <View style={styles.userAvatarContainer}>
-          <View style={[styles.userAvatar, { backgroundColor: getRoleColor() }]}>
-            <Text style={styles.avatarText}>
-              {(item.username || item.email || 'U').charAt(0).toUpperCase()}
-            </Text>
+      <Pressable
+        style={({ pressed }) => [styles.userCard, pressed && styles.userCardPressed]}
+        onPress={() => handleViewUser(item)}
+        activeOpacity={0.9}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver detalles de ${item.username || item.email}`}
+      >
+        <View style={styles.userCardLeft}>
+          <View style={[styles.userAvatar, { borderColor: active ? COLORS.success : COLORS.border }]}>
+            <Text style={styles.avatarText}>{iniciales}</Text>
+            <View style={[styles.statusDot, { backgroundColor: active ? COLORS.success : COLORS.textTertiary }]} />
+            <View style={styles.avatarIconBadge}>
+              <Ionicons name="people" size={11} color={COLORS.white} />
+            </View>
           </View>
-          <View style={[styles.roleIndicator, { backgroundColor: getRoleColor() }]}>
-            <Ionicons name={getRoleIcon()} size={12} color="#fff" />
-          </View>
-        </View>
 
-        <View style={styles.userInfo}>
-          <Text style={styles.username} numberOfLines={1}>
-            {item.username || 'Sin nombre'}
-          </Text>
-          <Text style={styles.userEmail} numberOfLines={1}>
-            {item.email || 'Sin email'}
-          </Text>
-          <View style={styles.roleContainer}>
-            <Ionicons name="people-outline" size={14} color={COLORS.warning} />
-            <Text style={[styles.userRole, { color: COLORS.warning }]}>
-              DAF
+          <View style={styles.userInfo}>
+            <Text style={styles.userName} numberOfLines={1}>
+              {item.nombre
+                ? `${item.nombre} ${item.apellidopat || ''}`.trim()
+                : item.username || 'Sin nombre'}
             </Text>
+            <Text style={styles.userHandle} numberOfLines={1}>
+              @{item.username || 'usuario'}
+            </Text>
+            <Text style={styles.userEmail} numberOfLines={1}>
+              {item.email || 'Sin email'}
+            </Text>
+            <View style={styles.userMetaRow}>
+              <View style={styles.roleChip}>
+                <Ionicons name="calculator-outline" size={12} color={COLORS.warning} />
+                <Text style={styles.roleChipText}>DAF</Text>
+              </View>
+              {nivel && (
+                <View style={styles.levelChip}>
+                  <Ionicons name="shield-checkmark-outline" size={12} color={COLORS.info} />
+                  <Text style={styles.levelChipText}>{nivel}</Text>
+                </View>
+              )}
+              <View style={[styles.statusChip, active ? styles.statusChipActive : styles.statusChipInactive]}>
+                <View style={[styles.statusChipDot, { backgroundColor: active ? COLORS.success : COLORS.textTertiary }]} />
+                <Text style={[styles.statusChipText, { color: active ? COLORS.success : COLORS.textSecondary }]}>
+                  {active ? 'Activo' : 'Inactivo'}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -299,16 +386,19 @@ const UsuariosDaf = () => {
             onPress={() => handleViewUser(item)}
             style={[styles.actionButton, styles.viewButton]}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver ${item.username}`}
           >
             <Ionicons name="eye-outline" size={20} color={COLORS.info} />
           </TouchableOpacity>
 
-          {/* 👇 BOTÓN DE EDITAR CONDICIONAL */}
           {canEdit && (
             <TouchableOpacity
               onPress={() => router.push(`/admin/editUser/${item.id}`)}
               style={[styles.actionButton, styles.editButton]}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Editar ${item.username}`}
             >
               <Ionicons name="pencil-outline" size={20} color={COLORS.warning} />
             </TouchableOpacity>
@@ -319,20 +409,23 @@ const UsuariosDaf = () => {
               onPress={() => handleDeleteUser(item.id)}
               style={[styles.actionButton, styles.deleteButton]}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Eliminar ${item.username}`}
             >
               <Ionicons name="trash-outline" size={20} color={COLORS.accent} />
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </Pressable>
     );
   };
 
-  const isAdmin = currentUserRole === 'admin';
-const renderUserModal = () => {
-    // 👇 LÓGICA CLAVE TAMBIÉN PARA EL MODAL
+  const renderUserModal = () => {
     const canEdit = currentUserRole === 'admin' || currentUserId === selectedUser?.id;
-    const isAdmin = currentUserRole === 'admin';
+    const modalIsAdmin = currentUserRole === 'admin';
+    const active = selectedUser ? isUserActive(selectedUser) : true;
+    const iniciales = selectedUser ? getIniciales(selectedUser) : 'D';
+    const nivel = selectedUser ? getNivelAcceso(selectedUser) : null;
 
     return (
       <Modal
@@ -347,45 +440,85 @@ const renderUserModal = () => {
           onPress={() => setShowUserModal(false)}
         >
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Detalles del Usuario DAF</Text>
-              <TouchableOpacity
-                onPress={() => setShowUserModal(false)}
-                style={styles.modalCloseButton}
-                accessibilityLabel="Cerrar"
-                accessibilityRole="button"
-              >
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
+            <View style={styles.modalGradient}>
+              <View style={styles.modalHeaderRow}>
+                <TouchableOpacity
+                  onPress={() => setShowUserModal(false)}
+                  style={styles.modalCloseButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cerrar"
+                >
+                  <Ionicons name="close" size={24} color={COLORS.white} />
+                </TouchableOpacity>
+                <View style={styles.modalRoleBadge}>
+                  <Ionicons name="calculator-outline" size={14} color={COLORS.warning} />
+                  <Text style={styles.modalRoleBadgeText}>DAF</Text>
+                </View>
+              </View>
+
+              <View style={styles.modalIdentity}>
+                <View style={[styles.modalAvatar, { borderColor: active ? COLORS.success : COLORS.border }]}>
+                  <Text style={styles.modalAvatarText}>{iniciales}</Text>
+                  <View style={[styles.modalStatusDot, { backgroundColor: active ? COLORS.success : COLORS.textTertiary }]} />
+                </View>
+                <Text style={styles.modalUserName} numberOfLines={1}>
+                  {selectedUser
+                    ? `${selectedUser.nombre || ''} ${selectedUser.apellidopat || ''}`.trim() || selectedUser.username
+                    : ''}
+                </Text>
+                <Text style={styles.modalUserHandle} numberOfLines={1}>
+                  @{selectedUser?.username || 'usuario'}
+                </Text>
+                {nivel && (
+                  <View style={styles.modalLevelChip}>
+                    <Ionicons name="shield-checkmark-outline" size={13} color={COLORS.info} />
+                    <Text style={styles.modalLevelChipText}>{nivel}</Text>
+                  </View>
+                )}
+                <View style={[styles.modalStatusBadge, active ? styles.modalStatusActive : styles.modalStatusInactive]}>
+                  <View style={[styles.statusChipDot, { backgroundColor: active ? COLORS.success : COLORS.textTertiary }]} />
+                  <Text style={{ color: active ? COLORS.success : COLORS.textSecondary, fontSize: 13, fontWeight: '600', marginLeft: 6 }}>
+                    {active ? 'Cuenta activa' : 'Cuenta inactiva'}
+                  </Text>
+                </View>
+              </View>
             </View>
 
             {selectedUser && (
               <View style={styles.modalBody}>
-                <View style={styles.modalUserAvatar}>
-                  <View style={[styles.modalAvatar, { backgroundColor: COLORS.warning }]}>
-                    <Text style={styles.modalAvatarText}>
-                      {(selectedUser.username || selectedUser.email || 'U').charAt(0).toUpperCase()}
-                    </Text>
+                <View style={styles.modalInfoRow}>
+                  <View style={styles.modalInfoIcon}>
+                    <Ionicons name="mail-outline" size={18} color={COLORS.textSecondary} />
+                  </View>
+                  <View style={styles.modalInfoTextWrap}>
+                    <Text style={styles.modalInfoLabel}>Correo electrónico</Text>
+                    <Text style={styles.modalInfoValue} numberOfLines={1}>{selectedUser.email || 'Sin email'}</Text>
                   </View>
                 </View>
 
-                <View style={styles.modalUserInfo}>
-                  <Text style={styles.modalUserName}>
-                    {selectedUser.username || 'Sin nombre'}
-                  </Text>
-                  <Text style={styles.modalUserEmail}>
-                    {selectedUser.email || 'Sin email'}
-                  </Text>
-                  <View style={styles.modalRoleContainer}>
-                    <Ionicons name="people-outline" size={16} color={COLORS.warning} />
-                    <Text style={[styles.modalUserRole, { color: COLORS.warning }]}>
-                      DAF
-                    </Text>
+                <View style={styles.modalInfoRow}>
+                  <View style={styles.modalInfoIcon}>
+                    <Ionicons name="person-outline" size={18} color={COLORS.textSecondary} />
+                  </View>
+                  <View style={styles.modalInfoTextWrap}>
+                    <Text style={styles.modalInfoLabel}>Usuario del sistema</Text>
+                    <Text style={styles.modalInfoValue} numberOfLines={1}>{selectedUser.username || 'Sin usuario'}</Text>
                   </View>
                 </View>
+
+                {selectedUser.facultad?.nombre && (
+                  <View style={styles.modalInfoRow}>
+                    <View style={styles.modalInfoIcon}>
+                      <Ionicons name="business-outline" size={18} color={COLORS.textSecondary} />
+                    </View>
+                    <View style={styles.modalInfoTextWrap}>
+                      <Text style={styles.modalInfoLabel}>Facultad</Text>
+                      <Text style={styles.modalInfoValue} numberOfLines={2}>{selectedUser.facultad.nombre}</Text>
+                    </View>
+                  </View>
+                )}
 
                 <View style={styles.modalActions}>
-                  {/* 👇 BOTÓN DE EDITAR CONDICIONAL EN EL MODAL */}
                   {canEdit && (
                     <TouchableOpacity
                       style={[styles.modalActionButton, styles.modalEditButton]}
@@ -393,19 +526,25 @@ const renderUserModal = () => {
                         setShowUserModal(false);
                         router.push(`/admin/editUser/${selectedUser.id}`);
                       }}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Editar usuario"
                     >
                       <Ionicons name="pencil" size={16} color="#fff" />
                       <Text style={styles.modalActionButtonText}>Editar</Text>
                     </TouchableOpacity>
                   )}
 
-                  {isAdmin && (
+                  {modalIsAdmin && (
                     <TouchableOpacity
                       style={[styles.modalActionButton, styles.modalDeleteButton]}
                       onPress={() => {
                         setShowUserModal(false);
                         handleDeleteUser(selectedUser.id);
                       }}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Eliminar usuario"
                     >
                       <Ionicons name="trash" size={16} color="#fff" />
                       <Text style={styles.modalActionButtonText}>Eliminar</Text>
@@ -423,8 +562,18 @@ const renderUserModal = () => {
   if (loading && (!users || users.length === 0)) {
     return (
       <SafeAreaView style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'Usuarios DAF',
+            headerStyle: { backgroundColor: COLORS.primary },
+            headerTintColor: '#fff',
+            headerTitleStyle: { fontWeight: 'bold' },
+          }}
+        />
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <View style={styles.loadingIcon}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
           <Text style={styles.loadingText}>Cargando usuarios DAF...</Text>
         </View>
       </SafeAreaView>
@@ -434,20 +583,20 @@ const renderUserModal = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen
-          options={{
-            title: 'Usuarios DAF',
-            headerStyle: { backgroundColor: COLORS.primary },
-            headerTintColor: '#fff',
-            headerTitleStyle: { fontWeight: 'bold' },
-            headerRight: () => (
-              isAdmin && (
-                <TouchableOpacity onPress={handleAddUser} style={styles.headerButton}>
-                  <Ionicons name="add-circle" size={28} color="#fff" />
-                </TouchableOpacity>
-              )
-            ),
-          }}
-        />
+        options={{
+          title: 'Usuarios DAF',
+          headerStyle: { backgroundColor: COLORS.primary },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          headerRight: () => (
+            isAdmin && (
+              <TouchableOpacity onPress={handleAddUser} style={styles.headerButton} accessibilityRole="button" accessibilityLabel="Añadir usuario DAF">
+                <Ionicons name="add-circle" size={28} color="#fff" />
+              </TouchableOpacity>
+            )
+          ),
+        }}
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -460,62 +609,126 @@ const renderUserModal = () => {
           />
         }
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.infoBanner}>
-          <Ionicons name="people" size={22} color={COLORS.warning} />
-          <Text style={styles.infoBannerText}>
-            Listado de usuarios con rol DAF
-          </Text>
+        <View style={styles.hero}>
+          <View style={styles.heroHeader}>
+            <View style={styles.heroIconWrap}>
+              <Ionicons name="calculator" size={26} color="#fff" />
+            </View>
+            <View style={styles.heroHeaderText}>
+              <Text style={styles.heroTitle}>Dirección Administrativa y Financiera</Text>
+              <Text style={styles.heroSubtitle}>Usuarios con acceso al módulo DAF del sistema de eventos</Text>
+            </View>
+          </View>
+          <View style={styles.heroStats}>
+            <View style={styles.heroStatItem}>
+              <Text style={styles.heroStatValue}>{totalUsers}</Text>
+              <Text style={styles.heroStatLabel}>Cuentas DAF</Text>
+            </View>
+            <View style={styles.heroStatDivider} />
+            <View style={styles.heroStatItem}>
+              <Text style={[styles.heroStatValue, { color: '#B9F6CA' }]}>{activeUsers}</Text>
+              <Text style={styles.heroStatLabel}>Activas</Text>
+            </View>
+            <View style={styles.heroStatDivider} />
+            <View style={styles.heroStatItem}>
+              <Text style={[styles.heroStatValue, { color: '#FDE68A' }]}>{totalUsers - activeUsers}</Text>
+              <Text style={styles.heroStatLabel}>Inactivas</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
-            <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+            <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar por nombre o email..."
-              accessibilityLabel="Buscar"
+              placeholder="Buscar por nombre, usuario o email..."
+              accessibilityLabel="Buscar usuarios DAF"
               value={searchTerm}
               onChangeText={setSearchTerm}
-              placeholderTextColor="#888"
+              placeholderTextColor={COLORS.textTertiary}
+              returnKeyType="search"
             />
             {searchTerm !== '' && (
-              <TouchableOpacity onPress={() => setSearchTerm('')} style={styles.clearButton}>
-                <Ionicons name="close-circle" size={20} color="#666" />
+              <TouchableOpacity onPress={() => setSearchTerm('')} style={styles.clearButton} accessibilityRole="button" accessibilityLabel="Limpiar búsqueda">
+                <Ionicons name="close-circle" size={20} color={COLORS.textTertiary} />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        <View style={styles.statsContainer}>
-          <Text style={styles.statsText}>
-            {filteredUsers.length} {filteredUsers.length === 1 ? 'usuario DAF' : 'usuarios DAF'}
-            {searchTerm ? ' encontrados' : ' en total'}
+        <View style={styles.filterRow}>
+          {ESTADO_FILTERS.map(f => (
+            <FilterChip
+              key={f.key}
+              label={f.label}
+              active={estadoFiltro === f.key}
+              onPress={() => setEstadoFiltro(f.key)}
+            />
+          ))}
+        </View>
+
+        <View style={styles.resultsBar}>
+          <Text style={styles.resultsText}>
+            {filteredUsers.length} {filteredUsers.length === 1 ? 'usuario' : 'usuarios'}
+            {searchTerm || estadoFiltro !== 'all' ? ' encontrados' : ' en total'}
           </Text>
+          {(searchTerm !== '' || estadoFiltro !== 'all') && (
+            <TouchableOpacity
+              onPress={() => { setSearchTerm(''); setEstadoFiltro('all'); }}
+              style={styles.clearFiltersButton}
+              accessibilityRole="button"
+              accessibilityLabel="Limpiar filtros"
+            >
+              <Ionicons name="refresh-outline" size={14} color={COLORS.primary} />
+              <Text style={styles.clearFiltersText}>Limpiar</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {!loading && filteredUsers.length === 0 ? (
-          <View style={styles.centered}>
-            <Ionicons name="people-outline" size={80} color="#ccc" />
-            <Text style={styles.noUsersText}>
-              {searchTerm
-                ? 'No se encontraron usuarios DAF con ese criterio.'
-                : 'No hay usuarios DAF registrados.'}
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconWrap}>
+              <Ionicons name={searchTerm || estadoFiltro !== 'all' ? 'search-outline' : 'people-outline'} size={48} color={COLORS.textTertiary} />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {searchTerm || estadoFiltro !== 'all' ? 'Sin resultados' : 'Aún no hay usuarios DAF'}
             </Text>
-            {searchTerm && (
+            <Text style={styles.emptySubtitle}>
+              {searchTerm || estadoFiltro !== 'all'
+                ? 'No se encontraron usuarios con los filtros aplicados.'
+                : 'Crea el primer usuario DAF para comenzar a gestionar solicitudes y recursos.'}
+            </Text>
+            {(searchTerm || estadoFiltro !== 'all') && (
               <TouchableOpacity
-                style={styles.clearFiltersButton}
-                onPress={() => setSearchTerm('')}
+                style={styles.emptyButton}
+                onPress={() => { setSearchTerm(''); setEstadoFiltro('all'); }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
               >
-                <Text style={styles.clearFiltersText}>Limpiar búsqueda</Text>
+                <Ionicons name="refresh-outline" size={16} color={COLORS.white} />
+                <Text style={styles.emptyButtonText}>Limpiar filtros</Text>
+              </TouchableOpacity>
+            )}
+            {!searchTerm && estadoFiltro === 'all' && isAdmin && (
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={handleAddUser}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+              >
+                <Ionicons name="add" size={16} color={COLORS.white} />
+                <Text style={styles.emptyButtonText}>Crear usuario DAF</Text>
               </TouchableOpacity>
             )}
           </View>
         ) : (
-          <View style={styles.listContentContainer}>
+          <View style={styles.list}>
             {filteredUsers.map((user) => (
               <View key={user.id}>
-                {renderUserItem({ item: user })}
+                {renderUserItem(user)}
               </View>
             ))}
           </View>
@@ -526,6 +739,8 @@ const renderUserModal = () => {
         <TouchableOpacity
           style={styles.fab}
           onPress={handleAddUser}
+          activeOpacity={0.85}
+          accessibilityRole="button"
           accessibilityLabel="Añadir nuevo usuario DAF"
         >
           <Ionicons name="add" size={28} color="#fff" />
@@ -540,22 +755,33 @@ const renderUserModal = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: 110 },
+
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
   },
+  loadingIcon: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: COLORS.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   loadingText: {
-    marginTop: 10,
+    marginTop: 16,
     fontSize: 16,
     color: COLORS.textSecondary,
+    fontWeight: '600',
   },
   headerButton: { marginRight: 15, padding: 5 },
   fab: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
+    bottom: 24,
+    right: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -572,210 +798,378 @@ const styles = StyleSheet.create({
       android: { elevation: 8 },
     }),
   },
-  infoBanner: {
-    flexDirection: 'row',
+
+  hero: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+    padding: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primaryDark,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  heroHeader: { flexDirection: 'row', alignItems: 'center' },
+  heroIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
-    backgroundColor: COLORS.primaryLight,
-    marginHorizontal: 15,
-    marginTop: 15,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.warning,
+    justifyContent: 'center',
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
-  infoBannerText: {
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-    marginLeft: 10,
-    flex: 1,
+  heroHeaderText: { flex: 1 },
+  heroTitle: { fontSize: 17, fontWeight: '800', color: '#fff', marginBottom: 3 },
+  heroSubtitle: { fontSize: 12.5, color: 'rgba(255,255,255,0.85)', lineHeight: 17 },
+  heroStats: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 14,
+    marginTop: 18,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
-  searchContainer: {
-    paddingHorizontal: 15,
-    paddingTop: 15,
-    paddingBottom: 10,
-  },
+  heroStatItem: { flex: 1, alignItems: 'center' },
+  heroStatValue: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  heroStatLabel: { fontSize: 11.5, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontWeight: '600' },
+  heroStatDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.25)' },
+
+  searchContainer: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 6 },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    paddingHorizontal: 15,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     height: 50,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, color: COLORS.textPrimary },
-  clearButton: { padding: 5 },
-  statsContainer: { paddingHorizontal: 15, paddingBottom: 10 },
-  statsText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    fontStyle: 'italic',
-  },
-  listContentContainer: { paddingHorizontal: 15, paddingBottom: 20 },
-  userItemContainer: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
+  searchInput: { flex: 1, fontSize: 15, color: COLORS.textPrimary },
+  clearButton: { padding: 6 },
+
+  filterRow: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 8, gap: 8 },
+  filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  filterChipText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
+  filterChipTextActive: { color: COLORS.white },
+
+  resultsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 8,
+  },
+  resultsText: { fontSize: 13, color: COLORS.textSecondary, fontStyle: 'italic' },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  clearFiltersText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
+
+  list: { paddingHorizontal: 16, paddingTop: 4 },
+  userCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
     elevation: 3,
   },
-  userAvatarContainer: { position: 'relative', marginRight: 15 },
+  userCardPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
+  userCardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.warningLight,
+    borderWidth: 2,
+    marginRight: 14,
+    position: 'relative',
   },
-  avatarText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  roleIndicator: {
+  avatarText: { fontSize: 18, fontWeight: '800', color: COLORS.warning },
+  statusDot: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
+    bottom: 0,
+    right: 0,
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  avatarIconBadge: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
     width: 20,
     height: 20,
     borderRadius: 10,
-    justifyContent: 'center',
+    backgroundColor: COLORS.warning,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
   },
   userInfo: { flex: 1 },
-  username: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginBottom: 6,
-  },
-  roleContainer: { flexDirection: 'row', alignItems: 'center' },
-  userRole: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+  userName: { fontSize: 15.5, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  userHandle: { fontSize: 12, color: COLORS.textTertiary, marginBottom: 2 },
+  userEmail: { fontSize: 13, color: COLORS.textSecondary, marginBottom: 8 },
+  userMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  roleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.warningLight,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  userActions: { flexDirection: 'row', alignItems: 'center' },
-  actionButton: { padding: 10, borderRadius: 8, marginLeft: 5 },
-  viewButton: { backgroundColor: 'rgba(52, 152, 219, 0.1)' },
-  editButton: { backgroundColor: 'rgba(243, 156, 18, 0.1)' },
-  deleteButton: { backgroundColor: 'rgba(231, 76, 60, 0.1)' },
-  noUsersText: {
-    fontSize: 16,
-    color: COLORS.textTertiary,
+  roleChipText: { fontSize: 11, fontWeight: '700', color: COLORS.warning, textTransform: 'uppercase' },
+  levelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  levelChipText: { fontSize: 11, fontWeight: '600', color: COLORS.info },
+  statusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 5,
+  },
+  statusChipActive: { backgroundColor: 'rgba(4, 120, 87, 0.1)' },
+  statusChipInactive: { backgroundColor: 'rgba(100, 116, 139, 0.1)' },
+  statusChipDot: { width: 7, height: 7, borderRadius: 3.5 },
+  statusChipText: { fontSize: 11, fontWeight: '700' },
+
+  userActions: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
+  actionButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  viewButton: { backgroundColor: 'rgba(59, 130, 246, 0.1)' },
+  editButton: { backgroundColor: 'rgba(245, 158, 11, 0.12)' },
+  deleteButton: { backgroundColor: 'rgba(239, 68, 68, 0.1)' },
+
+  emptyState: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24 },
+  emptyIconWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: COLORS.textPrimary, textAlign: 'center' },
+  emptySubtitle: {
+    fontSize: 13.5,
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 6,
+    marginBottom: 20,
+    lineHeight: 19,
+    maxWidth: 280,
   },
-  clearFiltersButton: {
-    marginTop: 15,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.primary,
-    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 6,
   },
-  clearFiltersText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  emptyButtonText: { color: COLORS.white, fontSize: 14, fontWeight: '700' },
+
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    width: width * 0.9,
-    maxWidth: 400,
+    borderRadius: 20,
+    width: width * 0.92,
+    maxWidth: 420,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 16,
   },
-  modalHeader: {
+  modalGradient: {
+    backgroundColor: COLORS.primary,
+    paddingTop: 14,
+    paddingBottom: 26,
+    paddingHorizontal: 20,
+  },
+  modalHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-  },
-  modalCloseButton: { padding: 5 },
-  modalBody: { padding: 20 },
-  modalUserAvatar: { alignItems: 'center', marginBottom: 20 },
-  modalAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalAvatarText: { color: '#fff', fontSize: 28, fontWeight: 'bold' },
-  modalUserInfo: { alignItems: 'center', marginBottom: 25 },
-  modalUserName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    marginBottom: 5,
+  modalRoleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 5,
   },
-  modalUserEmail: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
+  modalRoleBadgeText: { fontSize: 12, fontWeight: '800', color: COLORS.warning, textTransform: 'uppercase' },
+  modalIdentity: { alignItems: 'center', marginTop: 18 },
+  modalAvatar: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 3,
+    marginBottom: 12,
+    position: 'relative',
+  },
+  modalAvatarText: { fontSize: 30, fontWeight: '800', color: COLORS.white },
+  modalStatusDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: COLORS.primary,
+  },
+  modalUserName: { fontSize: 20, fontWeight: '800', color: COLORS.white, marginBottom: 2 },
+  modalUserHandle: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 10 },
+  modalLevelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
     marginBottom: 10,
   },
-  modalRoleContainer: { flexDirection: 'row', alignItems: 'center' },
-  modalUserRole: {
-    fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    marginLeft: 5,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+  modalLevelChipText: { fontSize: 12, fontWeight: '700', color: COLORS.white },
+  modalStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  modalActions: { flexDirection: 'row', justifyContent: 'space-around' },
+  modalStatusActive: { backgroundColor: 'rgba(185, 246, 202, 0.2)' },
+  modalStatusInactive: { backgroundColor: 'rgba(226, 232, 240, 0.2)' },
+
+  modalBody: { padding: 20 },
+  modalInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  modalInfoIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  modalInfoTextWrap: { flex: 1 },
+  modalInfoLabel: { fontSize: 11.5, color: COLORS.textTertiary, fontWeight: '600' },
+  modalInfoValue: { fontSize: 14.5, color: COLORS.textPrimary, fontWeight: '600', marginTop: 2 },
+  modalActions: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 18 },
   modalActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 100,
     justifyContent: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 12,
+    minWidth: 110,
+    gap: 6,
   },
   modalEditButton: { backgroundColor: COLORS.warning },
   modalDeleteButton: { backgroundColor: COLORS.accent },
   modalActionButtonText: {
     color: COLORS.white,
     fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 5,
+    fontWeight: '700',
   },
 });
 

@@ -198,7 +198,7 @@ const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpand
   );
 };
 
-const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificationPress, lastUpdated, onRefresh, refreshing, onTelegramPress, isTelegramLinked }) => {
+const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificationPress, lastUpdated, onRefresh, refreshing, onTelegramPress, isTelegramLinked, dafCounts }) => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
   return (
@@ -233,6 +233,37 @@ const MinimalHeader = ({ nombreUsuario, emailUsuario, unreadCount, onNotificatio
       <View style={styles.heroDivider} />
       <Text style={styles.headerTitle}>Panel DAF</Text>
       <Text style={styles.headerSubtitle}>Dirección Administrativa y Financiera · UFT Eventos</Text>
+      <View style={styles.heroStatsRow}>
+        <View style={styles.heroStat}>
+          <View style={[styles.heroStatIcon, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+            <Ionicons name="people-outline" size={16} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroStatValue}>{dafCounts.total}</Text>
+            <Text style={styles.heroStatLabel}>Cuentas DAF</Text>
+          </View>
+        </View>
+        <View style={styles.heroStatDivider} />
+        <View style={styles.heroStat}>
+          <View style={[styles.heroStatIcon, { backgroundColor: 'rgba(16,185,129,0.35)' }]}>
+            <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroStatValue}>{dafCounts.activos}</Text>
+            <Text style={styles.heroStatLabel}>Activas</Text>
+          </View>
+        </View>
+        <View style={styles.heroStatDivider} />
+        <View style={styles.heroStat}>
+          <View style={[styles.heroStatIcon, { backgroundColor: 'rgba(239,68,68,0.4)' }]}>
+            <Ionicons name="close-circle-outline" size={16} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroStatValue}>{dafCounts.inactivos}</Text>
+            <Text style={styles.heroStatLabel}>Inactivas</Text>
+          </View>
+        </View>
+      </View>
       {lastUpdated ? (
         <Text style={styles.lastUpdatedText}>
           Actualizado: {lastUpdated.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
@@ -288,6 +319,7 @@ const Daf = () => {
   ]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const [dafCounts, setDafCounts] = useState({ total: 0, activos: 0, inactivos: 0 });
 
     const cargarInfoUsuario = useCallback(async () => {
     try {
@@ -409,11 +441,20 @@ const saveThemeColor = useCallback(async (color) => {
       const token = await getTokenAsync();
       if (!token) { Alert.alert('Error', 'Por favor, inicia sesión nuevamente'); return; }
 
-      const [dashRes, eventsRes, notifsRes] = await Promise.all([
+      const [dashRes, eventsRes, notifsRes, daFUsersRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/dashboard/stats`, { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }),
         axios.get(`${API_BASE_URL}/eventos`,          { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }),
         axios.get(`${API_BASE_URL}/notificaciones`,   { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }).catch(() => ({ data: [] })),
+        axios.get(`${API_BASE_URL}/users/daf`,        { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }).catch(() => ({ data: [] })),
       ]);
+
+      const dafUsersRaw = Array.isArray(daFUsersRes.data) ? daFUsersRes.data : (daFUsersRes.data?.data || []);
+      const dafActivos = dafUsersRaw.filter(u => !(u.habilitado === 0 || u.habilitado === false || u.habilitado === '0' || u.habilitado === 'false')).length;
+      setDafCounts({
+        total: dafUsersRaw.length,
+        activos: dafActivos,
+        inactivos: Math.max(0, dafUsersRaw.length - dafActivos),
+      });
 
       const data = dashRes.data;
       setStats(data);
@@ -589,6 +630,7 @@ const saveThemeColor = useCallback(async (color) => {
           refreshing={refreshing}
           onTelegramPress={() => setShowTelegramModal(true)}
           isTelegramLinked={isTelegramLinked}
+          dafCounts={dafCounts}
         />
 
         {/* ── KPIs ── */}
@@ -959,6 +1001,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
   headerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 3, fontWeight: '500' },
+  heroStatsRow: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 14,
+    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 14,
+    paddingVertical: 10, paddingHorizontal: 8,
+  },
+  heroStat: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, gap: 6 },
+  heroStatIcon: { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  heroStatDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.25)' },
+  heroStatValue: { fontSize: 17, fontWeight: '800', color: '#fff', lineHeight: 18 },
+  heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 1 },
   lastUpdatedText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 6 },
   notifBadge: {
     position: 'absolute', top: 2, right: 2,

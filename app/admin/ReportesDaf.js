@@ -119,17 +119,40 @@ export default function Reportes() {
   const maxUsos = data?.recursosMasUsados?.[0]?.usos || 1;
   const barColors = [C.primary, C.info, C.success, C.warning, C.danger];
 
+  const HeroStat = ({ label, value, color }) => (
+    <View style={r.heroStat}>
+      <Text style={[r.heroStatValue, { color }]}>{value}</Text>
+      <Text style={r.heroStatLabel}>{label}</Text>
+    </View>
+  );
+
   return (
     <View style={r.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      <View style={r.header}>
-        <TouchableOpacity style={r.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={C.t1} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={r.hTitle}>Reportes</Text>
-          <Text style={r.hSub}>Uso de recursos y estadísticas</Text>
+      <View style={r.hero}>
+        <View style={r.heroTopRow}>
+          <TouchableOpacity style={r.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={20} color="#fff" />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={r.hTitle}>Reportes</Text>
+            <Text style={r.hSub}>Uso de recursos y estadísticas</Text>
+          </View>
+          <TouchableOpacity style={r.refreshBtn} onPress={() => fetchReportes(periodo)}>
+            {loading
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="refresh-outline" size={20} color="#fff" />}
+          </TouchableOpacity>
+        </View>
+        <View style={r.heroStatsRow}>
+          <HeroStat label="Solicitudes" value={data?.totalSolicitudes ?? 0} color="#fff" />
+          <View style={r.heroStatDivider} />
+          <HeroStat label="Aprobadas" value={data?.aprobadas ?? 0} color="#A7F3D0" />
+          <View style={r.heroStatDivider} />
+          <HeroStat label="Rechazadas" value={data?.rechazadas ?? 0} color="#FECACA" />
+          <View style={r.heroStatDivider} />
+          <HeroStat label="Pendientes" value={data?.pendientes ?? 0} color="#FDE68A" />
         </View>
       </View>
 
@@ -209,14 +232,26 @@ export default function Reportes() {
 
 const r = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  header: {
-    backgroundColor: C.surface, flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: (StatusBar.currentHeight || 40) + 12, paddingBottom: 14,
-    borderBottomWidth: 0.5, borderColor: C.border, gap: 12,
+  hero: {
+    backgroundColor: C.primary, paddingHorizontal: 16,
+    paddingTop: (StatusBar.currentHeight || 40) + 12, paddingBottom: 16,
+    borderBottomLeftRadius: 20, borderBottomRightRadius: 20,
+    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8,
   },
-  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.bg, justifyContent: 'center', alignItems: 'center', borderWidth: 0.5, borderColor: C.border },
-  hTitle: { fontSize: 20, fontWeight: '800', color: C.t1 },
-  hSub: { fontSize: 12, color: C.t2 },
+  heroTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' },
+  hTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  hSub: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  refreshBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' },
+  heroStatsRow: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 14,
+    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 14,
+    paddingVertical: 12, paddingHorizontal: 6,
+  },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatValue: { fontSize: 18, fontWeight: '800' },
+  heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.85)', marginTop: 2, textTransform: 'uppercase', fontWeight: '600' },
+  heroStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.25)' },
 
   periodoRow: { flexDirection: 'row', padding: 16, gap: 8 },
   periodoBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.surface, alignItems: 'center' },

@@ -15,11 +15,10 @@ import {
   Pressable,
   ScrollView
 } from 'react-native';
-import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import AdminHeader from '../../components/admin/AdminHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -480,6 +479,12 @@ const UsuariosAdmin = () => {
                       {isUserActive(selectedUser) ? 'Activo' : 'Inactivo'}
                     </Text>
                   </View>
+                  {selectedUser.role?.toLowerCase() === 'daf' && selectedUser.daf?.nivelAcceso && (
+                    <View style={[styles.modalRoleBadge, { backgroundColor: COLORS.warning + '1A' }]}>
+                      <Ionicons name="shield-outline" size={14} color={COLORS.warning} />
+                      <Text style={[styles.modalRoleText, { color: COLORS.warning }]}>Nivel {selectedUser.daf.nivelAcceso}</Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={styles.modalUserEmail}>
                   @{selectedUser.username || 'sin usuario'}
@@ -604,6 +609,14 @@ const UsuariosAdmin = () => {
   if (loading && (!users || users.length === 0)) {
     return (
       <SafeAreaView style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'Gestión de Usuarios',
+            headerStyle: { backgroundColor: COLORS.primary },
+            headerTintColor: '#fff',
+            headerTitleStyle: { fontWeight: 'bold' },
+          }}
+        />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Cargando usuarios...</Text>
@@ -614,15 +627,18 @@ const UsuariosAdmin = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <AdminHeader
-        title="Gestionar Usuarios"
-        subtitle="UFT Eventos · Universidad Privada Franz Tamayo"
-        eyebrow="Administración"
-        rightActions={(
-          <TouchableOpacity onPress={handleAddUser} style={styles.headerButton} accessibilityRole="button" accessibilityLabel="Agregar usuario">
-            <Ionicons name="add" size={26} color={COLORS.white} />
-          </TouchableOpacity>
-        )}
+      <Stack.Screen
+        options={{
+          title: 'Gestión de Usuarios',
+          headerStyle: { backgroundColor: COLORS.primary },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          headerRight: () => (
+            <TouchableOpacity onPress={handleAddUser} style={styles.headerButton} accessibilityRole="button" accessibilityLabel="Agregar usuario">
+              <Ionicons name="add-circle" size={28} color="#fff" />
+            </TouchableOpacity>
+          ),
+        }}
       />
 
       <ScrollView
@@ -767,6 +783,12 @@ const UsuariosAdmin = () => {
                                 {active ? 'Activo' : 'Inactivo'}
                               </Text>
                             </View>
+                            {user.role?.toLowerCase() === 'daf' && user.daf?.nivelAcceso && (
+                              <View style={[styles.levelBadge, { backgroundColor: COLORS.warning + '1A' }]}>
+                                <Ionicons name="shield-outline" size={12} color={COLORS.warning} />
+                                <Text style={[styles.levelBadgeText, { color: COLORS.warning }]}>Nivel {user.daf.nivelAcceso}</Text>
+                              </View>
+                            )}
                           </View>
                         </View>
 
@@ -873,6 +895,8 @@ const styles = StyleSheet.create({
   stateBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
   stateDot: { width: 6, height: 6, borderRadius: 3 },
   stateBadgeText: { fontSize: 12, fontWeight: '700' },
+  levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
+  levelBadgeText: { fontSize: 12, fontWeight: '700' },
   userActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   actionButton: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   noUsersText: { fontSize: 16, color: COLORS.textTertiary, textAlign: 'center', marginTop: 20 },
