@@ -246,12 +246,30 @@ const subirLayout = async () => {
           <Ionicons name="magic-wand-outline" size={17} color={C.primary} />
           <TextInput
             style={st.input}
-            placeholder="Ej: Layout con mesas en forma de U, 50 personas"
+            placeholder="Ej: distribución de aula para 50 personas"
             placeholderTextColor={C.t3}
             accessibilityLabel="Prompt para IA"
             value={promptIA}
             onChangeText={setPromptIA}
           />
+        </View>
+
+        <View style={st.sugWrap}>
+          <Text style={st.sugTitle}>Estilos disponibles — toca uno:</Text>
+          <View style={st.sugRow}>
+            <TouchableOpacity style={st.sugChip} onPress={() => setPromptIA('distribución de aula para 50 personas en un salón de conferencias')} activeOpacity={0.7}>
+              <Text style={st.sugChipLabel}>Aula</Text>
+              <Text style={st.sugChipSub}>filas de pupitres</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={st.sugChip} onPress={() => setPromptIA('layout de patio exterior para 50 personas, evento al aire libre')} activeOpacity={0.7}>
+              <Text style={st.sugChipLabel}>Patio</Text>
+              <Text style={st.sugChipSub}>bancas alrededor</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={st.sugChip} onPress={() => setPromptIA('mesas circulares para 50 personas en una boda')} activeOpacity={0.7}>
+              <Text style={st.sugChipLabel}>Circular</Text>
+              <Text style={st.sugChipSub}>banquete</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {generandoIA ? (
@@ -441,6 +459,15 @@ deleteBtnText: {
     paddingHorizontal: 12, paddingVertical: 12, marginBottom: 20,
   },
   input: { flex: 1, fontSize: 14, color: C.t1, padding: 0 },
+  sugWrap: { marginBottom: 20, gap: 8 },
+  sugTitle: { fontSize: 12, fontWeight: '700', color: C.t2 },
+  sugRow: { flexDirection: 'row', gap: 8 },
+  sugChip: {
+    flex: 1, backgroundColor: C.primaryLight, borderRadius: 10, paddingVertical: 10,
+    alignItems: 'center', borderWidth: 0.5, borderColor: C.primary + '30',
+  },
+  sugChipLabel: { fontSize: 13, fontWeight: '700', color: C.primary },
+  sugChipSub: { fontSize: 10, color: C.t3, marginTop: 2, textAlign: 'center' },
 galleryGrid: {
   flexDirection: 'row', flexWrap: 'wrap', gap: 12,
 },
