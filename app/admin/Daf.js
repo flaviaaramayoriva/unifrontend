@@ -164,6 +164,90 @@ const EventCards = ({ data, onPrint }) => {
   );
 };
 
+const WEEK_DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const pad2 = (n) => String(n).padStart(2, '0');
+const toDayKey = (date) => `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
+
+const Fase2Calendar = ({ viewMonth, setViewMonth, daysMap, selectedDay, onSelectDay }) => {
+  const todayKey = toDayKey(new Date());
+  const y = viewMonth.y;
+  const m = viewMonth.m;
+  const startOffset = (new Date(y, m, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+  const cells = [
+    ...Array.from({ length: startOffset }, (_, i) => ({ key: 'b' + i })),
+    ...Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      const key = `${pad2(day)}/${pad2(m + 1)}/${y}`;
+      const info = daysMap[day] || { pendientes: 0, aprobados: 0 };
+      return { key, day, pendientes: info.pendientes, aprobados: info.aprobados, isToday: key === todayKey };
+    }),
+  ];
+
+  const go = (delta) => {
+    const d = new Date(y, m + delta, 1);
+    setViewMonth({ y: d.getFullYear(), m: d.getMonth() });
+  };
+
+  const monthName = new Date(y, m, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+  return (
+    <View style={styles.calCard}>
+      <View style={styles.calHeader}>
+        <TouchableOpacity onPress={() => go(-1)} style={styles.calNav} accessibilityRole="button" accessibilityLabel="Mes anterior">
+          <Ionicons name="chevron-back" size={16} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+        <Text style={styles.calTitle}>{monthName}</Text>
+        <TouchableOpacity onPress={() => go(1)} style={styles.calNav} accessibilityRole="button" accessibilityLabel="Mes siguiente">
+          <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.calWeekRow}>
+        {WEEK_DAY_LABELS.map((w, i) => (
+          <Text key={i} style={styles.calWeekLabel}>{w}</Text>
+        ))}
+      </View>
+
+      <View style={styles.calGrid}>
+        {cells.map((c) => (
+          c.day ? (
+            <TouchableOpacity
+              key={c.key}
+              style={styles.calCell}
+              onPress={() => onSelectDay(selectedDay === c.key ? null : c.key)}
+              accessibilityRole="button"
+              accessibilityLabel={`Día ${c.day}`}
+            >
+              <View style={[styles.calNumCircle, c.isToday && styles.calNumCircleToday, selectedDay === c.key && styles.calNumCircleSelected]}>
+                <Text style={[styles.calCellNum, (c.isToday || selectedDay === c.key) && styles.calCellNumActive]}>{c.day}</Text>
+              </View>
+              <View style={styles.calDots}>
+                {c.pendientes > 0 && <View style={[styles.calDot, { backgroundColor: COLORS.warning }]} />}
+                {c.aprobados > 0 && <View style={[styles.calDot, { backgroundColor: COLORS.success }]} />}
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View key={c.key} style={styles.calCell} />
+          )
+        ))}
+      </View>
+
+      <View style={styles.calLegend}>
+        <View style={styles.calLegendItem}>
+          <View style={[styles.calDot, { backgroundColor: COLORS.warning }]} />
+          <Text style={styles.calLegendText}>Pendiente</Text>
+        </View>
+        <View style={styles.calLegendItem}>
+          <View style={[styles.calDot, { backgroundColor: COLORS.success }]} />
+          <Text style={styles.calLegendText}>Aprobado</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
 const MinimalBottomDock = ({ onLogout, onActionPress, isExpanded, onToggleExpanded }) => {
   const dockHeight = useRef(new Animated.Value(60)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -334,6 +418,34 @@ const Daf = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const [dafCounts, setDafCounts] = useState({ total: 0, activos: 0, inactivos: 0 });
+
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [viewMonth, setViewMonth] = useState(() => {
+    const d = new Date();
+    return { y: d.getFullYear(), m: d.getMonth() };
+  });
+
+  const daysMap = useMemo(() => {
+    const map = {};
+    allEvents.forEach(e => {
+      const parts = (e.date || '').split('/');
+      if (parts.length >= 3) {
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        if (y === viewMonth.y && m === viewMonth.m && d >= 1) {
+          if (!map[d]) map[d] = { pendientes: 0, aprobados: 0 };
+          if (e.state === 'Aprobado') map[d].aprobados += 1;
+          else map[d].pendientes += 1;
+        }
+      }
+    });
+    return map;
+  }, [allEvents, viewMonth.y, viewMonth.m]);
+
+  const displayedEvents = selectedDay
+    ? allEvents.filter(e => e.date === selectedDay)
+    : allEvents;
 
     const cargarInfoUsuario = useCallback(async () => {
     try {
@@ -683,26 +795,57 @@ const saveThemeColor = useCallback(async (color) => {
 
               <View style={styles.tableInfo}>
                 <Text style={styles.tableInfoText}>
-                  {allEvents.length} próximo{allEvents.length !== 1 ? 's' : ''}
+                  {displayedEvents.length} próximo{displayedEvents.length !== 1 ? 's' : ''}
                 </Text>
                 <View style={styles.metricPills}>
                   <View style={[styles.metricPill, { backgroundColor: '#FEF3C7' }]}>
                     <Ionicons name="hourglass-outline" size={13} color={COLORS.warning} />
                     <Text style={[styles.metricPillValue, { color: COLORS.warning }]}>
-                      {allEvents.filter(e => e.state !== 'Aprobado').length}
+                      {displayedEvents.filter(e => e.state !== 'Aprobado').length}
                     </Text>
                     <Text style={[styles.metricPillLabel, { color: COLORS.warning }]}>Pend.</Text>
                   </View>
                   <View style={[styles.metricPill, { backgroundColor: '#D1FAE5' }]}>
                     <Ionicons name="checkmark-circle-outline" size={13} color={COLORS.success} />
                     <Text style={[styles.metricPillValue, { color: COLORS.success }]}>
-                      {allEvents.filter(e => e.state === 'Aprobado').length}
+                      {displayedEvents.filter(e => e.state === 'Aprobado').length}
                     </Text>
                     <Text style={[styles.metricPillLabel, { color: COLORS.success }]}>Aprob.</Text>
                   </View>
                 </View>
               </View>
-              <EventCards data={allEvents} onPrint={handlePrintEvent} />
+
+              {allEvents.length > 0 && (
+                <Fase2Calendar
+                  viewMonth={viewMonth}
+                  setViewMonth={setViewMonth}
+                  daysMap={daysMap}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                />
+              )}
+
+              {selectedDay && (
+                <TouchableOpacity style={styles.selectedDayRow} onPress={() => setSelectedDay(null)} activeOpacity={0.7}>
+                  <Ionicons name="calendar-outline" size={13} color={COLORS.primary} />
+                  <Text style={styles.selectedDayRowText} numberOfLines={1}>
+                    Eventos del {selectedDay}
+                  </Text>
+                  <Ionicons name="close-circle" size={16} color={COLORS.textTertiary} />
+                </TouchableOpacity>
+              )}
+
+              {!loadingEvents && displayedEvents.length === 0 ? (
+                <View style={styles.emptyTable}>
+                  <Ionicons name="calendar-outline" size={32} color={COLORS.textTertiary} />
+                  <Text style={styles.emptyTableText}>No hay eventos para esta selección</Text>
+                  <TouchableOpacity style={styles.clearSelBtn} onPress={() => setSelectedDay(null)}>
+                    <Text style={styles.clearSelBtnText}>Ver todos</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <EventCards data={displayedEvents} onPrint={handlePrintEvent} />
+              )}
             </>
           )}
         </Section>
@@ -1357,6 +1500,40 @@ telegramQRCode: {
   emptyTable: { alignItems: 'center', paddingVertical: 40 },
   emptyTableText: { marginTop: 10, fontSize: 14, color: COLORS.textTertiary },
   emptyTableSubText: { marginTop: 4, fontSize: 12, color: COLORS.textTertiary, fontStyle: 'italic' },
+  clearSelBtn: { marginTop: 12, paddingHorizontal: 18, paddingVertical: 8, backgroundColor: COLORS.primary, borderRadius: 8 },
+  clearSelBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+
+  // Calendario Fase 2
+  calCard: {
+    backgroundColor: COLORS.surface, borderRadius: 16, padding: 14,
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  },
+  calHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  calNav: { width: 32, height: 32, borderRadius: 9, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border },
+  calTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, textTransform: 'capitalize' },
+  calWeekRow: { flexDirection: 'row', marginBottom: 6 },
+  calWeekLabel: { width: '14.28%', textAlign: 'center', fontSize: 11, fontWeight: '700', color: COLORS.textTertiary },
+  calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calCell: { width: '14.28%', alignItems: 'center', paddingVertical: 4 },
+  calNumCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  calNumCircleToday: { backgroundColor: COLORS.primary },
+  calNumCircleSelected: { backgroundColor: COLORS.textPrimary },
+  calCellNum: { fontSize: 12, fontWeight: '600', color: COLORS.textPrimary },
+  calCellNumActive: { color: '#fff', fontWeight: '800' },
+  calDots: { flexDirection: 'row', gap: 3, marginTop: 4, height: 6 },
+  calDot: { width: 6, height: 6, borderRadius: 3 },
+  calLegend: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10 },
+  calLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  calLegendText: { fontSize: 11, color: COLORS.textSecondary },
+  selectedDayRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.primaryLight, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10,
+    borderWidth: 1, borderColor: COLORS.primary,
+  },
+  selectedDayRowText: { flex: 1, fontSize: 12, fontWeight: '600', color: COLORS.primary },
 
   // Action cards
   toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN, justifyContent: 'space-between' },
