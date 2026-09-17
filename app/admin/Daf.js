@@ -1459,7 +1459,7 @@ telegramQRCode: {
     width: 58, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
     paddingVertical: 10, alignSelf: 'flex-start',
   },
-  eventDateBlockApproved: { backgroundColor: '#065F46' },
+  eventDateBlockApproved: { backgroundColor: COLORS.primary },
   eventDateBlockPending: { backgroundColor: '#9A3300' },
   eventDateDay: { fontSize: 22, fontWeight: '800', color: '#fff', lineHeight: 26 },
   eventDateMonth: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 2 },
