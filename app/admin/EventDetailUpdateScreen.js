@@ -572,10 +572,13 @@ const EventDetailScreen = () => {
           {/* Recursos y servicios */}
           <View style={gridCard}>
             <SectionHeader icon="cube-outline" title="Recursos y servicios" />
-            <View style={styles.kv}><Text style={styles.kvL}>Tecnológicos</Text><Text style={styles.kvV}>{recTec || '—'}</Text></View>
-            <View style={styles.kv}><Text style={styles.kvL}>Mobiliario</Text><Text style={styles.kvV}>{recMob || '—'}</Text></View>
-            <View style={styles.kv}><Text style={styles.kvL}>Vajilla</Text><Text style={styles.kvV}>{recVaj || '—'}</Text></View>
-            <View style={styles.kv}><Text style={styles.kvL}>Servicios</Text><Text style={styles.kvV}>{event.serviciosContratados?.length || '—'}</Text></View>
+            {recTec > 0 && <View style={styles.kv}><Text style={styles.kvL}>Tecnológicos</Text><Text style={styles.kvV}>{recTec}</Text></View>}
+            {recMob > 0 && <View style={styles.kv}><Text style={styles.kvL}>Mobiliario</Text><Text style={styles.kvV}>{recMob}</Text></View>}
+            {recVaj > 0 && <View style={styles.kv}><Text style={styles.kvL}>Vajilla</Text><Text style={styles.kvV}>{recVaj}</Text></View>}
+            {(event.serviciosContratados?.length || 0) > 0 && <View style={styles.kv}><Text style={styles.kvL}>Servicios</Text><Text style={styles.kvV}>{event.serviciosContratados.length}</Text></View>}
+            {recTec === 0 && recMob === 0 && recVaj === 0 && (event.serviciosContratados?.length || 0) === 0 && (
+              <View style={styles.kv}><Text style={styles.kvL}>Recursos</Text><Text style={styles.kvV}>Sin registros</Text></View>
+            )}
           </View>
         </View>
 
