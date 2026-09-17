@@ -548,6 +548,19 @@ const EventDetailScreen = () => {
             <Text style={styles.barLbl}>{pctInfo}% de la información completa</Text>
           </View>
 
+          {/* Segmentos Objetivo */}
+          {allSegReal.length > 0 && (
+            <View style={gridCard}>
+              <SectionHeader icon="people-circle-outline" title="Segmentos Objetivo" />
+              {Array.from(segMap.values()).map((seg, index) => (
+                <View key={`seg-${seg.idsegmento || index}`} style={styles.kv}>
+                  <Text style={styles.kvL}>{index + 1}</Text>
+                  <Text style={styles.kvV} numberOfLines={2}>{seg.nombre_segmento || `Segmento ID ${seg.idsegmento}`}{seg.texto_personalizado ? ` · ${seg.texto_personalizado}` : ''}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Actividades */}
           <View style={gridCard}>
             <SectionHeader icon="list-circle-outline" title="Actividades" />
@@ -668,19 +681,6 @@ const EventDetailScreen = () => {
             <Text style={styles.creatorName}>{event.creador.nombre}</Text>
             <Text style={styles.creatorRole}>Rol: {event.creador.role}</Text>
             <Text style={styles.creatorEmail}>Email: {event.creador.email}</Text>
-          </View>
-        )}
-
-        {/* Segmentos Objetivo */}
-        {allSegReal.length > 0 && (
-          <View style={styles.sectionCard}>
-            <SectionHeader icon="people-circle-outline" title="Segmentos Objetivo" />
-            {Array.from(segMap.values()).map((seg, index) => (
-              <View key={`seg-unique-${seg.idsegmento || index}`} style={styles.segmentItem}>
-                <View style={styles.segmentHeader}><Ionicons name="person-outline" size={16} color={COLORS.primary} style={styles.segmentIcon} /><Text style={styles.segmentName}>{seg.nombre_segmento || `Segmento ID ${seg.idsegmento}`}</Text></View>
-                {seg.texto_personalizado && <Text style={styles.segmentDescription}>{seg.texto_personalizado}</Text>}
-              </View>
-            ))}
           </View>
         )}
 
