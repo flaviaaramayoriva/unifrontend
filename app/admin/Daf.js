@@ -811,12 +811,12 @@ const saveThemeColor = useCallback(async (color) => {
                     </Text>
                     <Text style={[styles.metricPillLabel, { color: COLORS.warning }]}>Pend.</Text>
                   </View>
-                  <View style={[styles.metricPill, { backgroundColor: COLORS.primaryLight }]}>
-                    <Ionicons name="checkmark-circle-outline" size={13} color={COLORS.primary} />
-                    <Text style={[styles.metricPillValue, { color: COLORS.primary }]}>
+                  <View style={[styles.metricPill, { backgroundColor: '#D1FAE5' }]}>
+                    <Ionicons name="checkmark-circle-outline" size={13} color={COLORS.success} />
+                    <Text style={[styles.metricPillValue, { color: COLORS.success }]}>
                       {displayedEvents.filter(e => e.state === 'Aprobado').length}
                     </Text>
-                    <Text style={[styles.metricPillLabel, { color: COLORS.primary }]}>Aprob.</Text>
+                    <Text style={[styles.metricPillLabel, { color: COLORS.success }]}>Aprob.</Text>
                   </View>
                 </View>
               </View>
