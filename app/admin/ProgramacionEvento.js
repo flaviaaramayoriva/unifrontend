@@ -993,7 +993,15 @@ const programacionEvento = () => {
               </View>
             </ScrollView>
           )}
-        </View>
+</View>
+
+        {/* Layouts con IA */}
+        {layoutsDisponibles.length > 0 && (
+          <View style={styles.kv}>
+            <Text style={styles.kvL}>IA</Text>
+            <Text style={styles.kvV} numberOfLines={1}>Generar layout con IA</Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -1005,9 +1013,7 @@ const programacionEvento = () => {
           ) : (
             <>
               <Ionicons name={isEditing ? 'save-outline' : 'checkmark-circle-outline'} size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.buttonText}>
-                {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
-              </Text>
+              <Text style={styles.listText}>Guardar evento</Text>
             </>
           )}
         </TouchableOpacity>
