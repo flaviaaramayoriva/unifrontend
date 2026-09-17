@@ -196,6 +196,9 @@ const EventDetailScreen = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { width: winW } = useWindowDimensions();
+  const isWide = winW >= 640;
+
   const getCurrentPhaseFromFases = useCallback((fases) => {
     if (!Array.isArray(fases) || fases.length === 0) {
       return { number: 1, label: 'Planeación', key: 'phase1', color: COLORS.info, icon: 'document-text-outline' };
@@ -431,6 +434,8 @@ const EventDetailScreen = () => {
   const phaseNow = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
   const diasParaAprobar = daysRemaining === null ? '—' : daysRemaining <= 0 ? 'Hoy' : `${daysRemaining} día${daysRemaining === 1 ? '' : 's'}`;
 
+  const pdiList = (event.objetivosPDI || []).map(pdi => typeof pdi === 'string' ? pdi : (pdi?.nombre || pdi?.nombreobjetivo || `Objetivo PDI`));
+
   const allSegReal = (event.objetivos || [])
     .filter(o => o.segmentos && Array.isArray(o.segmentos))
     .flatMap(o => o.segmentos);
@@ -461,8 +466,6 @@ const EventDetailScreen = () => {
   ];
   const pctInfo = Math.round((infoItems.filter(Boolean).length / infoItems.length) * 100);
 
-  const { width: winW } = useWindowDimensions();
-  const isWide = winW >= 640;
   const gridCard = isWide ? styles.gridCardTwo : styles.gridCardFull;
 
   return (
@@ -537,7 +540,7 @@ const EventDetailScreen = () => {
             <SectionHeader icon="layers-outline" title="Clasificación" />
             {event.Clasificacion ? (<View style={styles.kv}><Text style={styles.kvL}>Principal</Text><Text style={styles.kvV} numberOfLines={2}>{event.Clasificacion.nombreClasificacion}</Text></View>) : null}
             {(event.tiposEvento || []).length > 0 ? (<View style={styles.kv}><Text style={styles.kvL}>Tipo</Text><Text style={styles.kvV} numberOfLines={2}>{event.tiposEvento.map(t => t.nombretipo).join(', ')}</Text></View>) : null}
-            {(event.objetivosPDI || []).length > 0 ? (<View style={styles.kv}><Text style={styles.kvL}>PDI</Text><Text style={styles.kvV} numberOfLines={2}>{event.objetivosPDI[0]}</Text></View>) : null}
+            {(event.objetivosPDI || []).length > 0 ? (<View style={styles.kv}><Text style={styles.kvL}>PDI</Text><Text style={styles.kvV} numberOfLines={2}>{pdiList[0]}</Text></View>) : null}
             <View style={styles.bar}><View style={[styles.barFill, { width: `${pctInfo}%` }]} /></View>
             <Text style={styles.barLbl}>{pctInfo}% de la información completa</Text>
           </View>
@@ -690,7 +693,7 @@ const EventDetailScreen = () => {
         {event.objetivosPDI && event.objetivosPDI.length > 0 && (
           <View style={styles.sectionCard}>
             <SectionHeader icon="school-outline" title="Objetivos del PDI Institucional" />
-            {event.objetivosPDI.map((pdi, index) => (
+            {pdiList.map((pdi, index) => (
               <View key={index} style={styles.listItem}>
                 <Text style={[styles.listText, { fontWeight: 'bold', color: COLORS.primary }]}>{index + 1}.</Text>
                 <Text style={styles.listText}>{pdi}</Text>
