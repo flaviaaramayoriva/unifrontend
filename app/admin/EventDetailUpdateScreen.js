@@ -276,7 +276,7 @@ const EventDetailScreen = () => {
         tiposEvento: eventData.TiposDeEvento || [],
         objetivos: eventData.Objetivos || [],
         objetivosPDI: Array.isArray(eventData.ObjetivosPDI) ? eventData.ObjetivosPDI : (typeof eventData.objetivos_pdi === 'string' ? JSON.parse(eventData.objetivos_pdi || '[]') : []),
-        segmentos: eventData.segmentos || [],
+        segmentos: eventData.Segmentos || eventData.segmentos || [],
         argumentacion: eventData.argumentacion || 'Sin argumentación',
         resultados: (eventData.Resultados && eventData.Resultados.length > 0) ? eventData.Resultados[0] : { participacion_esperada: null, satisfaccion_esperada: null, otros_resultados: null, satisfaccion_real: null },
         recursos: eventData.Recursos || [],
@@ -436,9 +436,12 @@ const EventDetailScreen = () => {
 
   const pdiList = (event.objetivosPDI || []).map(pdi => typeof pdi === 'string' ? pdi : (pdi?.nombre || pdi?.nombreobjetivo || `Objetivo PDI`));
 
-  const allSegReal = (event.objetivos || [])
-    .filter(o => o.segmentos && Array.isArray(o.segmentos))
-    .flatMap(o => o.segmentos);
+  const allSegReal = [
+    ...(Array.isArray(event.segmentos) ? event.segmentos : []),
+    ...(event.objetivos || [])
+      .filter(o => o.segmentos && Array.isArray(o.segmentos))
+      .flatMap(o => o.segmentos)
+  ];
   const segMap = new Map();
   allSegReal.forEach(sg => segMap.set(sg.idsegmento || sg.nombre_segmento || JSON.stringify(sg), sg));
   const segmentCount = segMap.size;
@@ -669,23 +672,15 @@ const EventDetailScreen = () => {
         )}
 
         {/* Segmentos Objetivo */}
-        {event.objetivos && event.objetivos.some(obj => obj.segmentos && obj.segmentos.length > 0) && (
+        {allSegReal.length > 0 && (
           <View style={styles.sectionCard}>
             <SectionHeader icon="people-circle-outline" title="Segmentos Objetivo" />
-            {(() => {
-              const allSegments = event.objetivos.filter(obj => obj.segmentos && Array.isArray(obj.segmentos)).flatMap(obj => obj.segmentos);
-              const uniqueSegmentsMap = new Map();
-              allSegments.forEach(seg => {
-                const key = seg.idsegmento || seg.nombre_segmento || JSON.stringify(seg);
-                if (!uniqueSegmentsMap.has(key)) uniqueSegmentsMap.set(key, seg);
-              });
-              return Array.from(uniqueSegmentsMap.values()).map((seg, index) => (
-                <View key={`seg-unique-${seg.idsegmento || index}`} style={styles.segmentItem}>
-                  <View style={styles.segmentHeader}><Ionicons name="person-outline" size={16} color={COLORS.primary} style={styles.segmentIcon} /><Text style={styles.segmentName}>{seg.nombre_segmento || `Segmento ID ${seg.idsegmento}`}</Text></View>
-                  {seg.texto_personalizado && <Text style={styles.segmentDescription}>{seg.texto_personalizado}</Text>}
-                </View>
-              ));
-            })()}
+            {Array.from(segMap.values()).map((seg, index) => (
+              <View key={`seg-unique-${seg.idsegmento || index}`} style={styles.segmentItem}>
+                <View style={styles.segmentHeader}><Ionicons name="person-outline" size={16} color={COLORS.primary} style={styles.segmentIcon} /><Text style={styles.segmentName}>{seg.nombre_segmento || `Segmento ID ${seg.idsegmento}`}</Text></View>
+                {seg.texto_personalizado && <Text style={styles.segmentDescription}>{seg.texto_personalizado}</Text>}
+              </View>
+            ))}
           </View>
         )}
 
