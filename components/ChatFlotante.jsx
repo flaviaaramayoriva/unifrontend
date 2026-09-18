@@ -66,15 +66,17 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
     try {
       const effectiveEventId = (eventId && eventId !== 'null' && eventId !== 'undefined') ? eventId : 'general';
 
-      const response = await fetch(`${API_BASE_URL}/chat/event/${effectiveEventId}/bot`, {
+      const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: texto,
-          userId: validUserId,
-          userName: userName || 'Usuario',
-          userRole: userRole || 'academico',
-          eventId: effectiveEventId,
+          sender: validUserId || 'invitado',
+          eventId: effectiveEventId === 'general' ? null : effectiveEventId,
+          history: messages.slice(-6).map(m => ({
+            role: m.esBot ? 'bot' : 'user',
+            text: m.message
+          })),
         }),
       });
 

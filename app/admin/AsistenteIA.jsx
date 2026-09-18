@@ -36,7 +36,7 @@ export default function AsistenteIAScreen() {
 
   const handleSend = async () => {
     const texto = input.trim();
-    if (!texto || !eventId) return;
+    if (!texto) return;
 
     // Agregar mensaje del usuario
     const userMessage = {
@@ -53,16 +53,21 @@ export default function AsistenteIAScreen() {
     setLoading(true);
 
     try {
-      // Llamar directamente al endpoint del bot
-      const response = await fetch(`${API_BASE_URL}/event/${eventId}/bot`, {
+      const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: texto,
-          userId: 1,
-          userName: 'Usuario'
-        })
+          sender: '1',
+          eventId: eventId,
+          history: messages.slice(-6).map(m => ({
+            role: m.esBot ? 'bot' : 'user',
+            text: m.message
+          })),
+        }),
       });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
       
@@ -70,7 +75,7 @@ export default function AsistenteIAScreen() {
         id: `bot_${Date.now()}`,
         userId: 0,
         userName: '🤖 Asistente IA',
-        message: data.respuesta || 'Lo siento, no entendí tu pregunta. ¿Puedes reformularla?',
+        message: data.reply || 'Lo siento, no entendí tu pregunta. ¿Puedes reformularla?',
         esBot: true,
         timestamp: new Date().toISOString()
       };
