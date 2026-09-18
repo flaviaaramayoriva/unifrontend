@@ -195,6 +195,7 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
   const [connected, setConnected] = useState(false);
   const [botTyping, setBotTyping] = useState(false);
   const [usuarios, setUsuarios]   = useState([]);
+  const [busquedaMsjs, setBusquedaMsjs] = useState('');
   const socketRef  = useRef(null);
   const flatRef    = useRef(null);
 
@@ -369,6 +370,11 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
     ? `${subtitulo}${usuarios.length ? ` · ${usuarios.length} en línea` : ''}`
     : 'Conectando...';
 
+  const qMsjs = busquedaMsjs.trim().toLowerCase();
+  const mensajesVisibles = qMsjs
+    ? messages.filter((m) => (m.message || m.text || '').toLowerCase().includes(qMsjs))
+    : messages;
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <View style={{
@@ -416,9 +422,36 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
         </View>
       </View>
 
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        paddingHorizontal: 10, paddingTop: 8,
+        backgroundColor: COLORS.background,
+      }}>
+        <View style={{
+          flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
+          backgroundColor: COLORS.white, borderRadius: 20,
+          paddingHorizontal: 10, paddingVertical: 5,
+          borderWidth: 1, borderColor: COLORS.border,
+        }}>
+          <Ionicons name="search" size={15} color={COLORS.textTertiary} />
+          <TextInput
+            value={busquedaMsjs}
+            onChangeText={setBusquedaMsjs}
+            placeholder="Buscar mensaje..."
+            placeholderTextColor={COLORS.textTertiary}
+            style={{ flex: 1, fontSize: 13, color: COLORS.textPrimary, padding: 0 }}
+          />
+          {busquedaMsjs ? (
+            <TouchableOpacity onPress={() => setBusquedaMsjs('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={15} color={COLORS.textTertiary} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+
       <FlatList
         ref={flatRef}
-        data={messages}
+        data={mensajesVisibles}
         keyExtractor={item => item.id}
         contentContainerStyle={{ padding: 12, flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
@@ -427,7 +460,7 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
         windowSize={5}
         removeClippedSubviews={Platform.OS === 'android'}
         renderItem={({ item, index }) => {
-          const prev = index > 0 ? messages[index - 1] : null;
+          const prev = index > 0 ? mensajesVisibles[index - 1] : null;
           const esPrimero = !prev
             || String(prev.userId) !== String(item.userId)
             || Boolean(prev.esBot) !== Boolean(item.esBot);
@@ -454,7 +487,9 @@ const VistaChat = ({ eventoId, titulo, subtitulo, roomId, userId, userRole, user
               <Ionicons name="chatbubbles-outline" size={34} color="#d3d6dc" />
             </View>
             <Text style={{ color: '#a6aab2', fontSize: 13, marginTop: 12 }}>
-              {connected ? 'Aún no hay mensajes. ¡Escribe el primero!' : 'Conectando al chat...'}
+              {qMsjs
+                ? `Sin resultados para "${busquedaMsjs.trim()}"`
+                : connected ? 'Aún no hay mensajes. ¡Escribe el primero!' : 'Conectando al chat...'}
             </Text>
           </View>
         }
@@ -611,6 +646,8 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
   const [chatPrivado, setChatPrivado]   = useState(null);
   const [abriendoEvento, setAbriendoEvento] = useState(false);
   const [aviso, setAviso]               = useState(null);
+  const [busquedaGrupo, setBusquedaGrupo]   = useState('');
+  const [busquedaPersonal, setBusquedaPersonal] = useState('');
   const avisoTimer = useRef(null);
   const activeRoomRef = useRef(activeRoom);
 
@@ -781,6 +818,16 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
     setChatPrivado({ ...contacto, roomId });
   };
 
+  const qGrupo = busquedaGrupo.trim().toLowerCase();
+  const eventosFiltrados = qGrupo
+    ? eventos.filter((e) => (e.nombreevento || '').toLowerCase().includes(qGrupo))
+    : eventos;
+
+  const qPersonal = busquedaPersonal.trim().toLowerCase();
+  const contactosFiltrados = qPersonal
+    ? contactos.filter((c) => `${c.nombre || ''} ${c.apellidopat || ''}`.trim().toLowerCase().includes(qPersonal))
+    : contactos;
+
   let contenido = null;
   if (eventoActual) {
     contenido = (
@@ -866,23 +913,48 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : tabMain === 'personal' ? (
-        contactos.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <View style={{ flex: 1 }}>
+          <View style={{ paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4, backgroundColor: COLORS.background }}>
             <View style={{
-              width: 72, height: 72, borderRadius: 36,
-              backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center',
-              shadowColor: '#000', shadowOpacity: 0.05,
-              shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2,
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+              backgroundColor: COLORS.white, borderRadius: 20,
+              paddingHorizontal: 10, paddingVertical: 5,
+              borderWidth: 1, borderColor: COLORS.border,
             }}>
-              <Ionicons name="person-outline" size={34} color="#d3d6dc" />
+              <Ionicons name="search" size={15} color={COLORS.textTertiary} />
+              <TextInput
+                value={busquedaPersonal}
+                onChangeText={setBusquedaPersonal}
+                placeholder="Buscar contacto..."
+                placeholderTextColor={COLORS.textTertiary}
+                style={{ flex: 1, fontSize: 13, color: COLORS.textPrimary, padding: 0 }}
+              />
+              {busquedaPersonal ? (
+                <TouchableOpacity onPress={() => setBusquedaPersonal('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={15} color={COLORS.textTertiary} />
+                </TouchableOpacity>
+              ) : null}
             </View>
-            <Text style={{ color: '#a6aab2', marginTop: 12, textAlign: 'center' }}>
-              No tienes contactos aún
-            </Text>
           </View>
-        ) : (
-          <ScrollView contentContainerStyle={{ padding: 12 }}>
-            {contactos.map((c) => {
+          {contactosFiltrados.length === 0 ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+              <View style={{
+                width: 72, height: 72, borderRadius: 36,
+                backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center',
+                shadowColor: '#000', shadowOpacity: 0.05,
+                shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2,
+              }}>
+                <Ionicons name="person-outline" size={34} color="#d3d6dc" />
+              </View>
+              <Text style={{ color: '#a6aab2', marginTop: 12, textAlign: 'center' }}>
+                {qPersonal
+                  ? `Sin contactos para "${busquedaPersonal.trim()}"`
+                  : 'No tienes contactos aún'}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={{ padding: 12 }}>
+              {contactosFiltrados.map((c) => {
               const nombre = c.nombre || `Usuario ${c.idusuario}`;
               const apellido = c.apellidopat || '';
               const rol = c.rol_comite || 'miembro';
@@ -933,8 +1005,9 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
-        )
+            </ScrollView>
+          )}
+        </View>
       ) : (
         <View style={{ flex: 1 }}>
           <View style={{
@@ -965,6 +1038,29 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
             </TouchableOpacity>
           </View>
 
+          <View style={{ paddingHorizontal: 12, paddingBottom: 8, backgroundColor: COLORS.background }}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+              backgroundColor: COLORS.white, borderRadius: 20,
+              paddingHorizontal: 10, paddingVertical: 5,
+              borderWidth: 1, borderColor: COLORS.border,
+            }}>
+              <Ionicons name="search" size={15} color={COLORS.textTertiary} />
+              <TextInput
+                value={busquedaGrupo}
+                onChangeText={setBusquedaGrupo}
+                placeholder="Buscar por nombre de evento..."
+                placeholderTextColor={COLORS.textTertiary}
+                style={{ flex: 1, fontSize: 13, color: COLORS.textPrimary, padding: 0 }}
+              />
+              {busquedaGrupo ? (
+                <TouchableOpacity onPress={() => setBusquedaGrupo('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={15} color={COLORS.textTertiary} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+
           {abriendoEvento && (
             <View style={{
               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -975,7 +1071,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
             </View>
           )}
 
-          {eventos.length === 0 ? (
+          {eventosFiltrados.length === 0 ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
               <View style={{
                 width: 72, height: 72, borderRadius: 36,
@@ -986,7 +1082,9 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
                 <Ionicons name="calendar-outline" size={34} color="#d3d6dc" />
               </View>
               <Text style={{ color: '#a6aab2', marginTop: 12, textAlign: 'center' }}>
-                No tienes eventos próximos
+                {qGrupo
+                  ? `Sin eventos para "${busquedaGrupo.trim()}"`
+                  : 'No tienes eventos próximos'}
               </Text>
             </View>
           ) : (
@@ -994,7 +1092,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
               <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 10 }}>
                 Tus eventos
               </Text>
-              {eventos.map((evento) => {
+              {eventosFiltrados.map((evento) => {
                 const comite = evento.Comite || evento.comite || [];
                 const nMiembros = comite.length;
                 const esHoy = fechaStr(evento) === hoyStr();
@@ -1082,7 +1180,7 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
                 );
               })}
               <Text style={{ textAlign: 'center', color: '#a6aab2', fontSize: 11, marginVertical: 6 }}>
-                {eventos.length > 0 ? 'Solo se muestran eventos próximos' : ''}
+                {!qGrupo && eventosFiltrados.length > 0 ? 'Solo se muestran eventos próximos' : ''}
               </Text>
             </ScrollView>
           )}

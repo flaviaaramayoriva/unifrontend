@@ -55,7 +55,7 @@ const safeArray = (value) => (Array.isArray(value) ? value : []);
 const safeObj = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
 
 const COLORS = {
-  primary: '#C44200', primaryLight: '#FFF0E6', secondary: '#0F172A',
+  primary: '#E95A0C', primaryLight: '#FDF2EC', secondary: '#0F172A',
   accent: '#EF4444', success: '#047857', warning: '#F59E0B', warningLight: '#FEF3C7',
   info: '#3B82F6', background: '#F6F7F9', surface: '#FFFFFF',
   textPrimary: '#1F2937', textSecondary: '#64748B', textTertiary: '#94A3B8',
@@ -356,16 +356,16 @@ const ProgresoEventoCard = ({ evento, router }) => {
 
 const ProyectarEventoCTA = ({ onPress }) => (
   <Pressable onPress={onPress} style={({ pressed }) => [styles.proyectarBtnCard, pressed && styles.proyectarBtnPressed]}>
-    <View style={[styles.proyectarGradient, { backgroundColor: COLORS.primary }]}>
+    <View style={[styles.proyectarGradient, { backgroundColor: 'rgba(233, 90, 12, 0.12)' }]}>
       <View style={styles.proyectarIconWrap}>
-        <Ionicons name="add" size={30} color={COLORS.white} />
+        <Ionicons name="add" size={30} color={COLORS.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.proyectarTitle}>Proyectar Evento</Text>
         <Text style={styles.proyectarSubtitle}>Crea y gestiona un nuevo evento</Text>
       </View>
       <View style={styles.proyectarArrow}>
-        <Ionicons name="arrow-forward" size={22} color={COLORS.white} />
+        <Ionicons name="arrow-forward" size={22} color={COLORS.primary} />
       </View>
     </View>
   </Pressable>
@@ -1121,22 +1121,23 @@ const styles = StyleSheet.create({
 
   proyectarBtnCard: {
     borderRadius: 18, overflow: 'hidden', elevation: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12,
+    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 12,
+    backgroundColor: COLORS.primaryLight,
   },
   proyectarBtnPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   proyectarGradient: {
     flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14, borderRadius: 18,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+    borderWidth: 1, borderColor: 'rgba(233, 90, 12, 0.18)',
   },
   proyectarIconWrap: {
-    width: 52, height: 52, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.22)',
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
+    width: 52, height: 52, borderRadius: 14, backgroundColor: COLORS.primaryLight,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(233, 90, 12, 0.18)',
   },
-  proyectarTitle: { fontSize: 19, fontWeight: '800', color: COLORS.white },
-  proyectarSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  proyectarTitle: { fontSize: 19, fontWeight: '800', color: COLORS.primary },
+  proyectarSubtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
   proyectarArrow: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center', justifyContent: 'center',
+    width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primaryLight,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(233, 90, 12, 0.18)',
   },
   notifBadge: {
     position: 'absolute', top: 2, right: 2,
@@ -1163,7 +1164,7 @@ const styles = StyleSheet.create({
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
     paddingVertical: 11, borderRadius: 10,
   },
-  mainTabActive: { backgroundColor: COLORS.primary },
+  mainTabActive: { backgroundColor: COLORS.secondary },
   mainTabText: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary },
   mainTabTextActive: { color: COLORS.white },
   toolCard: {
