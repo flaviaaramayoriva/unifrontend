@@ -63,16 +63,16 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
     setInput('');
     setLoading(true);
 
-    try {
-      const effectiveEventId = (eventId && eventId !== 'null' && eventId !== 'undefined') ? eventId : 'general';
+try {
+      const effectiveEventId = (eventId && eventId !== 'null' && eventId !== 'undefined') ? eventId : null;
 
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+      const response = await fetch(`${API_BASE_URL}/bot/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: texto,
           sender: validUserId || 'invitado',
-          eventId: effectiveEventId === 'general' ? null : effectiveEventId,
+          eventId: effectiveEventId,
           history: messages.slice(-6).map(m => ({
             role: m.esBot ? 'bot' : 'user',
             text: m.message
@@ -88,7 +88,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
         id: `bot_${Date.now()}`,
         userId: 0,
         userName: '🤖 Asistente IA',
-        message: data.respuesta || 'Lo siento, no entendí. Prueba con "ayuda"',
+        message: data.reply || 'Lo siento, no entendí. Prueba con "ayuda"',
         esBot: true,
         categoria: data.categoria,
       };
