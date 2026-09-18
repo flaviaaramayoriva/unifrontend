@@ -29,6 +29,7 @@ const PERIODOS = [
   { id: 'semana',  label: 'Esta semana' },
   { id: 'mes',     label: 'Este mes' },
   { id: 'trimestre', label: 'Trimestre' },
+  { id: 'personalizado', label: 'Personalizado' },
 ];
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
@@ -82,7 +83,7 @@ export default function Reportes() {
   const [periodo, setPeriodo]   = useState('mes');
   const [data, setData]         = useState(null);
 
-  const fetchReportes = useCallback(async (p) => {
+const fetchReportes = useCallback(async (p) => {
     setLoading(true);
     try {
       const token = await getToken();
@@ -99,10 +100,16 @@ export default function Reportes() {
       pendientes: data.pendientes ?? 0,
       recursosMasUsados: Array.isArray(data.recursosMasUsados) ? data.recursosMasUsados : [],
       eventoRecientes: Array.isArray(data.eventoRecientes) ? data.eventoRecientes : [],
-    });
+      topInscripciones: Array.isArray(data.topInscripciones) ? data.topInscripciones : [],
+      porFacultadInscripciones: Array.isArray(data.porFacultadInscripciones) ? data.porFacultadInscripciones : [],
+      porMesInscripciones: Array.isArray(data.porMesInscripciones) ? data.porMesInscripciones : [],
+      porTipoEvento: Array.isArray(data.porTipoEvento) ? data.porTipoEvento : [],
+      tiempoAprobacion: data.tiempoAprobacion || [],
+      porEstado: data.porEstado || [],
+      porFase: data.porFase || [],
+      });
     } catch (err) {
       console.error(err);
-      // Datos de demo si la API falla
       setData({
         totalSolicitudes: 0,
         aprobadas: 0,
@@ -110,6 +117,13 @@ export default function Reportes() {
         pendientes: 0,
         recursosMasUsados: [],
         eventoRecientes: [],
+        topInscripciones: [],
+        porFacultadInscripciones: [],
+        porMesInscripciones: [],
+        porTipoEvento: [],
+        tiempoAprobacion: [],
+        porEstado: [],
+        porFase: [],
       });
     } finally { setLoading(false); }
   }, []);
@@ -220,10 +234,137 @@ export default function Reportes() {
 
           {/* Eventos recientes */}
           <Text style={[r.secLabel, { marginTop: 24 }]}>Solicitudes recientes</Text>
-          {data.eventoRecientes?.map(ev => (
-            <EventoReporteCard key={ev.id} item={ev} />
-          ))}
+          {data.eventoRecientes?.length > 0 ? (
+            data.eventoRecientes?.map(ev => (
+              <EventoReporteCard key={ev.id} item={ev} />
+            ))
+          ) : (
+            <Text style={r.loadingText}>Sin datos para el período</Text>
+          )}
 
+          {/* Inscripciones */}
+          <Text style={[r.secLabel, { marginTop: 24 }]}>Top eventos por inscripciones</Text>
+          {data.topInscripciones?.length > 0 ? (
+            data.topInscripciones.map((item, i) => (
+              <View key={i} style={r.resourceBarRow}>
+                <Text style={r.recursoBarName} numberOfLines={1}>{item.nombreevento}</Text>
+                <View style={r.recursoBarTrack}>
+                  <View style={[r.recursoBarFill, { width: `${item.usados / (item.total || 1) * 100}%`, backgroundColor: C.primary }]} />
+                </View>
+                <Text style={[r.recursoBarCount, { color: C.primary }]}>{item.usados} de {item.total}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={r.loadingText}>Sin datos para el período</Text>
+          )}
+
+          {/* Inscripciones por facultad */}
+          <Text style={[r.secLabel, { marginTop: 24 }]}>Inscripciones por facultad</Text>
+          {data.porFacultadInscripciones?.length > 0 ? (
+            data.porFacultadInscripciones.map((fac, i) => (
+              <StatCard
+                key={i}
+                label={fac.facultad}
+                value={fac.inscritos}
+                icon="building-outline"
+                color={C.info}
+                colorLight={C.infoLight}
+                sub=" inscritos"
+              />
+            ))
+          ) : (
+            <Text style={r.loadingText}>Sin datos para el período</Text>
+          )}
+
+          {/* Inscripciones por mes */}
+          <Text style={[r.secLabel, { marginTop: 24 }]}>Inscripciones por mes</Text>
+          {data.porMesInscripciones?.length > 0 ? (
+            data.porMesInscripciones.map((mes, i) => (
+              <View key={i} style={r.stateRow}>
+                <View style={[r.stateDot, { backgroundColor: C.info }]} />
+                <Text style={r.stateLabel}>{mes.mes}</Text>
+                <View style={r.stateTrack}>
+                  <View style={[r.stateFill, { width: `${mes.usados / (mes.total || 1) * 100}%`, backgroundColor: C.info }]} />
+                </View>
+                <Text style={[r.stateCount, { color: C.info }]}>{mes.usados}</Text>
+                <Text style={r.statePct}>{Math.round((mes.usados / (mes.total || 1)) * 100)}%</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={r.loadingText}>Sin datos para el período</Text>
+          )}
+
+          {/* Distribución por tipo de evento */}
+          <Text style={[r.secLabel, { marginTop: 24 }]}>Distribución por tipo de evento</Text>
+          {data.porTipoEvento?.length > 0 ? (
+            data.porTipoEvento.map((tipo, i) => (
+              <StatCard
+                key={i}
+                label: tipo.tipo
+                value={tipo.total}
+                icon="format-outline"
+                color={C.primary}
+                colorLight={C.primaryLight}
+                sub=" eventos"
+              />
+            ))
+          ) : (
+            <Text style={r.loadingText}>Sin datos para el período</Text>
+          )}
+
+          {/* Tiempos de aprobación */}
+          <Text style={[r.secLabel, { marginTop: 24 }]}>Tiem medio de aprobación</Text>
+          {data.tiempoAprobacion?.length > 0 ? (
+            data.tiempoAprobacion.map((mes, i) => (
+              <View key={i} style={r.stateRow}>
+                <View style={[r.stateDot, { backgroundColor: C.success }]} />
+                <Text style={r.stateLabel}>{mes.mes}</Text>
+                <View style={r.stateTrack}>
+                  <View style={[r.stateFill, { width: `${mes.horas}%`, backgroundColor: C.success }]} />{" "}
+                  <Text style={r.stateCount}>{mes.horas}h</Text>
+                </View>
+                <Text style={r.statePct}>{mes.horas} hrs</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={r.loadingText}>Sin datos para el período</Text>
+          )}
+
+          {/* Estados de eventos */}
+          <Text style={[r.secLabel, { marginTop: 24 }]}>Estados de eventos</Text>
+          {data.porEstado?.length > 0 ? (
+            data.porEstado.map((item, i) => (
+              <View key={i} style={r.stateRow}>
+                <View style={[r.stateDot, { backgroundColor: item.color }]} />
+                <Text style={r.stateLabel}>{item.estado}</Text>
+                <View style={r.stateTrack}>
+                  <View style={[r.stateFill, { width: `${item.pct}%`, backgroundColor: item.color }]} />
+                </View>
+                <Text style={[r.stateCount, { color: item.color }]}>{item.total}</Text>
+                <Text style={r.statePct}>{item.pct}%</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={r.loadingText}>Sin datos para el período</Text>
+          )}
+
+          {/* Distribución por fase */}
+          <Text style={[r.secLabel, { marginTop: 24 }]}>Distribución por fase</Text>
+          {data.porFase?.length > 0 ? (
+            data.porFase.map((fase, i) => (
+              <StatCard
+                key={i}
+                label: `Fase ${fase.idfase}`
+                value={fase.total}
+                icon="layers-outline"
+                color={C.warning}
+                colorLight={C.warningLight}
+                sub=" eventos"
+              />
+            ))
+          ) : (
+            <Text style={r.loadingText}>Sin datos para el período</Text>
+          )}
         </ScrollView>
       )}
     </View>
@@ -273,6 +414,11 @@ const r = StyleSheet.create({
   recursoBarTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: C.bg, overflow: 'hidden' },
   recursoBarFill: { height: '100%', borderRadius: 4 },
   recursoBarCount: { fontSize: 13, fontWeight: '700', minWidth: 28, textAlign: 'right' },
+
+  resourceInscripcionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
+  resourceInscripcionName: { fontSize: 12, color: C.t1, fontWeight: '500', flex: 1 },
+  resourceInscripcionBar: { height: 6, borderRadius: 3, backgroundColor: C.bg, overflow: 'hidden', width: 80 },
+  resourceInscripcionCount: { fontSize: 11, color: C.primary, fontWeight: '600' },
 
   stateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   stateDot: { width: 8, height: 8, borderRadius: 4 },

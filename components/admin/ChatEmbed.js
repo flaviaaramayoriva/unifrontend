@@ -777,13 +777,27 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
           comite.forEach((m) => {
             const idC = String(m.idusuario);
             if (idC !== String(userId) && !mapContactos.has(idC)) {
-              mapContactos.set(idC, { idusuario: idC, nombre: m.nombre || m.usuario?.nombre, apellidopat: m.apellidopat || m.usuario?.apellidopat, rol_comite: m.rol_comite || m.role || 'miembro' });
+              mapContactos.set(idC, { 
+                idusuario: idC, 
+                nombre: m.nombre || m.usuario?.nombre, 
+                apellidopat: m.apellidopat || m.usuario?.apellidopat, 
+                rol_comite: m.rol_comite || m.role || 'miembro',
+                idevento: ev.idevento,
+                nombreevento: ev.nombreevento
+              });
             }
           });
           if (ev.idacademico && String(ev.idacademico) !== String(userId)) {
             const idA = String(ev.idacademico);
             if (!mapContactos.has(idA)) {
-              mapContactos.set(idA, { idusuario: idA, nombre: 'Creador del evento', apellidopat: '', rol_comite: 'creador' });
+              mapContactos.set(idA, { 
+                idusuario: idA, 
+                nombre: 'Creador del evento', 
+                apellidopat: '', 
+                rol_comite: 'creador',
+                idevento: ev.idevento,
+                nombreevento: ev.nombreevento
+              });
             }
           }
         });
@@ -959,6 +973,8 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
               const apellido = c.apellidopat || '';
               const rol = c.rol_comite || 'miembro';
               const colorRol = ROL_COLORS[rol] || COLORS.secondary;
+              const idevento = c.idevento;
+              const nombreevento = c.nombreevento;
               const pendPriv = noLeidos[roomPrivadaId(userId, c.idusuario)] || 0;
               return (
                 <TouchableOpacity
@@ -978,6 +994,11 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
                     <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.textPrimary }}>
                       {nombre} {apellido}
                     </Text>
+                    {idevento && nombreevento ? (
+                      <Text style={{ fontSize: 11, color: COLORS.textTertiary, marginTop: 2, textTransform: 'capitalize' }}>
+                        {nombreevento}
+                      </Text>
+                    ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colorRol }} />
                       <Text style={{ fontSize: 11, color: COLORS.textTertiary, textTransform: 'capitalize' }}>{rol}</Text>
