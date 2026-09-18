@@ -36,7 +36,7 @@ export default function AsistenteIAScreen() {
 
   const handleSend = async () => {
     const texto = input.trim();
-    if (!texto) return;
+    if (!texto || !eventId) return;
 
     // Agregar mensaje del usuario
     const userMessage = {
@@ -54,7 +54,7 @@ export default function AsistenteIAScreen() {
 
     try {
       // Llamar directamente al endpoint del bot
-      const response = await fetch(`${API_BASE_URL}/chat/event/${eventId}/bot`, {
+      const response = await fetch(`${API_BASE_URL}/event/${eventId}/bot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
