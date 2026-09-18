@@ -341,6 +341,8 @@ const programacionEvento = () => {
   const [layoutsDisponibles, setLayoutsDisponibles] = useState([]);
   const [layoutSeleccionado, setLayoutSeleccionado] = useState(null);
   const [cargandoLayouts, setCargandoLayouts] = useState(false);
+  const [promptIA, setPromptIA] = useState('');
+  const [generandoIA, setGenerandoIA] = useState(false);
 
   const { idevento } = params;
   const isEditing = !!idevento;
@@ -459,6 +461,32 @@ const programacionEvento = () => {
       return [];
     } finally {
       if (isMountedRef.current) setCargandoLayouts(false);
+    }
+  };
+
+  const generarConIA = async () => {
+    if (!promptIA.trim()) {
+      showAlert('Error', 'Por favor ingresa una descripción para la IA.');
+      return;
+    }
+    setGenerandoIA(true);
+    try {
+      const token = authToken || await getTokenAsync();
+      if (!token) {
+        showAlert('Error', 'No estás autenticado.');
+        return;
+      }
+      await axios.post(`${API_BASE_URL}/layouts/ia`, { prompt: promptIA }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      showAlert('Éxito', 'Layout generado con IA. Ya está disponible para seleccionar.');
+      setPromptIA('');
+      await cargarLayouts(token);
+    } catch (error) {
+      console.error('Error al generar layout con IA:', error.response?.data || error.message);
+      showAlert('Error', 'No se pudo generar el layout con IA.');
+    } finally {
+      if (isMountedRef.current) setGenerandoIA(false);
     }
   };
 
@@ -995,13 +1023,32 @@ const programacionEvento = () => {
           )}
 </View>
 
-        {/* Layouts con IA */}
-        {layoutsDisponibles.length > 0 && (
-          <View style={styles.kv}>
-            <Text style={styles.kvL}>IA</Text>
-            <Text style={styles.kvV} numberOfLines={1}>Generar layout con IA</Text>
+        {/* Generar con IA */}
+        <View style={styles.formSection}>
+          <SectionHeader icon="sparkles-outline" title="Generar con IA" color="#C44200" />
+          <Text style={styles.label}>Describe el layout</Text>
+          <View style={styles.inputGroup}>
+            <Ionicons name="chatbox-ellipses-outline" size={17} color="#94A3B8" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Ej: distribución de aula para 50 personas"
+              placeholderTextColor="#94A3B8"
+              value={promptIA}
+              onChangeText={setPromptIA}
+            />
           </View>
-        )}
+          {generandoIA ? (
+            <View style={styles.iaLoading}>
+              <ActivityIndicator color="#C44200" size="small" />
+              <Text style={styles.iaLoadingText}>Generando layout...</Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.button} onPress={generarConIA} activeOpacity={0.85}>
+              <Ionicons name="sparkles-outline" size={18} color="#fff" />
+              <Text style={[styles.buttonText, { marginLeft: 8 }]}>Generar layout con IA</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         <TouchableOpacity
           style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -1073,6 +1120,8 @@ const styles = StyleSheet.create({
   button: { backgroundColor: '#C44200', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 10, flexDirection: 'row', shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 5 },
   buttonDisabled: { backgroundColor: '#f9bda3' },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  iaLoading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, marginTop: 10 },
+  iaLoadingText: { marginLeft: 8, color: '#C44200', fontWeight: '600', fontSize: 15 },
   actividadPreviaItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
   actividadItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   actividadPreviaTitle: { fontSize: 15, fontWeight: '700', color: '#C44200' },
