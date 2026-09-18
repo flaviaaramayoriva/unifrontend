@@ -7,12 +7,12 @@ import {
   ScrollView,
   Alert,
   Image,
-  Pressable,
+  TouchableOpacity,
+  StatusBar,
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import CustomAlert from '../../../components/CustomAlert';
@@ -57,38 +57,31 @@ const deleteTokenAsync = async () => {
 };
 
 const COLORS = {
-  accent: '#FF7A45',
-  primary: '#FF7A45',
-  primarySoft: 'rgba(255,122,69,0.16)',
-  bg: '#0E1219',
-  surface: '#151B26',
-  surface2: '#1B2230',
-  line: 'rgba(255,255,255,0.10)',
-  text: '#F5F7FA',
-  textMid: '#AEB6C4',
-  textLight: '#7C8798',
-  success: '#2ED573',
-  warning: '#F5A623',
-  danger: '#EF4444',
-  successSoft: 'rgba(46,213,115,0.14)',
-  warningSoft: 'rgba(245,166,35,0.14)',
-  dangerSoft: 'rgba(239,68,68,0.14)',
-  overlay: 'rgba(15, 23, 42, 0.7)',
+  primary: '#C44200',
+  primaryLight: '#FFF0E6',
+  secondary: '#0F172A',
+  accent: '#EF4444',
+  success: '#047857',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+  background: '#F6F7F9',
+  surface: '#FFFFFF',
+  textPrimary: '#1F2937',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E6E9EF',
+  shadow: 'rgba(0,0,0,0.05)',
+  white: '#FFFFFF',
+  black: '#000000',
 };
 
 const STATUS_META = {
-  aprobado: { color: COLORS.success, soft: COLORS.successSoft, label: 'Aprobado', icon: 'checkmark-circle-outline' },
-  pendiente: { color: COLORS.warning, soft: COLORS.warningSoft, label: 'Pendiente', icon: 'time-outline' },
-  rechazado: { color: COLORS.danger, soft: COLORS.dangerSoft, label: 'Rechazado', icon: 'close-circle-outline' },
+  aprobado: { color: COLORS.success, soft: COLORS.success + '18', label: 'Aprobado', icon: 'checkmark-circle-outline' },
+  pendiente: { color: COLORS.warning, soft: COLORS.warning + '18', label: 'Pendiente', icon: 'time-outline' },
+  rechazado: { color: COLORS.accent, soft: COLORS.accent + '18', label: 'Rechazado', icon: 'close-circle-outline' },
+  cancelado: { color: COLORS.info, soft: COLORS.info + '18', label: 'Cancelado', icon: 'close-circle-outline' },
+  completado: { color: COLORS.info, soft: COLORS.info + '18', label: 'Completado', icon: 'checkmark-done-outline' },
 };
-
-const PHASE_POINTS = [
-  { label: 'Planeación', icon: 'document-text-outline', color: '#3498DB' },
-  { label: 'Revisión', icon: 'clipboard-outline', color: '#9B59B6' },
-  { label: 'Programación', icon: 'calendar-outline', color: COLORS.success },
-  { label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.accent },
-  { label: 'Cierre', icon: 'checkmark-done-outline', color: COLORS.textMid },
-];
 
 const formatDate = (dateString) => {
   if (!dateString) return 'No especificada';
@@ -116,6 +109,31 @@ const formatTime = (timeString) => {
   }
 };
 
+const Section = ({ title, subtitle, children }) => (
+  <View style={styles.section}>
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionAccent} />
+      <View style={styles.sectionHeaderText}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+      </View>
+    </View>
+    {children}
+  </View>
+);
+
+const InfoRow = ({ icon, label, value }) => (
+  <View style={styles.infoRow}>
+    <View style={styles.infoIcon}>
+      <Ionicons name={icon} size={18} color={COLORS.primary} />
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  </View>
+);
+
 const ItemDetailScreen = () => {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -125,42 +143,6 @@ const ItemDetailScreen = () => {
   const [user, setUser] = useState(null);
   const [showApproveAlert, setShowApproveAlert] = useState(false);
   const [showRejectAlert, setShowRejectAlert] = useState(false);
-
-  const getCurrentPhaseFromFases = useCallback((fases) => {
-    if (!Array.isArray(fases) || fases.length === 0) {
-      return {
-        number: 1,
-        label: 'Planeación',
-        key: 'phase1',
-        color: '#3498DB',
-        icon: 'document-text-outline',
-      };
-    }
-
-    const faseToShow = fases[0];
-
-    const phaseConfig = {
-      1: { label: 'Planeación', icon: 'document-text-outline', color: '#3498DB' },
-      2: { label: 'Revisión y aprobación', icon: 'clipboard-outline', color: '#9B59B6' },
-      3: { label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
-      4: { label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.accent },
-      5: { label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.textMid },
-    };
-
-    const config = phaseConfig[faseToShow.nrofase] || {
-      label: `Fase ${faseToShow.nrofase}`,
-      icon: 'help-circle-outline',
-      color: COLORS.textMid,
-    };
-
-    return {
-      number: faseToShow.nrofase,
-      label: config.label,
-      key: `phase${faseToShow.nrofase}`,
-      color: config.color,
-      icon: config.icon,
-    };
-  }, []);
 
   const fetchEventDetails = useCallback(async () => {
     let processedEventId = Array.isArray(id) ? id[0] : id;
@@ -303,12 +285,12 @@ const ItemDetailScreen = () => {
       <View style={styles.centered}>
         <Ionicons name="alert-circle-outline" size={50} color={COLORS.accent} />
         <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]} onPress={fetchEventDetails}>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchEventDetails} activeOpacity={0.85}>
           <Text style={styles.retryButtonText}>Reintentar</Text>
-        </Pressable>
-        <Pressable style={({ pressed }) => [styles.backButton, pressed && styles.pressed]} onPress={() => router.back()}>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.85}>
           <Text style={styles.backButtonText}>Volver</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -316,195 +298,125 @@ const ItemDetailScreen = () => {
   if (!event || Object.keys(event).length === 0) {
     return (
       <View style={styles.centered}>
-        <Ionicons name="information-circle-outline" size={50} color={COLORS.textLight} />
+        <Ionicons name="information-circle-outline" size={50} color={COLORS.textTertiary} />
         <Text style={styles.errorText}>No se encontraron datos del evento.</Text>
-        <Pressable style={({ pressed }) => [styles.backButton, pressed && styles.pressed]} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.85}>
           <Text style={styles.backButtonText}>Volver</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
     );
   }
 
   const statusMeta = STATUS_META[event.status] || STATUS_META.pendiente;
-  const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
   const initials = (event.creador?.nombre || 'U').split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase();
-
-  const metaRows = [
-    { icon: 'calendar-outline', label: 'Fecha', value: event.date },
-    { icon: 'time-outline', label: 'Hora', value: event.time },
-    { icon: 'location-outline', label: 'Ubicación', value: event.location },
-    { icon: 'people-outline', label: 'Asistentes', value: String(event.attendees) },
-  ];
 
   return (
     <View style={styles.screenContainer}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+
+      {/* Header */}
+      <View style={styles.hero}>
+        <View style={styles.heroTopRow}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={8} style={styles.heroIconBtn} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={22} color={COLORS.white} />
+          </TouchableOpacity>
+          <Text style={styles.heroTitle}>Detalle del Evento</Text>
+          <TouchableOpacity onPress={fetchEventDetails} hitSlop={8} style={styles.heroIconBtn} activeOpacity={0.7}>
+            <Ionicons name="refresh" size={22} color={COLORS.white} />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.heroSubtitle}>UFT Eventos · Universidad Privada Franz Tamayo</Text>
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
-        {/* HERO */}
-        <View style={styles.hero}>
-          {event.imageUrl ? (
-            <Image source={{ uri: event.imageUrl }} style={styles.heroImage} resizeMode="cover" />
-          ) : (
-            <LinearGradient
-              colors={['#232B3C', '#151B26', '#0E1219']}
-              style={styles.heroPlaceholder}
-            >
-              <Ionicons name="calendar" size={72} color="rgba(255,255,255,0.14)" />
-            </LinearGradient>
-          )}
-          <LinearGradient
-            colors={['rgba(14,18,25,0.4)', 'rgba(14,18,25,0.28)', 'rgba(14,18,25,0.98)']}
-            style={styles.heroGrad}
-          >
-            <View style={styles.heroTop}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Volver"
-                hitSlop={10}
-                onPress={() => router.back()}
-                style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="arrow-back" size={20} color="#fff" />
-              </Pressable>
-              <Text style={styles.heroBrand}>DETALLE DEL EVENTO</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Actualizar"
-                hitSlop={10}
-                onPress={fetchEventDetails}
-                style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="refresh" size={20} color="#fff" />
-              </Pressable>
-            </View>
+        {/* Imagen destacada */}
+        {event.imageUrl ? (
+          <View style={styles.imageCard}>
+            <Image source={{ uri: event.imageUrl }} style={styles.eventImage} resizeMode="cover" />
+          </View>
+        ) : (
+          <View style={[styles.imageCard, styles.imagePlaceholder]}>
+            <Ionicons name="calendar-outline" size={46} color={COLORS.primary} />
+          </View>
+        )}
 
-            <View style={styles.heroBottom}>
-              <View style={[styles.statusPill, { backgroundColor: statusMeta.soft, borderColor: `${statusMeta.color}55` }]}>
-                <View style={[styles.statusDot, { backgroundColor: statusMeta.color }]} />
-                <Text style={[styles.statusPillText, { color: statusMeta.color }]}>
-                  {statusMeta.label.toUpperCase()}
-                </Text>
-              </View>
-
-              <Text style={styles.heroTitle}>{event.title}</Text>
-
-              <View style={styles.heroChips}>
-                <View style={styles.heroChip}>
-                  <Ionicons name="calendar-outline" size={13} color={COLORS.accent} />
-                  <Text style={styles.heroChipText} numberOfLines={1}>{event.date}</Text>
-                </View>
-                <View style={styles.heroChip}>
-                  <Ionicons name="time-outline" size={13} color={COLORS.accent} />
-                  <Text style={styles.heroChipText} numberOfLines={1}>{event.time}</Text>
-                </View>
-              </View>
-            </View>
-          </LinearGradient>
+        {/* Título + estado */}
+        <View style={styles.card}>
+          <Text style={styles.eventTitle}>{event.title}</Text>
+          <View style={[styles.statusPill, { backgroundColor: statusMeta.soft }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusMeta.color }]} />
+            <Text style={[styles.statusPillText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
+          </View>
         </View>
 
-        {/* FASE */}
-        <View style={styles.body}>
-          <Text style={styles.sectionLabel}>PROGRESO</Text>
+        {/* Información del evento */}
+        <Section title="Información del Evento" subtitle="Datos generales del evento">
           <View style={styles.card}>
-            <View style={styles.phaseRow}>
-              <View style={[styles.phaseIcon, { backgroundColor: `${phaseInfo.color}22` }]}>
-                <Ionicons name={phaseInfo.icon} size={20} color={phaseInfo.color} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.phaseNum}>FASE {phaseInfo.number} DE 5</Text>
-                <Text style={styles.phaseLabel}>{phaseInfo.label}</Text>
-              </View>
-            </View>
-            <View style={styles.segTrack}>
-              {PHASE_POINTS.map((p, i) => {
-                const done = i < phaseInfo.number;
-                return (
-                  <View key={p.label} style={[styles.seg, done && styles.segDone, i < phaseInfo.number - 1 && { marginRight: 6 }]}>
-                    {i < phaseInfo.number - 1 ? null : (
-                      <Ionicons name="checkmark" size={11} color={done ? '#0E1219' : 'transparent'} />
-                    )}
-                  </View>
-                );
-              })}
-            </View>
+            <InfoRow icon="calendar-outline" label="Fecha" value={event.date} />
+            <InfoRow icon="time-outline" label="Hora" value={event.time} />
+            <InfoRow icon="location-outline" label="Ubicación" value={event.location} />
+            <InfoRow icon="people-outline" label="Asistentes" value={String(event.attendees)} />
           </View>
+        </Section>
 
-          {/* DATOS GENERALES */}
-          <Text style={styles.sectionLabel}>INFORMACIÓN</Text>
-          <View style={styles.card}>
-            {metaRows.map((row) => (
-              <View key={row.label} style={styles.metaRow}>
-                <View style={styles.metaIcon}>
-                  <Ionicons name={row.icon} size={17} color={COLORS.accent} />
+        {/* Clasificación Estratégica */}
+        {event.Clasificacion && (
+          <Section title="Clasificación Estratégica" subtitle="Categorización del evento">
+            <View style={styles.card}>
+              <View style={styles.chipRow}>
+                <View style={styles.chip}>
+                  <Ionicons name="layers-outline" size={14} color={COLORS.primary} />
+                  <Text style={styles.chipText}>{event.Clasificacion.nombreClasificacion}</Text>
+                </View>
+                {event.Clasificacion.nombresubcategoria ? (
+                  <View style={styles.chip}>
+                    <Ionicons name="pricetag-outline" size={14} color={COLORS.textSecondary} />
+                    <Text style={styles.chipText}>{event.Clasificacion.nombresubcategoria}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          </Section>
+        )}
+
+        {/* Tipos de Evento */}
+        {event.tiposEvento && event.tiposEvento.length > 0 && (
+          <Section title="Tipos de Evento" subtitle="Modalidades del evento">
+            <View style={styles.card}>
+              <View style={styles.chipRow}>
+                {event.tiposEvento.map((tipo, index) => (
+                  <View key={String(tipo.idtipoevento ?? index)} style={styles.chip}>
+                    <Ionicons name="flash-outline" size={14} color={COLORS.primary} />
+                    <Text style={styles.chipText}>
+                      {tipo.nombretipo || `Tipo ${tipo.idtipoevento ?? ''}`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </Section>
+        )}
+
+        {/* Propuesto por */}
+        {event.creador && (
+          <Section title="Propuesto por" subtitle="Creador del evento">
+            <View style={styles.card}>
+              <View style={styles.creatorRow}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{initials}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.metaLabel}>{row.label}</Text>
-                  <Text style={styles.metaValue}>{row.value}</Text>
+                  <Text style={styles.creatorName}>{event.creador.nombre}</Text>
+                  <Text style={styles.creatorRole}>{event.creador.role}</Text>
+                  {event.creador.email ? (
+                    <Text style={styles.creatorEmail}>{event.creador.email}</Text>
+                  ) : null}
                 </View>
               </View>
-            ))}
-          </View>
+            </View>
+          </Section>
+        )}
 
-          {/* CLASIFICACIÓN */}
-          {event.Clasificacion && (
-            <>
-              <Text style={styles.sectionLabel}>CLASIFICACIÓN</Text>
-              <View style={styles.card}>
-                <View style={styles.chipRow}>
-                  <View style={styles.chip}>
-                    <Ionicons name="layers-outline" size={14} color={COLORS.accent} />
-                    <Text style={styles.chipText}>{event.Clasificacion.nombreClasificacion}</Text>
-                  </View>
-                  {event.Clasificacion.nombresubcategoria && (
-                    <View style={styles.chip}>
-                      <Ionicons name="pricetag-outline" size={14} color={COLORS.textMid} />
-                      <Text style={styles.chipText}>{event.Clasificacion.nombresubcategoria}</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </>
-          )}
-
-          {/* TIPOS DE EVENTO */}
-          {event.tiposEvento && event.tiposEvento.length > 0 && (
-            <>
-              <Text style={styles.sectionLabel}>TIPOS DE EVENTO</Text>
-              <View style={styles.card}>
-                <View style={styles.chipRow}>
-                  {event.tiposEvento.map((tipo, index) => (
-                    <View key={String(tipo.idtipoevento ?? index)} style={styles.chip}>
-                      <Ionicons name="flash-outline" size={14} color={COLORS.accent} />
-                      <Text style={styles.chipText}>
-                        {tipo.nombretipo || `Tipo ${tipo.idtipoevento ?? ''}`}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </>
-          )}
-
-          {/* PROPUESTO POR */}
-          {event.creador && (
-            <>
-              <Text style={styles.sectionLabel}>PROPUESTO POR</Text>
-              <View style={styles.card}>
-                <View style={styles.creatorRow}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{initials}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.creatorName}>{event.creador.nombre}</Text>
-                    <Text style={styles.creatorRole}>{event.creador.role}</Text>
-                    {event.creador.email && (
-                      <Text style={styles.creatorEmail}>{event.creador.email}</Text>
-                    )}
-                  </View>
-                </View>
-              </View>
-            </>
-          )}
-        </View>
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
@@ -518,27 +430,27 @@ ItemDetailScreen.options = {
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.background,
   },
   contentContainer: {
-    paddingBottom: 0,
+    paddingBottom: 40,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.background,
     gap: 12,
     padding: 30,
   },
   loadingText: {
     marginTop: 6,
     fontSize: 15,
-    color: COLORS.textMid,
+    color: COLORS.textSecondary,
   },
   errorText: {
     fontSize: 15,
-    color: COLORS.textMid,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     maxWidth: 300,
   },
@@ -552,15 +464,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   retryButtonText: {
-    color: COLORS.bg,
+    color: COLORS.white,
     fontSize: 14,
     fontWeight: '800',
   },
   backButton: {
     marginTop: 4,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    backgroundColor: COLORS.border,
     paddingVertical: 12,
     paddingHorizontal: 26,
     borderRadius: 24,
@@ -568,98 +478,208 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backButtonText: {
-    color: COLORS.text,
+    color: COLORS.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
-  pressed: { opacity: 0.7 },
 
-  // Hero
-  hero: { width: '100%', height: 340 },
-  heroImage: { width: '100%', height: '100%', position: 'absolute' },
-  heroPlaceholder: { width: '100%', height: '100%', position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  heroGrad: { flex: 1, paddingHorizontal: 20, justifyContent: 'space-between', paddingVertical: 20 },
-  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)',
-    alignItems: 'center', justifyContent: 'center',
+  // Header
+  hero: {
+    width: '100%',
+    paddingHorizontal: 20,
+    paddingTop: (StatusBar.currentHeight || 40) + 14,
+    paddingBottom: 20,
+    backgroundColor: COLORS.primary,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
   },
-  heroBrand: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 2.4 },
-  heroBottom: { alignItems: 'flex-start' },
-  statusPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
-    borderWidth: 1, marginBottom: 10,
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusPillText: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
-  heroTitle: { color: '#fff', fontSize: 28, fontWeight: '900', lineHeight: 34, marginBottom: 12 },
-  heroChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  heroChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 34,
-    paddingHorizontal: 12, borderRadius: 18, maxWidth: '100%',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)',
+  heroIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  heroChipText: { color: '#EDF1F7', fontSize: 11.5, fontWeight: '600', flexShrink: 1 },
+  heroTitle: {
+    color: COLORS.white,
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  heroSubtitle: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 12,
+  },
 
-  // Body
-  body: { paddingHorizontal: 20, paddingTop: 24 },
-  sectionLabel: { color: COLORS.accent, fontSize: 10, fontWeight: '800', letterSpacing: 1.6, marginBottom: 10, marginTop: 22 },
+  // Image
+  imageCard: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 16,
+    height: 200,
+    overflow: 'hidden',
+    backgroundColor: COLORS.primaryLight,
+    elevation: 3,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+  },
+  eventImage: { width: '100%', height: '100%' },
+  imagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+
+  // Cards
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: 16,
     padding: 16,
+    elevation: 3,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
   },
 
-  // Phase
-  phaseRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  phaseIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  phaseNum: { color: COLORS.textLight, fontSize: 9, fontWeight: '800', letterSpacing: 1.4, marginBottom: 3 },
-  phaseLabel: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  segTrack: { flexDirection: 'row', marginTop: 14 },
-  seg: {
-    flex: 1, height: 22, borderRadius: 11,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center', justifyContent: 'center',
+  eventTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    lineHeight: 28,
+    marginBottom: 12,
   },
-  segDone: { backgroundColor: COLORS.primary },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
 
-  // Meta rows
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  metaIcon: {
-    width: 38, height: 38, borderRadius: 11,
-    backgroundColor: COLORS.primarySoft,
-    alignItems: 'center', justifyContent: 'center',
+  // Section
+  section: {
+    marginTop: 24,
+    paddingHorizontal: 20,
   },
-  metaLabel: { color: COLORS.textLight, fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 3 },
-  metaValue: { color: '#fff', fontSize: 14.5, fontWeight: '600', lineHeight: 19 },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 10,
+  },
+  sectionAccent: {
+    width: 4,
+    height: 24,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+  sectionHeaderText: { flex: 1 },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+
+  // Info rows
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  infoIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: COLORS.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoLabel: {
+    color: COLORS.textTertiary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 3,
+    textTransform: 'uppercase',
+  },
+  infoValue: {
+    color: COLORS.textPrimary,
+    fontSize: 14.5,
+    fontWeight: '600',
+    lineHeight: 19,
+  },
 
   // Chips
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 34,
-    paddingHorizontal: 12, borderRadius: 18,
-    backgroundColor: COLORS.primarySoft,
-    borderWidth: 1, borderColor: 'rgba(255,122,69,0.28)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: COLORS.primaryLight,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '22',
   },
-  chipText: { color: '#EDF1F7', fontSize: 12, fontWeight: '600' },
+  chipText: {
+    color: COLORS.textPrimary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
 
   // Creator
   creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: {
-    width: 46, height: 46, borderRadius: 23,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: COLORS.primary,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatarText: { color: COLORS.bg, fontSize: 16, fontWeight: '900' },
-  creatorName: { color: '#fff', fontSize: 15, fontWeight: '700', marginBottom: 3 },
-  creatorRole: { color: COLORS.textMid, fontSize: 12, marginBottom: 3, textTransform: 'capitalize' },
-  creatorEmail: { color: COLORS.textLight, fontSize: 12, fontStyle: 'italic' },
+  avatarText: { color: COLORS.white, fontSize: 16, fontWeight: '900' },
+  creatorName: {
+    color: COLORS.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  creatorRole: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginBottom: 3,
+    textTransform: 'capitalize',
+  },
+  creatorEmail: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
 });
 
 export default ItemDetailScreen;
