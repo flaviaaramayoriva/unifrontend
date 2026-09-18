@@ -110,7 +110,13 @@ const EventosComite = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     try {
-      return new Date(dateStr).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+      const s = String(dateStr);
+      const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      const parsed = ymd
+        ? new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]))
+        : new Date(s);
+      if (isNaN(parsed.getTime())) return '';
+      return parsed.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
     } catch { return ''; }
   };
 

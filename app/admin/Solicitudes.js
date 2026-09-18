@@ -322,9 +322,18 @@ export default function Solicitudes() {
           ? `${e.academicoCreador.nombre || ''} ${e.academicoCreador.apellidopat || ''}`.trim()
           : 'Desconocido',
         fechaEvento:   e.fechaevento
-          ? new Date(e.fechaevento).toLocaleDateString('es-ES', {
-              day: '2-digit', month: '2-digit', year: 'numeric',
-            })
+          ? (() => {
+              const s = String(e.fechaevento);
+              const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+              const parsed = ymd
+                ? new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]))
+                : new Date(s);
+              return isNaN(parsed.getTime())
+                ? 'N/A'
+                : parsed.toLocaleDateString('es-ES', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                  });
+            })()
           : 'N/A',
         horaEvento:    e.horaevento ? e.horaevento.substring(0, 5) : 'N/A',
         estado:        e.estadoDAF  || 'Pendiente',

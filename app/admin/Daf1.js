@@ -116,7 +116,14 @@ export default function DafServicios() {
         id: e.idevento,
         nombreEvento: e.nombreevento || 'Sin título',
         solicitante: e.academicoCreador ? `${e.academicoCreador.nombre} ${e.academicoCreador.apellidopat}` : 'Desconocido',
-        fechaEvento: e.fechaevento ? new Date(e.fechaevento).toLocaleDateString('es-ES') : 'N/A',
+        fechaEvento: e.fechaevento ? (() => {
+            const s = String(e.fechaevento);
+            const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            const parsed = ymd
+              ? new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]))
+              : new Date(s);
+            return isNaN(parsed.getTime()) ? 'N/A' : parsed.toLocaleDateString('es-ES');
+          })() : 'N/A',
        estado: (e.estadoDAF || e.estado || 'Pendiente').toLowerCase(),
         totalRecursos: e.recursos?.length || 0,
       }));

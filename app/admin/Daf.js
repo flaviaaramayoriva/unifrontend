@@ -697,14 +697,24 @@ const saveThemeColor = useCallback(async (color) => {
       const allPhase2 = rawEvents
         .filter(e => e.idfase === 2)
         .map(e => {
-          const eventDate = e.fechaevento ? new Date(e.fechaevento) : null;
-          if (eventDate) eventDate.setHours(0, 0, 0, 0);
+          const rawDate = (() => {
+            const s = e.fechaevento ? String(e.fechaevento) : '';
+            if (!s) return null;
+            const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            const d = ymd
+              ? new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]))
+              : new Date(s);
+            if (isNaN(d.getTime())) return null;
+            d.setHours(0, 0, 0, 0);
+            return d;
+          })();
+          const eventDate = rawDate;
 
           return {
             id: e.idevento,
             title: e.nombreevento || 'Sin título',
-            date: e.fechaevento
-              ? new Date(e.fechaevento).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            date: rawDate
+              ? rawDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
               : 'N/A',
             time: e.horaevento ? e.horaevento.substring(0, 5) : 'N/A',
             state: e.estado?.toLowerCase().includes('aprobado') ? 'Aprobado' : 'Pendiente',

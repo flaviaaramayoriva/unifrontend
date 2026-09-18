@@ -62,24 +62,38 @@ const deleteTokenAsync = async () => {
   }
 };
 
-const parseEventDate = (dateStr) => {
-  if (!dateStr) return new Date(0);
-  if (dateStr instanceof Date && !isNaN(dateStr.getTime())) return dateStr;
+// Parsea la fecha como día local para evitar el desfase de zona horaria
+// (new Date("2025-09-30") se interpreta como UTC y retrocede un día).
+const parseLocalDate = (dateStr) => {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
 
-  const parsed = new Date(dateStr);
-  if (!isNaN(parsed.getTime())) return parsed;
+  const s = String(dateStr);
 
-  if (typeof dateStr === 'string' && dateStr.includes('/')) {
-    const parts = dateStr.split('/');
+  const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymd) {
+    const d = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  if (s.includes('/')) {
+    const parts = s.split('/');
     if (parts.length === 3) {
       const [day, month, year] = parts.map(Number);
-      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-        return new Date(year, month - 1, day);
+      if (![day, month, year].some(isNaN)) {
+        const d = new Date(year, month - 1, day);
+        return isNaN(d.getTime()) ? null : d;
       }
     }
   }
 
-  return new Date(0);
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const parseEventDate = (dateStr) => {
+  if (!dateStr) return new Date(0);
+  return parseLocalDate(dateStr) || new Date(0);
 };
 
 const isEventPast = (event) => {
@@ -308,16 +322,18 @@ const EventosAprobadosPorFacultad = () => {
       : null;
 
     const dateStr = item.fechaevento || item.date;
-    const displayDate = dateStr
-      ? new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+    const parsedDate = parseLocalDate(dateStr);
+    const displayDate = parsedDate
+      ? parsedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
       : 'N/A';
     const displayTime = item.time || item.horaevento || '';
 
     const daysRemaining = (() => {
-      if (!dateStr) return null;
-      const d = new Date(dateStr).setHours(0, 0, 0, 0);
-      const today = new Date().setHours(0, 0, 0, 0);
-      return Math.round((d - today) / 864e5);
+      if (!parsedDate) return null;
+      const target = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate()).getTime();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return Math.round((target - today.getTime()) / 864e5);
     })();
 
     const getInitials = () => {

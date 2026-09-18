@@ -22,11 +22,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
-const showAlert = (title, message) => {
-  console.warn(`🚨 ALERT: ${title} - ${message}`);
-  setToast({ title, message });
-};
-
 const LoginScreen = () => {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -35,6 +30,13 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [toast, setToast] = useState(null);
+  const [inlineError, setInlineError] = useState(null);
+
+  const showAlert = (title, message) => {
+    console.warn(`🚨 ALERT: ${title} - ${message}`);
+    setToast({ title, message });
+    setInlineError(message);
+  };
 
   useEffect(() => {
     if (!toast) return;
@@ -348,7 +350,7 @@ const LoginScreen = () => {
                 placeholderTextColor={PLACEHOLDER}
                 accessibilityLabel="Correo Electrónico"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(t) => { setEmail(t); if (inlineError) setInlineError(null); }}
                 onFocus={() => setFocusedField('email')}
                 onBlur={() => setFocusedField(null)}
                 autoCapitalize="none"
@@ -371,7 +373,7 @@ const LoginScreen = () => {
                 placeholderTextColor={PLACEHOLDER}
                 accessibilityLabel="Contraseña"
                 value={contrasenia}
-                onChangeText={setPassword}
+                onChangeText={(t) => { setPassword(t); if (inlineError) setInlineError(null); }}
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
                 secureTextEntry={!showPassword}
@@ -394,6 +396,13 @@ const LoginScreen = () => {
                 />
               </TouchableOpacity>
             </View>
+
+            {inlineError && (
+              <View style={styles.inlineError} accessibilityRole="alert">
+                <Ionicons name="alert-circle" size={18} color="#C2410C" />
+                <Text style={styles.inlineErrorText}>{inlineError}</Text>
+              </View>
+            )}
 
             <TouchableOpacity
               onPress={handleLogin}
@@ -590,6 +599,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 6,
+  },
+  inlineError: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FFF4EC',
+    borderWidth: 1,
+    borderColor: '#FFD4BC',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 18,
+  },
+  inlineErrorText: {
+    color: '#C2410C',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 18,
   },
   button: {
     borderRadius: 14,

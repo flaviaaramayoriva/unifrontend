@@ -206,7 +206,8 @@ const SeleccionarProgramacionEvento = () => {
     }
 
     list = list.filter(ev => !isEventPast(ev));
-    list = list.filter(ev => Number(ev.idfase) !== 3);
+    list = list.filter(ev => Number(ev.idfase) !== 2 && Number(ev.idfase) !== 3);
+    list = list.filter(ev => !tieneProgramacion(ev));
 
     return list.sort((a, b) => parseEventDate(a.fechaevento) - parseEventDate(b.fechaevento));
   }, [events, myId, userRole, searchTerm]);
@@ -313,7 +314,7 @@ const SeleccionarProgramacionEvento = () => {
           <View style={styles.stepperNote}>
             <Ionicons name="information-circle-outline" size={17} color={COLORS.info} />
             <Text style={styles.stepperNoteText}>
-              Aquí solo aparecen eventos APROBADOS, que no han vencido y sin fase 3. Si tu evento está «Pendiente», míralo en la pestaña Pendientes hasta que lo aprueben.
+              Aquí solo aparecen eventos APROBADOS, que no han vencido, sin programación y sin fase 3. Si tu evento está «Pendiente», míralo en la pestaña Pendientes hasta que lo aprueben; si ya está en Fase 2 (ya programado), aparece en Aprobados como «Listo para publicar».
             </Text>
           </View>
         </View>
