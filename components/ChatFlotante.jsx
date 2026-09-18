@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  FlatList, KeyboardAvoidingView, Platform, StatusBar, ScrollView,
+  FlatList, KeyboardAvoidingView, Platform, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -17,6 +17,7 @@ const COLORS = {
 };
 
 const QUICK_ACTIONS = [
+  { label: 'Crear evento', icon: '➕', action: 'Crear evento' },
   { label: 'Resumen del día', icon: '📋', action: 'Resumen del día' },
   { label: 'Pendientes', icon: '⏳', action: 'Qué tengo pendiente' },
   { label: 'Eventos cercanos', icon: '📅', action: 'Eventos cercanos' },
@@ -31,7 +32,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
       id: 'welcome',
       userId: 0,
       userName: '🤖 Asistente IA',
-      message: '¡Hola! Soy tu asistente virtual. Puedo ayudarte con:\n\n📋 Quick Actions:\n  • Resumen del día\n  • Qué tengo pendiente\n  • Eventos cercanos\n  • Sugerencias\n\n📊 Reports:\n  • Reporte del evento\n  • Eventos cerrados\n\n📱 Telegram:\n  • Enviar resumen por Telegram\n  • Enviar reporte por Telegram\n\nEscribe "ayuda" para ver todo.',
+      message: '¡Hola! Soy tu asistente virtual. Puedo ayudarte con:\n\n➕ Crear evento:\n  • "Crear evento" - Registrar un nuevo evento\n\n📋 Quick Actions:\n  • Resumen del día\n  • Qué tengo pendiente\n  • Eventos cercanos\n  • Sugerencias\n\n📊 Reports:\n  • Reporte del evento\n  • Eventos cerrados\n\n📱 Telegram:\n  • Enviar resumen por Telegram\n  • Enviar reporte por Telegram\n\nEscribe "ayuda" para ver todo.',
       esBot: true,
     }
   ]);
@@ -112,7 +113,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
       <Text style={{ fontSize: 11, color: COLORS.textTertiary, fontWeight: '600', marginBottom: 6, marginLeft: 4 }}>
         ACCIONES RÁPIDAS
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: 6 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         {QUICK_ACTIONS.map((qa) => (
           <TouchableOpacity
             key={qa.label}
@@ -127,7 +128,7 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
             <Text style={{ fontSize: 11, color: '#7B1FA2', fontWeight: '600' }}>{qa.label}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 

@@ -19,6 +19,11 @@ const SUGERENCIAS_IA = [
   { label: 'Aula', sub: 'filas de pupitres', prompt: 'distribución de aula para 50 personas en un salón de conferencias' },
   { label: 'Patio', sub: 'bancas alrededor', prompt: 'layout de patio exterior para 50 personas, evento al aire libre' },
   { label: 'Circular', sub: 'banquete', prompt: 'mesas circulares para 50 personas en una cena de gala' },
+  { label: 'Auditorio', sub: 'escenario al frente', prompt: 'layout de auditorio con escenario al frente y filas de asientos para 50 personas' },
+  { label: 'Cóctel', sub: 'mesas altas', prompt: 'layout de cóctel con mesas altas y espacio libre para 50 personas' },
+  { label: 'Feria', sub: 'stands de exposición', prompt: 'layout de feria con stands de exposición distribuidos para 50 personas' },
+  { label: 'Comedor', sub: 'mesas rectangulares', prompt: 'layout de comedor con mesas rectangulares para 50 personas tipo banquete' },
+  { label: 'Taller', sub: 'mesas en U', prompt: 'layout de taller con mesas en forma de U para 50 personas' },
 ];
 
 const parseDateLocal = (dateInput) => {
@@ -347,6 +352,9 @@ const programacionEvento = () => {
   const [layoutsDisponibles, setLayoutsDisponibles] = useState([]);
   const [layoutSeleccionado, setLayoutSeleccionado] = useState(null);
   const [cargandoLayouts, setCargandoLayouts] = useState(false);
+  const [recursosDisponibles, setRecursosDisponibles] = useState([]);
+  const [recursosSeleccionados, setRecursosSeleccionados] = useState([]);
+  const [cargandoRecursos, setCargandoRecursos] = useState(false);
   const [promptIA, setPromptIA] = useState('');
   const [generandoIA, setGenerandoIA] = useState(false);
 
@@ -470,6 +478,51 @@ const programacionEvento = () => {
     }
   };
 
+  const cargarRecursosDisponibles = async (token) => {
+    const authTokenToUse = token || authToken;
+    if (!authTokenToUse) return [];
+
+    setCargandoRecursos(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/recursos`, {
+        headers: { 'Authorization': `Bearer ${authTokenToUse}` }
+      });
+      const raw = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.recursos || []);
+      const activos = raw.filter(r => r && (r.habilitado === 1 || r.habilitado === true || r.habilitado === '1'));
+      setRecursosDisponibles(activos);
+      return activos;
+    } catch (error) {
+      console.error('Error al cargar recursos:', error.response?.data || error.message);
+      setRecursosDisponibles([]);
+      return [];
+    } finally {
+      if (isMountedRef.current) setCargandoRecursos(false);
+    }
+  };
+
+  const toggleRecursoSeleccionado = (recurso) => {
+    setRecursosSeleccionados(prev => {
+      const existe = prev.find(r => r.idrecurso === recurso.idrecurso);
+      if (existe) return prev.filter(r => r.idrecurso !== recurso.idrecurso);
+      return [...prev, { ...recurso, cantidadIA: 1 }];
+    });
+  };
+
+  const cambiarCantidadRecursoIA = (idrecurso, delta) => {
+    setRecursosSeleccionados(prev => prev.map(r => {
+      if (r.idrecurso !== idrecurso) return r;
+      const disponible = parseInt(r.cantidad) || 1;
+      const nueva = Math.min(Math.max(1, (r.cantidadIA || 1) + delta), disponible);
+      return { ...r, cantidadIA: nueva };
+    }));
+  };
+
+  const recursosParaIA = () => recursosSeleccionados.map(r => ({
+    nombre_recurso: r.nombre_recurso,
+    recurso_tipo: r.recurso_tipo,
+    cantidad: r.cantidadIA || 1,
+  }));
+
   const generarConIA = async () => {
     if (!promptIA.trim()) {
       showAlert('Error', 'Por favor ingresa una descripción para la IA.');
@@ -482,7 +535,7 @@ const programacionEvento = () => {
         showAlert('Error', 'No estás autenticado.');
         return;
       }
-      await axios.post(`${API_BASE_URL}/layouts/ia`, { prompt: promptIA }, {
+      await axios.post(`${API_BASE_URL}/layouts/ia`, { prompt: promptIA, recursos: recursosParaIA() }, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       showAlert('Éxito', 'Layout generado con IA. Ya está disponible para seleccionar.');
@@ -509,6 +562,7 @@ const programacionEvento = () => {
       }
 
       const layoutsData = await cargarLayouts(token);
+      await cargarRecursosDisponibles(token);
 
       if (isEditing && idevento) {
         if (!isMountedRef.current) return;
@@ -1069,6 +1123,59 @@ const programacionEvento = () => {
               ))}
             </View>
           </View>
+
+          <View style={styles.iaSugWrap}>
+            <Text style={styles.iaSugTitle}>Recursos disponibles</Text>
+            {cargandoRecursos ? (
+              <ActivityIndicator size="small" color="#C44200" />
+            ) : recursosDisponibles.length === 0 ? (
+              <Text style={styles.iaEmptyRecursos}>No hay recursos activos en el inventario.</Text>
+            ) : (
+              <View style={styles.iaSugRow}>
+                {recursosDisponibles.map((recurso) => {
+                  const seleccionado = recursosSeleccionados.find(r => r.idrecurso === recurso.idrecurso);
+                  const icRecurso = recurso.recurso_tipo === 'tecnologico' ? 'hardware-chip-outline'
+                    : recurso.recurso_tipo === 'vajilla' ? 'restaurant-outline'
+                    : 'grid-outline';
+                  return (
+                    <View key={recurso.idrecurso} style={styles.recursoWrap}>
+                      <TouchableOpacity
+                        style={[styles.recursoChip, seleccionado && styles.recursoChipSel]}
+                        onPress={() => toggleRecursoSeleccionado(recurso)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name={icRecurso} size={14} color={seleccionado ? '#C44200' : '#94A3B8'} />
+                        <Text style={[styles.recursoChipLabel, seleccionado && styles.recursoChipLabelSel]} numberOfLines={1}>
+                          {recurso.nombre_recurso}
+                        </Text>
+                        <Text style={styles.recursoChipSub}>disp. {recurso.cantidad}</Text>
+                      </TouchableOpacity>
+                      {seleccionado && (
+                        <View style={styles.recursoQtyRow}>
+                          <TouchableOpacity
+                            style={styles.recursoQtyBtn}
+                            onPress={() => cambiarCantidadRecursoIA(recurso.idrecurso, -1)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="remove" size={14} color="#C44200" />
+                          </TouchableOpacity>
+                          <Text style={styles.recursoQtyText}>{seleccionado.cantidadIA}</Text>
+                          <TouchableOpacity
+                            style={styles.recursoQtyBtn}
+                            onPress={() => cambiarCantidadRecursoIA(recurso.idrecurso, 1)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="add" size={14} color="#C44200" />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
           {generandoIA ? (
             <View style={styles.iaLoading}>
               <ActivityIndicator color="#C44200" size="small" />
@@ -1158,10 +1265,20 @@ const styles = StyleSheet.create({
   iaSub: { fontSize: 12, color: '#64748b', marginTop: 1, lineHeight: 16 },
   iaSugWrap: { marginBottom: 16 },
   iaSugTitle: { fontSize: 12, fontWeight: '700', color: '#64748b', marginBottom: 8 },
-  iaSugRow: { flexDirection: 'row', gap: 8 },
-  iaSugChip: { flex: 1, backgroundColor: '#FFF0E6', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', borderWidth: 1, borderColor: '#C442002E' },
+  iaSugRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  iaSugChip: { flexGrow: 1, flexBasis: '30%', backgroundColor: '#FFF0E6', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', borderWidth: 1, borderColor: '#C442002E' },
   iaSugChipLabel: { fontSize: 13, fontWeight: '700', color: '#C44200' },
   iaSugChipSub: { fontSize: 10, color: '#64748b', marginTop: 2, textAlign: 'center' },
+  iaEmptyRecursos: { fontSize: 13, color: '#94A3B8', fontStyle: 'italic', textAlign: 'center', paddingVertical: 10 },
+  recursoWrap: { flexGrow: 1, flexBasis: '30%', minWidth: 100 },
+  recursoChip: { backgroundColor: '#F6F7F9', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 8, alignItems: 'center', marginBottom: 4 },
+  recursoChipSel: { backgroundColor: '#FFF0E6', borderColor: '#C44200' },
+  recursoChipLabel: { fontSize: 12, fontWeight: '600', color: '#1e293b', marginTop: 2, width: '100%' },
+  recursoChipLabelSel: { color: '#C44200' },
+  recursoChipSub: { fontSize: 10, color: '#94A3B8', marginTop: 1 },
+  recursoQtyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 4 },
+  recursoQtyBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF0E6', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#C442002E' },
+  recursoQtyText: { fontSize: 14, fontWeight: '700', color: '#C44200' },
   iaLoading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF0E6', borderRadius: 12, paddingVertical: 15 },
   iaLoadingText: { marginLeft: 8, color: '#C44200', fontWeight: '600', fontSize: 14 },
   iaButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#C44200', paddingVertical: 11, borderRadius: 10, width: '50%', alignSelf: 'center' },

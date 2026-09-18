@@ -383,7 +383,7 @@ const MainTabs = ({ active, onChange }) => (
         onPress={() => onChange(t.id)}
         accessibilityRole="tab"
       >
-        <Ionicons name={t.icon} size={18} color={active === t.id ? COLORS.white : COLORS.textSecondary} />
+        <Ionicons name={t.icon} size={18} color={active === t.id ? COLORS.primary : COLORS.textSecondary} />
         <Text style={[styles.mainTabText, active === t.id && styles.mainTabTextActive]}>{t.label}</Text>
       </TouchableOpacity>
     ))}
@@ -1164,9 +1164,9 @@ const styles = StyleSheet.create({
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
     paddingVertical: 11, borderRadius: 10,
   },
-  mainTabActive: { backgroundColor: COLORS.secondary },
+  mainTabActive: { backgroundColor: 'rgba(233, 90, 12, 0.12)', borderWidth: 1, borderColor: 'rgba(233, 90, 12, 0.18)' },
   mainTabText: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary },
-  mainTabTextActive: { color: COLORS.white },
+  mainTabTextActive: { color: COLORS.primary },
   toolCard: {
     backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, minHeight: 130,
     borderWidth: 1, maxWidth: '100%',

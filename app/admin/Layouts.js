@@ -43,6 +43,11 @@ const SUGERENCIAS_IA = [
   { label: 'Aula', sub: 'filas de pupitres', prompt: 'distribución de aula para 50 personas en un salón de conferencias' },
   { label: 'Patio', sub: 'bancas alrededor', prompt: 'layout de patio exterior para 50 personas, evento al aire libre' },
   { label: 'Circular', sub: 'banquete', prompt: 'mesas circulares para 50 personas en una boda' },
+  { label: 'Auditorio', sub: 'escenario al frente', prompt: 'layout de auditorio con escenario al frente y filas de asientos para 50 personas' },
+  { label: 'Cóctel', sub: 'mesas altas', prompt: 'layout de cóctel con mesas altas y espacio libre para 50 personas' },
+  { label: 'Feria', sub: 'stands de exposición', prompt: 'layout de feria con stands de exposición distribuidos para 50 personas' },
+  { label: 'Comedor', sub: 'mesas rectangulares', prompt: 'layout de comedor con mesas rectangulares para 50 personas tipo banquete' },
+  { label: 'Taller', sub: 'mesas en U', prompt: 'layout de taller con mesas en forma de U para 50 personas' },
 ];
 
 const uriToBlob = async (uri) => {
@@ -57,6 +62,9 @@ const LayoutsScreen = () => {
   const [imagenUri, setImagenUri] = useState(null);
   const [promptIA, setPromptIA] = useState('');
   const [generandoIA, setGenerandoIA] = useState(false);
+  const [recursosDisponibles, setRecursosDisponibles] = useState([]);
+  const [recursosSeleccionados, setRecursosSeleccionados] = useState([]);
+  const [cargandoRecursos, setCargandoRecursos] = useState(false);
   const [loading, setLoading] = useState(false);
   const [layouts, setLayouts] = useState([]);
   const [loadingLayouts, setLoadingLayouts] = useState(true);
@@ -185,7 +193,7 @@ const subirLayout = async () => {
         return;
       }
 
-      await axios.post(`${API_BASE_URL}/layouts/ia`, { prompt: promptIA }, {
+      await axios.post(`${API_BASE_URL}/layouts/ia`, { prompt: promptIA, recursos: recursosParaIA() }, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
@@ -202,10 +210,53 @@ const subirLayout = async () => {
     }
   };
 
+  const cargarRecursosDisponibles = async () => {
+    setCargandoRecursos(true);
+    try {
+      const token = await getTokenAsync();
+      if (!token) return;
+      const response = await axios.get(`${API_BASE_URL}/recursos`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const raw = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.recursos || []);
+      const activos = raw.filter(r => r && (r.habilitado === 1 || r.habilitado === true || r.habilitado === '1'));
+      setRecursosDisponibles(activos);
+    } catch (error) {
+      console.error('Error al cargar recursos:', error);
+      setRecursosDisponibles([]);
+    } finally {
+      setCargandoRecursos(false);
+    }
+  };
+
+  const toggleRecursoSeleccionado = (recurso) => {
+    setRecursosSeleccionados(prev => {
+      const existe = prev.find(r => r.idrecurso === recurso.idrecurso);
+      if (existe) return prev.filter(r => r.idrecurso !== recurso.idrecurso);
+      return [...prev, { ...recurso, cantidadIA: 1 }];
+    });
+  };
+
+  const cambiarCantidadRecursoIA = (idrecurso, delta) => {
+    setRecursosSeleccionados(prev => prev.map(r => {
+      if (r.idrecurso !== idrecurso) return r;
+      const disponible = parseInt(r.cantidad) || 1;
+      const nueva = Math.min(Math.max(1, (r.cantidadIA || 1) + delta), disponible);
+      return { ...r, cantidadIA: nueva };
+    }));
+  };
+
+  const recursosParaIA = () => recursosSeleccionados.map(r => ({
+    nombre_recurso: r.nombre_recurso,
+    recurso_tipo: r.recurso_tipo,
+    cantidad: r.cantidadIA || 1,
+  }));
+
   const puedeSubir = nombreLayout.trim().length > 0 && !!imagenUri && !loading;
 
   useEffect(() => {
   cargarLayouts();
+  cargarRecursosDisponibles();
 }, []);
 
   return (
@@ -273,6 +324,58 @@ const subirLayout = async () => {
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
+
+          <View style={st.sugWrap}>
+            <Text style={st.sugTitle}>Recursos disponibles</Text>
+            {cargandoRecursos ? (
+              <ActivityIndicator size="small" color={C.primary} />
+            ) : recursosDisponibles.length === 0 ? (
+              <Text style={st.emptyRecursos}>No hay recursos activos en el inventario.</Text>
+            ) : (
+              <View style={st.sugRow}>
+                {recursosDisponibles.map((recurso) => {
+                  const seleccionado = recursosSeleccionados.find(r => r.idrecurso === recurso.idrecurso);
+                  const icRecurso = recurso.recurso_tipo === 'tecnologico' ? 'hardware-chip-outline'
+                    : recurso.recurso_tipo === 'vajilla' ? 'restaurant-outline'
+                    : 'grid-outline';
+                  return (
+                    <View key={recurso.idrecurso} style={st.recursoWrap}>
+                      <TouchableOpacity
+                        style={[st.recursoChip, seleccionado && st.recursoChipSel]}
+                        onPress={() => toggleRecursoSeleccionado(recurso)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name={icRecurso} size={14} color={seleccionado ? C.primary : C.t3} />
+                        <Text style={[st.recursoChipLabel, seleccionado && st.recursoChipLabelSel]} numberOfLines={1}>
+                          {recurso.nombre_recurso}
+                        </Text>
+                        <Text style={st.recursoChipSub}>disp. {recurso.cantidad}</Text>
+                      </TouchableOpacity>
+                      {seleccionado && (
+                        <View style={st.recursoQtyRow}>
+                          <TouchableOpacity
+                            style={st.recursoQtyBtn}
+                            onPress={() => cambiarCantidadRecursoIA(recurso.idrecurso, -1)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="remove" size={14} color={C.primary} />
+                          </TouchableOpacity>
+                          <Text style={st.recursoQtyText}>{seleccionado.cantidadIA}</Text>
+                          <TouchableOpacity
+                            style={st.recursoQtyBtn}
+                            onPress={() => cambiarCantidadRecursoIA(recurso.idrecurso, 1)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="add" size={14} color={C.primary} />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {generandoIA ? (
@@ -499,13 +602,29 @@ const st = StyleSheet.create({
 
   sugWrap: { marginBottom: 16, gap: 8 },
   sugTitle: { fontSize: 12, fontWeight: '700', color: C.t2 },
-  sugRow: { flexDirection: 'row', gap: 8 },
+  sugRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   sugChip: {
-    flex: 1, backgroundColor: C.primaryLight, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 6,
+    flexGrow: 1, flexBasis: '30%', backgroundColor: C.primaryLight, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 6,
     alignItems: 'center', borderWidth: 1, borderColor: C.primary + '2E',
   },
   sugChipLabel: { fontSize: 13, fontWeight: '700', color: C.primary },
   sugChipSub: { fontSize: 10, color: C.t2, marginTop: 2, textAlign: 'center' },
+  emptyRecursos: { fontSize: 13, color: C.t3, fontStyle: 'italic', textAlign: 'center', paddingVertical: 10 },
+  recursoWrap: { flexGrow: 1, flexBasis: '30%', minWidth: 100 },
+  recursoChip: {
+    backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 10,
+    paddingVertical: 8, paddingHorizontal: 8, alignItems: 'center', marginBottom: 4,
+  },
+  recursoChipSel: { backgroundColor: C.primaryLight, borderColor: C.primary },
+  recursoChipLabel: { fontSize: 12, fontWeight: '600', color: C.t1, marginTop: 2, width: '100%' },
+  recursoChipLabelSel: { color: C.primary },
+  recursoChipSub: { fontSize: 10, color: C.t3, marginTop: 1 },
+  recursoQtyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 4 },
+  recursoQtyBtn: {
+    width: 24, height: 24, borderRadius: 12, backgroundColor: C.primaryLight,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.primary + '2E',
+  },
+  recursoQtyText: { fontSize: 14, fontWeight: '700', color: C.primary },
 
   genLoading: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
