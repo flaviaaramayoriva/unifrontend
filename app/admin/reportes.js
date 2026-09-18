@@ -423,7 +423,7 @@ const ReportesAvanzadosScreen = () => {
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const chartWidth = Math.max(windowWidth - 56, 240);
-  const isNarrow = windowWidth < 600;
+  const isNarrow = windowWidth < 960;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
