@@ -280,12 +280,20 @@ const UltimoEventoCard = ({ evento, onPress }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '–';
     try {
-      let dateStrLocal = String(dateStr).split('T')[0];
-      const parts = dateStrLocal.split('-');
-      if (parts.length === 3) {
-        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-        return dayjs(d).format('DD [de] MMMM, YYYY');
+      const s = String(dateStr).trim();
+
+      const ymd = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (ymd) {
+        const d = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+        if (!isNaN(d.getTime())) return dayjs(d).format('DD [de] MMMM, YYYY');
       }
+
+      const dmy = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (dmy) {
+        const d = new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+        if (!isNaN(d.getTime())) return dayjs(d).format('DD [de] MMMM, YYYY');
+      }
+
       const date = dayjs(dateStr);
       if (!date.isValid()) return '–';
       return date.format('DD [de] MMMM, YYYY');

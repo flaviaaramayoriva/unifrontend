@@ -186,12 +186,6 @@ const BADGE_CONFIG = {
   vencido: { label: 'Vencido', color: COLORS.secondary },
 };
 
-const numeroFaseEvento = (ev) => {
-  const lista = Array.isArray(ev && ev.fases) && ev.fases.length > 0 ? ev.fases : null;
-  const raw = lista ? Number(lista[0] && lista[0].nrofase) : Number(ev && ev.idfase);
-  return raw && !isNaN(raw) ? Math.min(Math.max(raw, 1), 5) : 1;
-};
-
 const diasAntesEvento = (fechaStr) => {
   if (!fechaStr) return null;
   const s = String(fechaStr).slice(0, 10);
@@ -246,13 +240,13 @@ const ProgresoEventoCard = ({ evento, router }) => {
     ctaIcon = 'document-text-outline';
     ctaSub = 'Proceso finalizado.';
     ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
-  } else if (esHoy && !terminal && numeroFaseEvento(evento) >= 3) {
+  } else if (esHoy && !terminal && faseActual >= 3) {
     ctaTipo = 'hoy';
     ctaLabel = 'Es hoy · Abrir informe del evento';
     ctaIcon = 'rocket-outline';
     ctaSub = 'Registra asistencia, fotos y resultados. El informe cierra el proceso.';
     ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
-  } else if (estKey === 'aprobado' && numeroFaseEvento(evento) < 3) {
+  } else if (estKey === 'aprobado' && faseActual === 2) {
     ctaLabel = 'Siguiente paso: Programar evento';
     ctaIcon = 'calendar-outline';
     ctaSub = 'El comité aprobó tu evento. Elige fecha y recursos disponibles.';
