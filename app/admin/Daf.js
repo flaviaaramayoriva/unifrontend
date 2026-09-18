@@ -269,6 +269,9 @@ const Fase2Calendar = ({ viewMonth, setViewMonth, daysMap, selectedDay, onSelect
 };
 
 const EventTable = ({ data, onPrint }) => {
+  const { width: windowWidth } = useWindowDimensions();
+  const isNarrow = windowWidth < 560;
+
   if (!data?.length) {
     return (
       <View style={styles.emptyTable}>
@@ -278,51 +281,53 @@ const EventTable = ({ data, onPrint }) => {
     );
   }
 
+  if (isNarrow) {
+    return <EventCards data={data} onPrint={onPrint} />;
+  }
+
   return (
     <View style={styles.tableWrap}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-        <View>
-          <View style={styles.tableHead}>
-            <Text style={[styles.tableTh, styles.colFecha]}>Fecha</Text>
-            <Text style={[styles.tableTh, styles.colHora]}>Hora</Text>
-            <Text style={[styles.tableTh, styles.colEvento]}>Evento</Text>
-            <Text style={[styles.tableTh, styles.colSolicitante]}>Solicitante</Text>
-            <Text style={[styles.tableTh, styles.colEstado]}>Estado</Text>
-            <Text style={[styles.tableTh, styles.colAccion]}>Acción</Text>
-          </View>
-          {data.map((row, idx) => {
-            const approved = row.state === 'Aprobado';
-            return (
-              <View key={row.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]}>
-                <Text style={[styles.tableTd, styles.colFecha]} numberOfLines={1}>{row.date}</Text>
-                <Text style={[styles.tableTd, styles.colHora]} numberOfLines={1}>{row.time}</Text>
-                <Text style={[styles.tableTd, styles.colEvento]} numberOfLines={2}>{row.title}</Text>
-                <Text style={[styles.tableTd, styles.colSolicitante]} numberOfLines={1}>
-                  <Text style={styles.tableTdStrong}>{row.creator}</Text>
-                </Text>
-                <View style={[styles.tableTd, styles.colEstado]}>
-                  <View style={[styles.cellChip, { backgroundColor: approved ? '#D1FAE5' : '#FEF3C7' }]}>
-                    <View style={[styles.cellChipDot, { backgroundColor: approved ? COLORS.success : COLORS.warning }]} />
-                    <Text style={[styles.cellChipText, { color: approved ? COLORS.success : COLORS.warning }]}>
-                      {approved ? 'Aprobado' : 'Pendiente'}
-                    </Text>
-                  </View>
-                </View>
-                <View style={[styles.tableTd, styles.colAccion]}>
-                  {approved ? (
-                    <TouchableOpacity style={styles.cellPrintBtn} onPress={() => onPrint(row.id)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`Imprimir ${row.title}`}>
-                      <Ionicons name="print-outline" size={15} color={COLORS.primary} />
-                      <Text style={styles.cellPrintBtnText}>Imprimir</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <Text style={styles.cellMuted}>—</Text>
-                  )}
+      <View style={styles.tableInner}>
+        <View style={styles.tableHead}>
+          <Text style={[styles.tableTh, styles.colFecha]}>Fecha</Text>
+          <Text style={[styles.tableTh, styles.colHora]}>Hora</Text>
+          <Text style={[styles.tableTh, styles.colEvento]}>Evento</Text>
+          <Text style={[styles.tableTh, styles.colSolicitante]}>Solicitante</Text>
+          <Text style={[styles.tableTh, styles.colEstado]}>Estado</Text>
+          <Text style={[styles.tableTh, styles.colAccion]}>Acción</Text>
+        </View>
+        {data.map((row, idx) => {
+          const approved = row.state === 'Aprobado';
+          return (
+            <View key={row.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]}>
+              <Text style={[styles.tableTd, styles.colFecha]} numberOfLines={1}>{row.date}</Text>
+              <Text style={[styles.tableTd, styles.colHora]} numberOfLines={1}>{row.time}</Text>
+              <Text style={[styles.tableTd, styles.colEvento]} numberOfLines={2}>{row.title}</Text>
+              <Text style={[styles.tableTd, styles.colSolicitante]} numberOfLines={1}>
+                <Text style={styles.tableTdStrong}>{row.creator}</Text>
+              </Text>
+              <View style={[styles.tableTd, styles.colEstado]}>
+                <View style={[styles.cellChip, { backgroundColor: approved ? '#D1FAE5' : '#FEF3C7' }]}>
+                  <View style={[styles.cellChipDot, { backgroundColor: approved ? COLORS.success : COLORS.warning }]} />
+                  <Text numberOfLines={1} style={[styles.cellChipText, { color: approved ? COLORS.success : COLORS.warning }]}>
+                    {approved ? 'Aprobado' : 'Pendiente'}
+                  </Text>
                 </View>
               </View>
-            );
-          })}
-        </View>
-      </ScrollView>
+              <View style={[styles.tableTd, styles.colAccion]}>
+                {approved ? (
+                  <TouchableOpacity style={styles.cellPrintBtn} onPress={() => onPrint(row.id)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`Imprimir ${row.title}`}>
+                    <Ionicons name="print-outline" size={15} color={COLORS.primary} />
+                    <Text numberOfLines={1} style={styles.cellPrintBtnText}>Imprimir</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.cellMuted}>—</Text>
+                )}
+              </View>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 };
@@ -1654,6 +1659,7 @@ telegramQRCode: {
     backgroundColor: COLORS.surface, borderRadius: 14, overflow: 'hidden',
     borderWidth: 1, borderColor: COLORS.border, marginBottom: 12,
   },
+  tableInner: { width: '100%' },
   tableHead: {
     flexDirection: 'row', backgroundColor: COLORS.primary,
     paddingVertical: 9, paddingHorizontal: 10, gap: 8,
@@ -1667,22 +1673,22 @@ telegramQRCode: {
   tableRowAlt: { backgroundColor: '#FAFAFB' },
   tableTd: { fontSize: 12, color: COLORS.textSecondary },
   tableTdStrong: { color: COLORS.textPrimary, fontWeight: '600' },
-  colFecha: { width: 92 },
-  colHora: { width: 52 },
-  colEvento: { width: 220 },
-  colSolicitante: { width: 160 },
-  colEstado: { width: 108 },
-  colAccion: { width: 104 },
-  cellChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
-  cellChipDot: { width: 6, height: 6, borderRadius: 3 },
-  cellChipText: { fontSize: 11, fontWeight: '700' },
+  colFecha: { flex: 0.9, minWidth: 70 },
+  colHora: { flex: 0.5, minWidth: 40 },
+  colEvento: { flex: 2.1 },
+  colSolicitante: { flex: 1.5 },
+  colEstado: { flex: 1, minWidth: 78 },
+  colAccion: { flex: 1, minWidth: 64 },
+  cellChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
+  cellChipDot: { width: 6, height: 6, borderRadius: 3, flexShrink: 0 },
+  cellChipText: { fontSize: 11, fontWeight: '700', flexShrink: 1 },
   cellPrintBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: COLORS.primaryLight, borderRadius: 7,
     borderWidth: 1, borderColor: COLORS.primary,
-    paddingHorizontal: 9, paddingVertical: 5,
+    paddingHorizontal: 9, paddingVertical: 5, alignSelf: 'flex-start',
   },
-  cellPrintBtnText: { color: COLORS.primary, fontSize: 11, fontWeight: '700' },
+  cellPrintBtnText: { color: COLORS.primary, fontSize: 11, fontWeight: '700', flexShrink: 1 },
   cellMuted: { fontSize: 13, color: COLORS.textTertiary },
 
   // Action cards

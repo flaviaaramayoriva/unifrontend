@@ -15,6 +15,12 @@ import * as SecureStore from 'expo-secure-store';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
 
+const SUGERENCIAS_IA = [
+  { label: 'Aula', sub: 'filas de pupitres', prompt: 'distribución de aula para 50 personas en un salón de conferencias' },
+  { label: 'Patio', sub: 'bancas alrededor', prompt: 'layout de patio exterior para 50 personas, evento al aire libre' },
+  { label: 'Circular', sub: 'banquete', prompt: 'mesas circulares para 50 personas en una boda' },
+];
+
 const parseDateLocal = (dateInput) => {
   if (!dateInput) return new Date();
   if (dateInput instanceof Date) {
@@ -1025,7 +1031,16 @@ const programacionEvento = () => {
 
         {/* Generar con IA */}
         <View style={styles.formSection}>
-          <SectionHeader icon="sparkles-outline" title="Generar con IA" color="#C44200" />
+          <View style={styles.iaHeader}>
+            <View style={styles.iaIcon}>
+              <Ionicons name="sparkles-outline" size={17} color="#C44200" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.iaTitle}>Generar con IA</Text>
+              <Text style={styles.iaSub}>Crea el plano automáticamente en segundos</Text>
+            </View>
+          </View>
+
           <Text style={styles.label}>Describe el layout</Text>
           <View style={styles.inputGroup}>
             <Ionicons name="chatbox-ellipses-outline" size={17} color="#94A3B8" style={styles.inputIcon} />
@@ -1036,6 +1051,23 @@ const programacionEvento = () => {
               value={promptIA}
               onChangeText={setPromptIA}
             />
+          </View>
+
+          <View style={styles.iaSugWrap}>
+            <Text style={styles.iaSugTitle}>Estilos disponibles</Text>
+            <View style={styles.iaSugRow}>
+              {SUGERENCIAS_IA.map((s) => (
+                <TouchableOpacity
+                  key={s.label}
+                  style={styles.iaSugChip}
+                  onPress={() => setPromptIA(s.prompt)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.iaSugChipLabel}>{s.label}</Text>
+                  <Text style={styles.iaSugChipSub} numberOfLines={1}>{s.sub}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
           {generandoIA ? (
             <View style={styles.iaLoading}>
@@ -1120,8 +1152,18 @@ const styles = StyleSheet.create({
   button: { backgroundColor: '#C44200', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 10, flexDirection: 'row', shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 5 },
   buttonDisabled: { backgroundColor: '#f9bda3' },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  iaLoading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, marginTop: 10 },
-  iaLoadingText: { marginLeft: 8, color: '#C44200', fontWeight: '600', fontSize: 15 },
+  iaHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  iaIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#FFF0E6', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  iaTitle: { fontSize: 15, fontWeight: '800', color: '#111827' },
+  iaSub: { fontSize: 12, color: '#64748b', marginTop: 1, lineHeight: 16 },
+  iaSugWrap: { marginBottom: 16 },
+  iaSugTitle: { fontSize: 12, fontWeight: '700', color: '#64748b', marginBottom: 8 },
+  iaSugRow: { flexDirection: 'row', gap: 8 },
+  iaSugChip: { flex: 1, backgroundColor: '#FFF0E6', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', borderWidth: 1, borderColor: '#C442002E' },
+  iaSugChipLabel: { fontSize: 13, fontWeight: '700', color: '#C44200' },
+  iaSugChipSub: { fontSize: 10, color: '#64748b', marginTop: 2, textAlign: 'center' },
+  iaLoading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF0E6', borderRadius: 12, paddingVertical: 15 },
+  iaLoadingText: { marginLeft: 8, color: '#C44200', fontWeight: '600', fontSize: 14 },
   actividadPreviaItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
   actividadItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   actividadPreviaTitle: { fontSize: 15, fontWeight: '700', color: '#C44200' },
