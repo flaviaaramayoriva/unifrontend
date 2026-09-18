@@ -18,7 +18,7 @@ const TOKEN_KEY = 'adminAuthToken';
 const SUGERENCIAS_IA = [
   { label: 'Aula', sub: 'filas de pupitres', prompt: 'distribución de aula para 50 personas en un salón de conferencias' },
   { label: 'Patio', sub: 'bancas alrededor', prompt: 'layout de patio exterior para 50 personas, evento al aire libre' },
-  { label: 'Circular', sub: 'banquete', prompt: 'mesas circulares para 50 personas en una boda' },
+  { label: 'Circular', sub: 'banquete', prompt: 'mesas circulares para 50 personas en una cena de gala' },
 ];
 
 const parseDateLocal = (dateInput) => {
@@ -1075,9 +1075,9 @@ const programacionEvento = () => {
               <Text style={styles.iaLoadingText}>Generando layout...</Text>
             </View>
           ) : (
-            <TouchableOpacity style={styles.button} onPress={generarConIA} activeOpacity={0.85}>
-              <Ionicons name="sparkles-outline" size={18} color="#fff" />
-              <Text style={[styles.buttonText, { marginLeft: 8 }]}>Generar layout con IA</Text>
+            <TouchableOpacity style={styles.iaButton} onPress={generarConIA} activeOpacity={0.85}>
+              <Ionicons name="sparkles-outline" size={16} color="#fff" />
+              <Text style={styles.iaButtonText}>Generar layout con IA</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1164,6 +1164,8 @@ const styles = StyleSheet.create({
   iaSugChipSub: { fontSize: 10, color: '#64748b', marginTop: 2, textAlign: 'center' },
   iaLoading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF0E6', borderRadius: 12, paddingVertical: 15 },
   iaLoadingText: { marginLeft: 8, color: '#C44200', fontWeight: '600', fontSize: 14 },
+  iaButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C44200', paddingVertical: 11, borderRadius: 10 },
+  iaButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   actividadPreviaItemContainer: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 16, marginBottom: 15, backgroundColor: '#FDFDFD' },
   actividadItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   actividadPreviaTitle: { fontSize: 15, fontWeight: '700', color: '#C44200' },
