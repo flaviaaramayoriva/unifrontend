@@ -300,7 +300,7 @@ const fetchReportes = useCallback(async (p) => {
             data.porTipoEvento.map((tipo, i) => (
               <StatCard
                 key={i}
-                label: tipo.tipo
+                label={tipo.tipo}
                 value={tipo.total}
                 icon="format-outline"
                 color={C.primary}
@@ -354,7 +354,7 @@ const fetchReportes = useCallback(async (p) => {
             data.porFase.map((fase, i) => (
               <StatCard
                 key={i}
-                label: `Fase ${fase.idfase}`
+                label={`Fase ${fase.idfase}`}
                 value={fase.total}
                 icon="layers-outline"
                 color={C.warning}
