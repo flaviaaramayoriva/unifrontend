@@ -423,6 +423,7 @@ const ReportesAvanzadosScreen = () => {
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const chartWidth = Math.max(windowWidth - 56, 240);
+  const tableWidth = Math.max(windowWidth - 62, 600);
   const isNarrow = windowWidth < 960;
 
   const [loading, setLoading] = useState(true);
@@ -1787,7 +1788,7 @@ const ReportesAvanzadosScreen = () => {
                     </View>
                   ) : (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={styles.tInner}>
+                      <View style={[styles.tInner, { width: tableWidth, minWidth: tableWidth }]}>
                         <View style={styles.tableHeader}>
                           <Text style={[styles.tCell, styles.tHead, styles.tColEvento]}>Evento</Text>
                           <Text style={[styles.tCell, styles.tHead, styles.tColFecha]}>Fecha</Text>
