@@ -55,7 +55,7 @@ const safeArray = (value) => (Array.isArray(value) ? value : []);
 const safeObj = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
 
 const COLORS = {
-  primary: '#E95A0C', primaryLight: '#FDEEE7', secondary: '#0F172A',
+  primary: '#D44E0B', primaryLight: '#FBE9E0', secondary: '#0F172A',
   accent: '#EF4444', success: '#047857', warning: '#F59E0B', warningLight: '#FEF3C7',
   info: '#3B82F6', background: '#F6F7F9', surface: '#FFFFFF',
   textPrimary: '#1F2937', textSecondary: '#64748B', textTertiary: '#94A3B8',
