@@ -1047,11 +1047,11 @@ const adminActions = [
             </View>
             <View style={{ flex: 1 }}>
               <ChatEmbed
-                userId={String(chatUserId || nombreUsuario)}
+                userId={String(chatUserId || '')}
                 userRole="academico"
-                userName={nombreUsuario || chatUserId}
+                userName={nombreUsuario || chatUserId || ''}
                 noLeidos={noLeidos}
-                activeRoom={isChatOpen ? salaActiva : null}
+                activeRoom={isChatOpen && chatUserId ? salaActiva : null}
                 onRoomChange={(r) => { setSalaActiva(r); limpiarNoLeidos(r); }}
               />
             </View>
@@ -1060,11 +1060,11 @@ const adminActions = [
       ) : null}
 
       <ChatAlertas
-        userId={String(chatUserId || nombreUsuario)}
+        userId={String(chatUserId || '')}
         userRole="academico"
-        userName={nombreUsuario || chatUserId}
-        activeRoom={isChatOpen ? salaActiva : null}
-        chatAbierto={isChatOpen}
+        userName={nombreUsuario || chatUserId || ''}
+        activeRoom={isChatOpen && chatUserId ? salaActiva : null}
+        chatAbierto={isChatOpen && !!chatUserId}
         onAbrir={abrirChat}
         onUnread={marcarnoLeido}
       />
