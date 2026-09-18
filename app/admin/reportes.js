@@ -423,6 +423,7 @@ const ReportesAvanzadosScreen = () => {
   const { width: windowWidth } = useWindowDimensions();
   const router = useRouter();
   const chartWidth = Math.max(windowWidth - 56, 240);
+  const isNarrow = windowWidth < 600;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1741,47 +1742,92 @@ const ReportesAvanzadosScreen = () => {
               </ScrollView>
               <View style={styles.card}>
                 {tablaEventosFiltrados.length ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  isNarrow ? (
                     <View>
-                      <View style={styles.tableHeader}>
-                        <Text style={[styles.tCell, styles.tHead, { width: 210 }]}>Evento</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 92 }]}>Fecha</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 130 }]}>Solicitante</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 74, textAlign: 'right' }]}>Recursos</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 96, textAlign: 'center' }]}>Estado</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 90, textAlign: 'center', color: COLORS.purple }]}>Asistencia</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 130 }]}>Presup. ejecutado</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 40, textAlign: 'center' }]}>Ver</Text>
-                      </View>
                       {tablaEventosFiltrados.slice(0, 25).map((r, i) => (
-                        <TouchableOpacity key={`${i}-${r.id || r.nombre}`} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]} onPress={() => irDetalleEvento(r.id)} activeOpacity={0.6}>
-                          <Text style={[styles.tCell, { width: 210, fontWeight: '600' }]} numberOfLines={1}>{r.nombre || 'Sin nombre'}</Text>
-                          <Text style={[styles.tCell, { width: 92 }]}>{fechaTxt(r.fecha)}</Text>
-                          <Text style={[styles.tCell, { width: 130, color: COLORS.textSecondary }]} numberOfLines={1}>{r.solicitante || '–'}</Text>
-                          <Text style={[styles.tCell, { width: 74, textAlign: 'right' }]}>{fmtNum(r.recursos)}</Text>
-                          <View style={[styles.tCell, { width: 96, alignItems: 'center' }]}><EstadoBadge estado={r.estado} /></View>
-                          <Text style={[styles.tCell, { width: 90, textAlign: 'center', fontWeight: '700', color: r.tasaAsistencia === null ? COLORS.textTertiary : r.tasaAsistencia >= 70 ? COLORS.success : r.tasaAsistencia >= 40 ? COLORS.warning : COLORS.error }]}>
-                            {r.tasaAsistencia === null ? '–' : r.tasaAsistencia + '%'}
-                          </Text>
-                          <View style={[styles.tCell, { width: 130 }]}>
-                            {r.ejecucion === null ? (
-                              <Text style={{ fontSize: 12, color: COLORS.textTertiary }}>–</Text>
-                            ) : (
-                              <View style={styles.ejecBar}>
-                                <View style={styles.ejecBarTrack}>
-                                  <View style={[styles.ejecBarFill, { width: `${Math.min(100, Math.max(3, r.ejecucion))}%`, backgroundColor: r.ejecucion > 100 ? COLORS.error : r.ejecucion >= 70 ? COLORS.success : r.ejecucion >= 40 ? COLORS.warning : COLORS.info }]} />
-                                </View>
-                                <Text style={styles.ejecPct}>{r.ejecucion}%</Text>
-                              </View>
-                            )}
+                        <TouchableOpacity
+                          key={`m-${i}-${r.id || r.nombre}`}
+                          style={[styles.mobileEventCard, i % 2 === 1 && styles.tableRowAlt]}
+                          onPress={() => irDetalleEvento(r.id)}
+                          activeOpacity={0.6}
+                        >
+                          <View style={styles.mobileEventTop}>
+                            <Text style={styles.mobileEventTitle} numberOfLines={2}>{r.nombre || 'Sin nombre'}</Text>
+                            <EstadoBadge estado={r.estado} />
                           </View>
-                          <View style={[styles.tCell, { width: 40, alignItems: 'center' }]}>
+                          <View style={styles.mobileEventMeta}>
+                            <View style={styles.mobileEventMetaItem}>
+                              <Ionicons name="calendar-outline" size={12} color={COLORS.textTertiary} />
+                              <Text style={styles.mobileEventMetaText}>{fechaTxt(r.fecha)}</Text>
+                            </View>
+                            <View style={styles.mobileEventMetaItem}>
+                              <Ionicons name="person-outline" size={12} color={COLORS.textTertiary} />
+                              <Text style={[styles.mobileEventMetaText, { flexShrink: 1 }]} numberOfLines={1}>{r.solicitante || '–'}</Text>
+                            </View>
+                          </View>
+                          <View style={styles.mobileEventFoot}>
+                            <View style={styles.mobileEventFootItem}>
+                              <Text style={styles.mobileEventFootLabel}>Recursos</Text>
+                              <Text style={styles.mobileEventFootValue}>{fmtNum(r.recursos)}</Text>
+                            </View>
+                            <View style={styles.mobileEventFootItem}>
+                              <Text style={styles.mobileEventFootLabel}>Asistencia</Text>
+                              <Text style={[styles.mobileEventFootValue, { color: r.tasaAsistencia === null ? COLORS.textTertiary : r.tasaAsistencia >= 70 ? COLORS.success : r.tasaAsistencia >= 40 ? COLORS.warning : COLORS.error }]}>
+                                {r.tasaAsistencia === null ? '–' : r.tasaAsistencia + '%'}
+                              </Text>
+                            </View>
+                            <View style={styles.mobileEventFootItem}>
+                              <Text style={styles.mobileEventFootLabel}>Presup.</Text>
+                              <Text style={styles.mobileEventFootValue}>{r.ejecucion === null ? '–' : r.ejecucion + '%'}</Text>
+                            </View>
                             <Ionicons name="open-outline" size={15} color={COLORS.primary} />
                           </View>
                         </TouchableOpacity>
                       ))}
                     </View>
-                  </ScrollView>
+                  ) : (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={styles.tInner}>
+                        <View style={styles.tableHeader}>
+                          <Text style={[styles.tCell, styles.tHead, styles.tColEvento]}>Evento</Text>
+                          <Text style={[styles.tCell, styles.tHead, styles.tColFecha]}>Fecha</Text>
+                          <Text style={[styles.tCell, styles.tHead, styles.tColSolicitante]}>Solicitante</Text>
+                          <Text style={[styles.tCell, styles.tHead, styles.tColRecursos, { textAlign: 'right' }]}>Recursos</Text>
+                          <Text style={[styles.tCell, styles.tHead, styles.tColEstado, { textAlign: 'center' }]}>Estado</Text>
+                          <Text style={[styles.tCell, styles.tHead, styles.tColAsistencia, { textAlign: 'center', color: COLORS.purple }]}>Asistencia</Text>
+                          <Text style={[styles.tCell, styles.tHead, styles.tColPresup]}>Presup. ejecutado</Text>
+                          <Text style={[styles.tCell, styles.tHead, styles.tColVer, { textAlign: 'center' }]}>Ver</Text>
+                        </View>
+                        {tablaEventosFiltrados.slice(0, 25).map((r, i) => (
+                          <TouchableOpacity key={`${i}-${r.id || r.nombre}`} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]} onPress={() => irDetalleEvento(r.id)} activeOpacity={0.6}>
+                            <Text style={[styles.tCell, styles.tColEvento, { fontWeight: '600' }]} numberOfLines={1}>{r.nombre || 'Sin nombre'}</Text>
+                            <Text style={[styles.tCell, styles.tColFecha]} numberOfLines={1}>{fechaTxt(r.fecha)}</Text>
+                            <Text style={[styles.tCell, styles.tColSolicitante, { color: COLORS.textSecondary }]} numberOfLines={1}>{r.solicitante || '–'}</Text>
+                            <Text style={[styles.tCell, styles.tColRecursos, { textAlign: 'right' }]} numberOfLines={1}>{fmtNum(r.recursos)}</Text>
+                            <View style={[styles.tCell, styles.tColEstado, { alignItems: 'center' }]}><EstadoBadge estado={r.estado} /></View>
+                            <Text style={[styles.tCell, styles.tColAsistencia, { textAlign: 'center', fontWeight: '700', color: r.tasaAsistencia === null ? COLORS.textTertiary : r.tasaAsistencia >= 70 ? COLORS.success : r.tasaAsistencia >= 40 ? COLORS.warning : COLORS.error }]}>
+                              {r.tasaAsistencia === null ? '–' : r.tasaAsistencia + '%'}
+                            </Text>
+                            <View style={[styles.tCell, styles.tColPresup]}>
+                              {r.ejecucion === null ? (
+                                <Text style={{ fontSize: 12, color: COLORS.textTertiary }}>–</Text>
+                              ) : (
+                                <View style={styles.ejecBar}>
+                                  <View style={styles.ejecBarTrack}>
+                                    <View style={[styles.ejecBarFill, { width: `${Math.min(100, Math.max(3, r.ejecucion))}%`, backgroundColor: r.ejecucion > 100 ? COLORS.error : r.ejecucion >= 70 ? COLORS.success : r.ejecucion >= 40 ? COLORS.warning : COLORS.info }]} />
+                                  </View>
+                                  <Text style={styles.ejecPct}>{r.ejecucion}%</Text>
+                                </View>
+                              )}
+                            </View>
+                            <View style={[styles.tCell, styles.tColVer, { alignItems: 'center' }]}>
+                              <Ionicons name="open-outline" size={15} color={COLORS.primary} />
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  )
                 ) : (
                   <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                     <Ionicons name="search-outline" size={26} color={COLORS.textTertiary} />
@@ -1961,6 +2007,31 @@ const styles = StyleSheet.create({
   tableRowAlt: { backgroundColor: '#FAFBFC' },
   tCell: { paddingHorizontal: 10, paddingVertical: 10, fontSize: 13, color: COLORS.textPrimary },
   tHead: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', color: COLORS.textSecondary },
+  tInner: { minWidth: '100%' },
+  tColEvento: { flex: 2, minWidth: 150 },
+  tColFecha: { flex: 1, minWidth: 92 },
+  tColSolicitante: { flex: 1.2, minWidth: 100 },
+  tColRecursos: { flex: 0.7, minWidth: 64 },
+  tColEstado: { flex: 0.9, minWidth: 100 },
+  tColAsistencia: { flex: 0.7, minWidth: 64 },
+  tColPresup: { flex: 1.1, minWidth: 120 },
+  tColVer: { flex: 0.3, minWidth: 36 },
+  mobileEventCard: {
+    backgroundColor: COLORS.surface, borderRadius: 12, padding: 12,
+    borderWidth: 1, borderColor: COLORS.border, marginBottom: 8,
+  },
+  mobileEventTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  mobileEventTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, lineHeight: 19 },
+  mobileEventMeta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 8 },
+  mobileEventMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
+  mobileEventMetaText: { fontSize: 12, color: COLORS.textSecondary },
+  mobileEventFoot: {
+    flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10,
+    paddingTop: 9, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border,
+  },
+  mobileEventFootItem: { flex: 1 },
+  mobileEventFootLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, color: COLORS.textTertiary },
+  mobileEventFootValue: { fontSize: 13, fontWeight: '800', color: COLORS.textPrimary, marginTop: 1 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 },
   badgeText: { fontSize: 11, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.55)', justifyContent: 'center', padding: 24 },

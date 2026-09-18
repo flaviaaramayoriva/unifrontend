@@ -1092,7 +1092,7 @@ const programacionEvento = () => {
           ) : (
             <>
               <Ionicons name={isEditing ? 'save-outline' : 'checkmark-circle-outline'} size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.listText}>Guardar evento</Text>
+              <Text style={styles.buttonText}>Guardar evento</Text>
             </>
           )}
         </TouchableOpacity>
