@@ -106,13 +106,6 @@ export default function HomeVistaOscura() {
             </View>
 
             <View style={styles.heroBody}>
-              <View style={styles.heroTag}>
-                <Text style={styles.heroTagText}>UNIFRANZ · EVENTOS</Text>
-              </View>
-              <Text style={styles.heroTitle}>
-                Profesional{'\n'}con propósito
-              </Text>
-              <Text style={styles.heroSub}>Aprende haciendo</Text>
               <Pressable
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.ctaBtn, pressed && styles.pressed]}
@@ -132,9 +125,8 @@ export default function HomeVistaOscura() {
             <Text style={styles.sectionTitle}>Facultades</Text>
           </View>
           <View style={styles.facGrid}>
-            {mockCategories.map((cat, idx) => {
+            {mockCategories.map((cat) => {
               const active = cat.id === selectedFacultad.id;
-              const isLastOdd = idx === mockCategories.length - 1 && mockCategories.length % 2 === 1;
               return (
                 <Pressable
                   key={cat.id}
@@ -144,14 +136,13 @@ export default function HomeVistaOscura() {
                   style={({ pressed }) => [
                     { width: tileWidth },
                     styles.facCard,
-                    isLastOdd && styles.facCardWide,
                     active && styles.facCardActive,
                     pressed && styles.pressed,
                   ]}
                 >
                   <Image source={cat.image} style={styles.facImage} resizeMode="cover" />
                   <LinearGradient
-                    colors={['transparent', 'rgba(8,11,17,0.9)']}
+                    colors={['rgba(14,18,25,0.45)', 'rgba(14,18,25,0.7)', 'rgba(8,11,17,0.92)']}
                     style={styles.facGradient}
                   />
                   {active && (
@@ -276,10 +267,6 @@ const styles = StyleSheet.create({
   },
   ghostBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   heroBody: { alignItems: 'flex-start' },
-  heroTag: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 12 },
-  heroTagText: { color: COLORS.bg, fontSize: 9, fontWeight: '800', letterSpacing: 1.6 },
-  heroTitle: { color: '#fff', fontSize: 34, fontWeight: '900', lineHeight: 40, marginBottom: 8 },
-  heroSub: { color: COLORS.primary, fontSize: 15, fontWeight: '700', marginBottom: 16 },
   ctaBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48,
     backgroundColor: COLORS.primary, paddingHorizontal: 20, borderRadius: 24,
@@ -298,7 +285,6 @@ const styles = StyleSheet.create({
     height: 118, borderRadius: 18, overflow: 'hidden',
     backgroundColor: COLORS.surface, borderWidth: 2, borderColor: 'transparent',
   },
-  facCardWide: { width: '100%' },
   facCardActive: { borderColor: COLORS.primary },
   facImage: { width: '100%', height: '100%' },
   facGradient: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
