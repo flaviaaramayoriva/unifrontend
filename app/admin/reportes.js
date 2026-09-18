@@ -1500,44 +1500,6 @@ const ReportesAvanzadosScreen = () => {
           </View>
         ) : (
           <>
-            {/* KPIs */}
-            <View style={styles.section}>
-              <SectionHeader
-                icon="pulse-outline"
-                title="Métricas del período"
-                subtitle={drillMes ? `Filtrado a ${MONTH_NAMES_FULL[parseInt(drillMes.slice(5, 7), 10) - 1]} ${drillMes.slice(0, 4)}` : (reporteDesde || reporteHasta ? `${reporteDesde || '…'} → ${reporteHasta || 'hoy'}` : 'Sin filtro')}
-                action={
-                  drillMes ? (
-                    <TouchableOpacity style={styles.exportBtn} onPress={limpiarDrill} accessibilityRole="button" accessibilityLabel="Quitar filtro de mes">
-                      <Ionicons name="close" size={14} color={COLORS.primary} />
-                      <Text style={styles.exportBtnText}>Quitar mes</Text>
-                    </TouchableOpacity>
-                  ) : null
-                }
-              />
-              <View style={styles.kpiGrid}>
-                {kpis.slice(0, 4).map(k => (
-                  <KpiCard key={k.label} {...k} />
-                ))}
-              </View>
-              <View style={styles.kpiGrid}>
-                {kpis.slice(4, 8).map(k => (
-                  <KpiCard key={k.label} {...k} />
-                ))}
-              </View>
-              <View style={styles.kpiGrid}>
-                {kpis.slice(8, 12).map(k => (
-                  <KpiCard key={k.label} {...k} />
-                ))}
-              </View>
-              {estadoFiltro ? (
-                <TouchableOpacity style={styles.filtroActivoChip} onPress={() => setEstadoFiltro(null)} accessibilityRole="button">
-                  <Ionicons name="funnel-outline" size={14} color={COLORS.white} />
-                  <Text style={styles.filtroActivoText}>Filtrando eventos: {ESTADOS_FILTRO.find(e => e.id === estadoFiltro)?.label}: toca para quitar</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-
             {/* Tendencia mensual */}
             <View style={styles.section}>
               <SectionHeader
@@ -1923,6 +1885,44 @@ const ReportesAvanzadosScreen = () => {
                   );
                 })
               ) : <Text style={styles.emptyNote}>Sin eventos para mostrar.</Text>}
+            </View>
+
+            {/* KPIs */}
+            <View style={styles.section}>
+              <SectionHeader
+                icon="pulse-outline"
+                title="Métricas del período"
+                subtitle={drillMes ? `Filtrado a ${MONTH_NAMES_FULL[parseInt(drillMes.slice(5, 7), 10) - 1]} ${drillMes.slice(0, 4)}` : (reporteDesde || reporteHasta ? `${reporteDesde || '…'} → ${reporteHasta || 'hoy'}` : 'Sin filtro')}
+                action={
+                  drillMes ? (
+                    <TouchableOpacity style={styles.exportBtn} onPress={limpiarDrill} accessibilityRole="button" accessibilityLabel="Quitar filtro de mes">
+                      <Ionicons name="close" size={14} color={COLORS.primary} />
+                      <Text style={styles.exportBtnText}>Quitar mes</Text>
+                    </TouchableOpacity>
+                  ) : null
+                }
+              />
+              <View style={styles.kpiGrid}>
+                {kpis.slice(0, 4).map(k => (
+                  <KpiCard key={k.label} {...k} />
+                ))}
+              </View>
+              <View style={styles.kpiGrid}>
+                {kpis.slice(4, 8).map(k => (
+                  <KpiCard key={k.label} {...k} />
+                ))}
+              </View>
+              <View style={styles.kpiGrid}>
+                {kpis.slice(8, 12).map(k => (
+                  <KpiCard key={k.label} {...k} />
+                ))}
+              </View>
+              {estadoFiltro ? (
+                <TouchableOpacity style={styles.filtroActivoChip} onPress={() => setEstadoFiltro(null)} accessibilityRole="button">
+                  <Ionicons name="funnel-outline" size={14} color={COLORS.white} />
+                  <Text style={styles.filtroActivoText}>Filtrando eventos: {ESTADOS_FILTRO.find(e => e.id === estadoFiltro)?.label}: toca para quitar</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </>
         )}
