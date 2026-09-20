@@ -4,6 +4,7 @@ import {
   FlatList, KeyboardAvoidingView, Platform, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
@@ -27,6 +28,7 @@ const QUICK_ACTIONS = [
 ];
 
 export default function ChatFlotante({ eventId, visible, onClose, userId, userName, userRole }) {
+  const router = useRouter();
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
@@ -94,6 +96,13 @@ try {
       };
 
       setMessages(prev => [...prev, botMessage]);
+
+      if (data.abrirFormulario) {
+        setTimeout(() => {
+          if (typeof onClose === 'function') onClose();
+          router.push(data.abrirFormulario);
+        }, 900);
+      }
     } catch (error) {
       console.error('❌ Error en ChatFlotante:', error);
       setMessages(prev => [...prev, {

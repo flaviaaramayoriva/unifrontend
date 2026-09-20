@@ -961,8 +961,8 @@ const ProyectoEvento = () => {
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictoDetectado, setConflictoDetectado] = useState(null);
 
-  const [nombreevento, setNombreevento] = useState('');
-  const [lugarevento, setLugarevento] = useState('');
+  const [nombreevento, setNombreevento] = useState(params.nombreevento || '');
+  const [lugarevento, setLugarevento] = useState(params.lugarevento || '');
   const [nombreResponsable, setNombreResponsable] = useState('');
   const [tiposSeleccionados, setTiposSeleccionados] = useState({});
   const [textoOtroTipo, setTextoOtroTipo] = useState('');
