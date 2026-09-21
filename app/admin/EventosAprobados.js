@@ -140,31 +140,8 @@ const EventosAprobadosPorFacultad = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [facultadFiltro, setFacultadFiltro] = useState('todas');
   const [faseFiltro, setFaseFiltro] = useState('1');
-  const [comiteEvents, setComiteEvents] = useState([]);
   const [myId, setMyId] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [vista, setVista] = useState('comite'); // 'creados' | 'comite'
-
-  const normalizeComite = useCallback((ev) => ({
-    ...ev,
-    title: ev.nombreevento || 'Sin título',
-    nombreevento: ev.nombreevento,
-    id: ev.idevento,
-    idevento: ev.idevento,
-    date: ev.fechaevento,
-    fechaevento: ev.fechaevento,
-    fecha_inicio: ev.fechaevento,
-    time: ev.horaevento || 'N/A',
-    horaevento: ev.horaevento,
-    location: ev.lugarevento || 'Sin ubicación',
-    lugarevento: ev.lugarevento,
-    organizer: ev.academico?.nombre || 'Sin organizador',
-    responsable_evento: ev.academico?.nombre || 'Sin organizador',
-    idfase: ev.idfase || 1,
-    faculty: ev.facultad || 'Sin facultad',
-    facultad: ev.facultad || 'Sin facultad',
-    estado: ev.estado || 'aprobado',
-  }), []);
 
   const fetchApprovedEventsByFaculty = useCallback(async () => {
     try {
@@ -187,30 +164,15 @@ const EventosAprobadosPorFacultad = () => {
       setEvents(mainList);
 
       try {
-        const [resComite, resProfile] = await Promise.all([
-          axios.get(`${API_BASE_URL}/dashboard/my-committee-events`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          axios.get(`${API_BASE_URL}/profile`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
-        ]);
+        const resProfile = await axios.get(`${API_BASE_URL}/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-        const dataComite = Array.isArray(resComite.data) ? resComite.data : (resComite.data?.events || []);
         const miId = resProfile.data?.id ?? resProfile.data?.idusuario ?? null;
         setMyId(miId);
         setUserRole(resProfile.data?.role || null);
-
-        const mapaComite = new Map();
-        dataComite.forEach(ev => { if (ev && ev.idevento) mapaComite.set(String(ev.idevento), ev); });
-        mainList.forEach(ev => {
-          if (ev && ev.idevento && (ev.Comite || []).some(m => String(m.idusuario) === String(miId))) {
-            mapaComite.set(String(ev.idevento), ev);
-          }
-        });
-        setComiteEvents([...mapaComite.values()].map(normalizeComite));
       } catch (e) {
-        console.warn('⚠️ No se pudo cargar comité/perfil:', e.message);
+        console.warn('⚠️ No se pudo cargar el perfil del usuario:', e.message);
       }
 
     } catch (error) {
@@ -229,7 +191,7 @@ const EventosAprobadosPorFacultad = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [router, normalizeComite]);
+  }, [router]);
 
   useEffect(() => {
     fetchApprovedEventsByFaculty();
@@ -263,19 +225,12 @@ const EventosAprobadosPorFacultad = () => {
 
   const curEvents = useMemo(() => {
     if (userRole !== 'academico') return sinInvalidos(events);
-    if (vista === 'creados') return sinInvalidos(events.filter(e => creadoPorMi(e) && !soyComite(e)));
-    if (vista === 'comite') return sinInvalidos(comiteEvents.filter(e => !creadoPorMi(e)));
-    return sinInvalidos(events);
-  }, [vista, events, comiteEvents, creadoPorMi, soyComite, sinInvalidos, userRole]);
+    return sinInvalidos(events.filter(e => creadoPorMi(e) && !soyComite(e)));
+  }, [events, creadoPorMi, soyComite, sinInvalidos, userRole]);
 
   const creadosCount = useMemo(
     () => events.filter(e => creadoPorMi(e) && !soyComite(e) && !esVencido(e) && !esRechazado(e) && !isEventPast(e)).length,
     [events, creadoPorMi, soyComite, esVencido, esRechazado]
-  );
-
-  const comiteCount = useMemo(
-    () => comiteEvents.filter(e => !creadoPorMi(e) && !esVencido(e) && !esRechazado(e) && !isEventPast(e)).length,
-    [comiteEvents, creadoPorMi, esVencido, esRechazado]
   );
 
   const faculties = useMemo(() => {
@@ -292,10 +247,9 @@ const EventosAprobadosPorFacultad = () => {
   const filteredEvents = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return curEvents.filter(event => {
-      const esComite = vista === 'comite';
-      if (!esComite && isEventPast(event)) return false;
-      if (!esComite && faseFiltro !== 'todas' && String(event.idfase || 1) !== faseFiltro) return false;
-      if (!esComite && facultadFiltro !== 'todas' && getEventFaculty(event) !== facultadFiltro) return false;
+      if (isEventPast(event)) return false;
+      if (faseFiltro !== 'todas' && String(event.idfase || 1) !== faseFiltro) return false;
+      if (facultadFiltro !== 'todas' && getEventFaculty(event) !== facultadFiltro) return false;
       if (term) {
         const haystack = [
           event.title, event.nombreevento,
@@ -306,7 +260,7 @@ const EventosAprobadosPorFacultad = () => {
       }
       return true;
     });
-  }, [curEvents, searchTerm, facultadFiltro, faseFiltro, vista]);
+  }, [curEvents, searchTerm, facultadFiltro, faseFiltro]);
 
   const phaseStats = useMemo(() => {
     const upcoming = curEvents.filter(e => !isEventPast(e));
@@ -336,10 +290,6 @@ const EventosAprobadosPorFacultad = () => {
     const eventId = item.id || item.idevento;
     const facultyName = getEventFaculty(item);
     const facultyColor = getFacultyColor(facultyName);
-
-    const miRolComite = vista === 'comite'
-      ? (item.Comite || item.comite || []).find(m => String(m.idusuario || m.user_id) === String(myId))?.rol_comite || null
-      : null;
 
     const dateStr = item.fechaevento || item.date;
     const parsedDate = parseLocalDate(dateStr);
@@ -441,13 +391,6 @@ const EventosAprobadosPorFacultad = () => {
               </View>
             )}
 
-            {miRolComite && (
-              <View style={styles.comiteBadge}>
-                <Ionicons name="people-outline" size={12} color={COLORS.info} />
-                <Text style={styles.comiteBadgeText} numberOfLines={1}>Comité · {miRolComite}</Text>
-              </View>
-            )}
-
             <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
           </View>
         </View>
@@ -474,7 +417,7 @@ const EventosAprobadosPorFacultad = () => {
   };
 
   const renderListHeader = () => {
-    const phase2Count = (vista === 'todos' || userRole !== 'academico') ? events.filter(e => e.idfase === 2 && !isEventPast(e)).length : 0;
+    const phase2Count = curEvents.filter(e => String(e.idfase || 1) === '2' && !isEventPast(e)).length;
 
     return (
       <View>
@@ -492,33 +435,7 @@ const EventosAprobadosPorFacultad = () => {
           </View>
         )}
 
-        {userRole === 'academico' && (
-          <View style={styles.vistaTabs}>
-            {[
-              { id: 'creados',  label: 'Creados por mí', count: creadosCount },
-              { id: 'comite',   label: 'Como comité',    count: comiteCount },
-            ].map(t => (
-              <TouchableOpacity
-                key={t.id}
-                style={[styles.vistaTab, vista === t.id && styles.vistaTabActive]}
-                onPress={() => setVista(t.id)}
-                accessibilityRole="button"
-              >
-                <Text style={[styles.vistaTabText, vista === t.id && styles.vistaTabTextActive]} numberOfLines={1}>
-                  {t.label}
-                </Text>
-                <View style={[styles.vistaTabCount, vista === t.id && styles.vistaTabCountActive]}>
-                  <Text style={[styles.vistaTabCountText, vista === t.id && styles.vistaTabCountTextActive]}>
-                    {t.count}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {vista !== 'comite' && (
-          <View style={styles.phaseTabs}>
+        <View style={styles.phaseTabs}>
           <TouchableOpacity
             style={[styles.phaseTab, faseFiltro === '1' && styles.phaseTabActive1]}
             onPress={() => setFaseFiltro('1')}
@@ -551,7 +468,6 @@ const EventosAprobadosPorFacultad = () => {
             </View>
           </TouchableOpacity>
         </View>
-        )}
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -625,7 +541,7 @@ const EventosAprobadosPorFacultad = () => {
           {filteredEvents.length} {filteredEvents.length === 1 ? 'evento' : 'eventos'}
           {searchTerm || facultadFiltro !== 'todas'
             ? ' encontrados'
-            : vista === 'creados' && userRole === 'academico' ? ' creados por ti' : vista === 'comite' ? ' como comité' : ` en Fase ${faseFiltro}`}
+            : userRole === 'academico' ? ' creados por ti' : ` en Fase ${faseFiltro}`}
         </Text>
       </View>
     );
@@ -681,10 +597,8 @@ const EventosAprobadosPorFacultad = () => {
             <Text style={styles.emptyTitle}>{curEvents.length === 0 ? 'No hay eventos' : 'Sin resultados'}</Text>
             <Text style={styles.emptyText}>
               {curEvents.length === 0
-                ? (vista === 'creados'
-                  ? 'Aún no has creado eventos aprobados.'
-                  : vista === 'comite'
-                    ? 'Aún no formas parte del comité de ningún evento aprobado.'
+                ? (userRole === 'academico'
+                    ? 'Aún no has creado eventos aprobados.'
                     : 'No se encontraron eventos aprobados organizados por facultad.')
                 : 'No hay eventos que coincidan con los filtros aplicados. Intenta ajustar la búsqueda.'}
             </Text>
@@ -902,59 +816,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   phaseTabCountTextActive: {
-    color: COLORS.white,
-  },
-
-  vistaTabs: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-  vistaTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  vistaTabActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  vistaTabText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.grayText,
-    flexShrink: 1,
-  },
-  vistaTabTextActive: {
-    color: COLORS.white,
-  },
-  vistaTabCount: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    paddingHorizontal: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  vistaTabCountActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  vistaTabCountText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  vistaTabCountTextActive: {
     color: COLORS.white,
   },
 
