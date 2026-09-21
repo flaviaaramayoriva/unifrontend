@@ -143,7 +143,7 @@ const EventosAprobadosPorFacultad = () => {
   const [comiteEvents, setComiteEvents] = useState([]);
   const [myId, setMyId] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [vista, setVista] = useState('creados'); // 'creados' | 'comite'
+  const [vista, setVista] = useState('comite'); // 'creados' | 'comite'
 
   const normalizeComite = useCallback((ev) => ({
     ...ev,
@@ -249,14 +249,19 @@ const EventosAprobadosPorFacultad = () => {
     });
   };
 
-  const curEvents = useMemo(() => {
-    if (userRole !== 'academico') return events;
-    if (vista === 'creados') return events.filter(e => String(e.idacademico || e.organizerId) === String(myId));
-    if (vista === 'comite') return comiteEvents;
-    return events;
-  }, [vista, events, comiteEvents, myId, userRole]);
+  const esVencido = useCallback((e) => String(e?.estado || '').toLowerCase() === 'vencido', []);
 
-  const creadosCount = useMemo(() => events.filter(e => String(e.idacademico || e.organizerId) === String(myId)).length, [events, myId]);
+  const curEvents = useMemo(() => {
+    const sinVencidos = (list) => list.filter(e => !esVencido(e));
+    if (userRole !== 'academico') return sinVencidos(events);
+    if (vista === 'creados') return sinVencidos(events.filter(e => String(e.idacademico || e.organizerId) === String(myId)));
+    if (vista === 'comite') return sinVencidos(comiteEvents);
+    return sinVencidos(events);
+  }, [vista, events, comiteEvents, myId, userRole, esVencido]);
+
+  const creadosCount = useMemo(() => events.filter(e => !esVencido(e) && String(e.idacademico || e.organizerId) === String(myId)).length, [events, myId, esVencido]);
+
+  const comiteCount = useMemo(() => comiteEvents.filter(e => !esVencido(e)).length, [comiteEvents, esVencido]);
 
   const faculties = useMemo(() => {
     const list = [...new Set(curEvents.map(getEventFaculty))].sort();
@@ -476,7 +481,7 @@ const EventosAprobadosPorFacultad = () => {
           <View style={styles.vistaTabs}>
             {[
               { id: 'creados',  label: 'Creados por mí', count: creadosCount },
-              { id: 'comite',   label: 'Como comité',    count: comiteEvents.length },
+              { id: 'comite',   label: 'Como comité',    count: comiteCount },
             ].map(t => (
               <TouchableOpacity
                 key={t.id}
