@@ -781,7 +781,7 @@ const adminActions = [
     { id: '4', title: 'Programación', icon: 'calendar-outline', route: '/admin/SeleccionarProgramacionEvento', color: COLORS.info, description: 'Elige evento aprobado para programar', tab: 'gestion' },
     { id: '5', title: 'Vencidos', icon: 'alert-circle-outline', route: '/admin/EventosVencidos', color: COLORS.secondary, description: 'Eventos vencidos', tab: 'gestion' },
     { id: '6', title: 'Completados', icon: 'trophy-outline', route: '/admin/EventosCompletados', color: COLORS.info, description: 'Fase 3 finalizada', tab: 'gestion' },
-    { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosAprobados', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
+    { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
     { id: '8', title: 'Reportes Avanzados', icon: 'document-text-outline', route: '/admin/reportes', color: COLORS.secondary, description: 'Generación de reportes detallados', tab: 'comite', badge: 'Nuevo' },
   ];
   const gestionTools = adminActions.filter((t) => t.tab === 'gestion');
