@@ -19,6 +19,7 @@ const COLORS = {
 
 const QUICK_ACTIONS = [
   { label: 'Crear evento', icon: '➕', action: 'Crear evento' },
+  { label: 'Cancelar', icon: '✖️', action: 'Cancelar' },
   { label: 'Resumen del día', icon: '📋', action: 'Resumen del día' },
   { label: 'Pendientes', icon: '⏳', action: 'Qué tengo pendiente' },
   { label: 'Eventos cercanos', icon: '📅', action: 'Eventos cercanos' },
@@ -131,12 +132,14 @@ try {
             onPress={() => handleSend(qa.action)}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 4,
-              backgroundColor: '#F3E5F5', paddingHorizontal: 10, paddingVertical: 6,
-              borderRadius: 14, borderWidth: 1, borderColor: '#9B59B622',
+              backgroundColor: qa.label === 'Cancelar' ? '#FDE8E8' : '#F3E5F5',
+              paddingHorizontal: 10, paddingVertical: 6,
+              borderRadius: 14, borderWidth: 1,
+              borderColor: qa.label === 'Cancelar' ? '#EF444466' : '#9B59B622',
             }}
           >
             <Text style={{ fontSize: 12 }}>{qa.icon}</Text>
-            <Text style={{ fontSize: 11, color: '#7B1FA2', fontWeight: '600' }}>{qa.label}</Text>
+            <Text style={{ fontSize: 11, color: qa.label === 'Cancelar' ? '#DC2626' : '#7B1FA2', fontWeight: '600' }}>{qa.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
