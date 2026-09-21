@@ -511,20 +511,52 @@ const HomeAcademicoScreen = () => {
   const [noLeidos, setNoLeidos] = useState({});
   const totalNoLeidos = Object.values(noLeidos).reduce((acc, n) => acc + (n || 0), 0);
 
+  const vistosChatRef = useRef(new Set());
+  const salaActivaRef = useRef(null);
+  const chatUserIdRef = useRef(null);
+  useEffect(() => { salaActivaRef.current = salaActiva; }, [salaActiva]);
+  useEffect(() => { chatUserIdRef.current = chatUserId; }, [chatUserId]);
+
   const recargarNotificaciones = useCallback(async () => {
     try {
       const token = await getTokenAsync();
       if (!token) return;
       const res = await axios.get(`${API_BASE_URL}/notificaciones`, { headers: { Authorization: `Bearer ${token}` } });
-      if (Array.isArray(res.data)) setNotifications(res.data);
+      if (!Array.isArray(res.data)) return;
+      setNotifications(res.data);
+
+      const pendChat = res.data.filter(n => String(n.tipo) === 'chat_privado' && !n.read && n.id_relacionado);
+      const yo = String(chatUserIdRef.current || '');
+      const sala = salaActivaRef.current;
+      const nuevas = pendChat.filter(n => {
+        const room = 'private_' + [yo, String(n.id_relacionado)].map(Number).sort((a, b) => a - b).join('_');
+        if (sala && String(sala) === room) return false;
+        return !vistosChatRef.current.has(String(n.id));
+      });
+      pendChat.forEach(n => vistosChatRef.current.add(String(n.id)));
+      if (nuevas.length > 0) {
+        const ultima = nuevas[0];
+        setToast({ type: 'chat', titulo: ultima.titulo || 'Nuevo mensaje privado', message: ultima.mensaje, chatId: ultima.id_relacionado });
+      }
     } catch (e) {}
   }, []);
+
+  useEffect(() => {
+    const t0 = setTimeout(() => recargarNotificaciones(), 2500);
+    const id = setInterval(() => recargarNotificaciones(), 20000);
+    const onFocus = () => recargarNotificaciones();
+    if (Platform.OS === 'web' && typeof window !== 'undefined') window.addEventListener('focus', onFocus);
+    return () => {
+      clearTimeout(t0);
+      clearInterval(id);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.removeEventListener('focus', onFocus);
+    };
+  }, [recargarNotificaciones]);
 
   const marcarnoLeido = (n) => {
     if (!n || !n.roomId) return;
     const k = String(n.roomId);
     setNoLeidos(prev => ({ ...prev, [k]: (prev[k] || 0) + 1 }));
-    if (String(n.type) === 'private') recargarNotificaciones();
   };
   const limpiarNoLeidos = (roomId) => {
     if (!roomId) return;
@@ -698,6 +730,7 @@ const HomeAcademicoScreen = () => {
     try {
       const token = await getTokenAsync();
       await axios.patch(`${API_BASE_URL}/notificaciones/${notifId}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      vistosChatRef.current.add(String(notifId));
       setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)));
     } catch (e) {}
   };
@@ -1002,14 +1035,28 @@ const adminActions = [
       />
 
       {toast ? (
-        <View
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => {
+            if (toast.chatId) {
+              const origen = { ...toast };
+              setToast(null);
+              abrirChat();
+              setChatAbrir({
+                idusuario: String(origen.chatId),
+                nombre: String(origen.titulo || '').replace(/\s+te envió un mensaje$/i, '').trim() || `Usuario ${origen.chatId}`,
+              });
+            } else {
+              setToast(null);
+            }
+          }}
           style={[
             styles.toast,
-            toast.type === 'success' ? styles.toastSuccess : toast.type === 'info' ? styles.toastInfo : styles.toastError,
+            toast.type === 'success' ? styles.toastSuccess : toast.type === 'chat' ? styles.toastInfo : toast.type === 'info' ? styles.toastInfo : styles.toastError,
           ]}
         >
           <Ionicons
-            name={toast.type === 'success' ? 'checkmark-circle' : toast.type === 'info' ? 'information-circle' : 'alert-circle'}
+            name={toast.type === 'success' ? 'checkmark-circle' : (toast.type === 'chat' || toast.type === 'info') ? 'information-circle' : 'alert-circle'}
             size={20}
             color="#fff"
           />
@@ -1017,7 +1064,7 @@ const adminActions = [
             <Text style={styles.toastTitle}>{toast.title}</Text>
             {toast.message ? <Text style={styles.toastMessage}>{toast.message}</Text> : null}
           </View>
-        </View>
+        </TouchableOpacity>
       ) : null}
 
       {!isDockExpanded && (
