@@ -101,6 +101,12 @@ const formatTime = (dateStr) => {
   return date.format('HH:mm');
 };
 
+const formatHora = (horaStr) => {
+  if (!horaStr) return '';
+  const m = String(horaStr).match(/(\d{1,2}):(\d{2})/);
+  return m ? `${String(m[1]).padStart(2, '0')}:${m[2]}` : '';
+};
+
 const DashboardCard = ({ title, value, icon, color, trend, description }) => {
   const safeColor = color || COLORS.primary;
   const trendColor = trend > 0 ? COLORS.success : COLORS.warning;
@@ -235,16 +241,23 @@ const ProgresoEventoCard = ({ evento, router }) => {
   let ctaSub = 'Consulta la información completa del evento.';
   let ctaOnPress = () => irA(`/admin/EventDetailScreen?eventId=${evento.idevento}`);
 
+  let finFecha = dayjs(evento.fechaevento);
+  if (finFecha.isValid() && evento.horaevento) {
+    const hm = String(evento.horaevento).match(/(\d{1,2}):(\d{1,2})/);
+    if (hm) finFecha = finFecha.hour(Number(hm[1])).minute(Number(hm[2]));
+  }
+  const eventoTerminado = finFecha.isValid() && finFecha.isBefore(dayjs());
+
   if (estKey === 'completado' || estKey === 'finalizado') {
     ctaLabel = 'Ver informe del evento';
     ctaIcon = 'document-text-outline';
     ctaSub = 'Proceso finalizado.';
     ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
-  } else if (esHoy && !terminal && faseActual >= 3) {
+  } else if (!terminal && faseActual >= 3 && eventoTerminado) {
     ctaTipo = 'hoy';
-    ctaLabel = 'Es hoy · Abrir informe del evento';
+    ctaLabel = 'Abrir informe del evento';
     ctaIcon = 'rocket-outline';
-    ctaSub = 'Registra asistencia, fotos y resultados. El informe cierra el proceso.';
+    ctaSub = 'El evento terminó. Registra asistencia, fotos y resultados. El informe cierra el proceso.';
     ctaOnPress = () => irA(`/admin/InformeEventoScreen?eventId=${evento.idevento}`);
   } else if (estKey === 'aprobado' && faseActual === 2) {
     ctaLabel = 'Siguiente paso: Programar evento';
@@ -252,7 +265,7 @@ const ProgresoEventoCard = ({ evento, router }) => {
     ctaSub = 'El comité aprobó tu evento. Elige fecha y recursos disponibles.';
     ctaOnPress = () => irA('/admin/SeleccionarProgramacionEvento');
   } else if (estKey === 'aprobado') {
-    ctaSub = 'Fecha y recursos asignados. El informe se habilitará el día del evento.';
+    ctaSub = 'Fecha y recursos asignados. El informe se habilitará cuando termine el evento.';
   } else if (estKey === 'pendiente' || estKey === 'proyectado') {
     ctaTipo = 'deshabilitado';
     ctaLabel = 'Enviado a revisión';
@@ -274,7 +287,7 @@ const ProgresoEventoCard = ({ evento, router }) => {
 
       <View style={styles.progMetaRow}>
         <Ionicons name="calendar-outline" size={14} color={COLORS.textTertiary} />
-        <Text style={styles.progMetaText}>{formatDate(evento.fechaevento)}{formatTime(evento.fechaevento) ? ` · ${formatTime(evento.fechaevento)}` : ''}</Text>
+<Text style={styles.progMetaText}>{formatDate(evento.fechaevento)}{formatHora(evento.horaevento) ? ` · ${formatHora(evento.horaevento)}` : ''}</Text>
       </View>
       {evento.lugarevento ? (
         <View style={styles.progMetaRow}>
@@ -768,7 +781,7 @@ const adminActions = [
     { id: '4', title: 'Programación', icon: 'calendar-outline', route: '/admin/SeleccionarProgramacionEvento', color: COLORS.info, description: 'Elige evento aprobado para programar', tab: 'gestion' },
     { id: '5', title: 'Vencidos', icon: 'alert-circle-outline', route: '/admin/EventosVencidos', color: COLORS.secondary, description: 'Eventos vencidos', tab: 'gestion' },
     { id: '6', title: 'Completados', icon: 'trophy-outline', route: '/admin/EventosCompletados', color: COLORS.info, description: 'Fase 3 finalizada', tab: 'gestion' },
-    { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosComite', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
+    { id: '7', title: 'Comité', icon: 'people-outline', route: '/admin/EventosAprobados', color: COLORS.secondary, description: 'Eventos donde eres comité', tab: 'comite' },
     { id: '8', title: 'Reportes Avanzados', icon: 'document-text-outline', route: '/admin/reportes', color: COLORS.secondary, description: 'Generación de reportes detallados', tab: 'comite', badge: 'Nuevo' },
   ];
   const gestionTools = adminActions.filter((t) => t.tab === 'gestion');
