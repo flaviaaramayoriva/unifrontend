@@ -250,18 +250,33 @@ const EventosAprobadosPorFacultad = () => {
   };
 
   const esVencido = useCallback((e) => String(e?.estado || '').toLowerCase() === 'vencido', []);
+  const esRechazado = useCallback((e) => String(e?.estado || '').toLowerCase() === 'rechazado', []);
+  const creadoPorMi = useCallback((e) => String(e.idacademico ?? e.organizerId ?? '') === String(myId), [myId]);
+  const soyComite = useCallback((e) => {
+    const miembros = e.Comite || e.comite;
+    return Array.isArray(miembros) && miembros.some(m => String(m.idusuario ?? m.user_id) === String(myId));
+  }, [myId]);
+  const sinInvalidos = useCallback(
+    (list) => list.filter(e => !esVencido(e) && !esRechazado(e) && !isEventPast(e)),
+    [esVencido, esRechazado]
+  );
 
   const curEvents = useMemo(() => {
-    const sinVencidos = (list) => list.filter(e => !esVencido(e));
-    if (userRole !== 'academico') return sinVencidos(events);
-    if (vista === 'creados') return sinVencidos(events.filter(e => String(e.idacademico || e.organizerId) === String(myId)));
-    if (vista === 'comite') return sinVencidos(comiteEvents);
-    return sinVencidos(events);
-  }, [vista, events, comiteEvents, myId, userRole, esVencido]);
+    if (userRole !== 'academico') return sinInvalidos(events);
+    if (vista === 'creados') return sinInvalidos(events.filter(e => creadoPorMi(e) && !soyComite(e)));
+    if (vista === 'comite') return sinInvalidos(comiteEvents.filter(e => !creadoPorMi(e)));
+    return sinInvalidos(events);
+  }, [vista, events, comiteEvents, creadoPorMi, soyComite, sinInvalidos, userRole]);
 
-  const creadosCount = useMemo(() => events.filter(e => !esVencido(e) && String(e.idacademico || e.organizerId) === String(myId)).length, [events, myId, esVencido]);
+  const creadosCount = useMemo(
+    () => events.filter(e => creadoPorMi(e) && !soyComite(e) && !esVencido(e) && !esRechazado(e) && !isEventPast(e)).length,
+    [events, creadoPorMi, soyComite, esVencido, esRechazado]
+  );
 
-  const comiteCount = useMemo(() => comiteEvents.filter(e => !esVencido(e)).length, [comiteEvents, esVencido]);
+  const comiteCount = useMemo(
+    () => comiteEvents.filter(e => !creadoPorMi(e) && !esVencido(e) && !esRechazado(e) && !isEventPast(e)).length,
+    [comiteEvents, creadoPorMi, esVencido, esRechazado]
+  );
 
   const faculties = useMemo(() => {
     const list = [...new Set(curEvents.map(getEventFaculty))].sort();
