@@ -506,6 +506,7 @@ const HomeAcademicoScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [proximoEvento, setProximoEvento] = useState(null);
+  const [eventoEnProgreso, setEventoEnProgreso] = useState(null);
   const [eventosPorEstado, setEventosPorEstado] = useState(null);
   const [tendenciaMensual, setTendenciaMensual] = useState(null);
   const [estadosBarra, setEstadosBarra] = useState(null);
@@ -622,12 +623,13 @@ const HomeAcademicoScreen = () => {
     const headers = { Authorization: `Bearer ${token}` };
 
     try {
-      const [prof, statsRes, histRes, comiteRes, notifRes] = await Promise.allSettled([
+      const [prof, statsRes, histRes, comiteRes, notifRes, misEventosRes] = await Promise.allSettled([
         axios.get(`${API_BASE_URL}/profile`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-stats`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-historical`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-committee-events`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/notificaciones`, { headers, timeout: 8000 }),
+        axios.get(`${API_BASE_URL}/eventos/aprobados-por-facultad`, { headers, timeout: 8000 }),
       ]);
 
       const counts = { aprobado: 0, pendiente: 0, rechazado: 0, vencido: 0, cancelado: 0, completado: 0 };
@@ -638,9 +640,43 @@ const HomeAcademicoScreen = () => {
         const u = prof.value.data;
         setNombreUsuario(u.nombre || params.nombre || 'Académico');
         setTelegramUsername(u.telegram_username || '');
-        setChatUserId(u.id || u.idusuario || u.user_id || u.iduser || null);
+        const myId = u.id || u.idusuario || u.user_id || u.iduser || null;
+        setChatUserId(myId);
         const chatId = u.telegram_chat_id;
         setIsTelegramLinked(chatId !== null && chatId !== undefined && chatId !== '' && chatId !== 'null' && chatId !== 'undefined');
+
+        // Fetch event created by me that is currently in progress
+        if (misEventosRes.status === 'fulfilled' && misEventosRes.value && misEventosRes.value.data) {
+          const misEventos = safeArray(misEventosRes.value.data);
+          const misEventosCreados = misEventos.filter(ev => String(ev.idacademico ?? ev.organizerId ?? '') === String(myId));
+          // Evento en progreso: hoy o en fase 2/3
+          const enProgreso = misEventosCreados
+            .filter(ev => {
+              const dateStr = ev.fechaevento;
+              if (!dateStr) return false;
+              let eventDate;
+              if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) eventDate = dayjs(dateStr, 'YYYY-MM-DD');
+              else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) eventDate = dayjs(dateStr, 'DD/MM/YYYY');
+              else eventDate = dayjs(dateStr);
+              if (!eventDate.isValid()) return false;
+              const hoy = dayjs().startOf('day');
+              const esHoy = eventDate.isSame(hoy);
+              const esFaseAvanzada = (ev.idfase === 2 || ev.idfase === 3);
+              return esHoy || esFaseAvanzada;
+            })
+            .sort((a, b) => {
+              // Priorizar los que son hoy
+              const da = dayjs(a.fechaevento).startOf('day');
+              const db = dayjs(b.fechaevento).startOf('day');
+              const hoy = dayjs().startOf('day');
+              const aHoy = da.isSame(hoy);
+              const bHoy = db.isSame(hoy);
+              if (aHoy && !bHoy) return -1;
+              if (!aHoy && bHoy) return 1;
+              return da.diff(db);
+            });
+          setEventoEnProgreso(enProgreso[0] || null);
+        }
       }
 
       if (statsRes.status === 'fulfilled' && statsRes.value && statsRes.value.data) {
@@ -808,9 +844,26 @@ const adminActions = [
           <ProyectarEventoCTA onPress={() => handleActionPress('/admin/ProyectoEvento')} />
         </View>
 
-        {proximoEvento ? (
+        {(proximoEvento || eventoEnProgreso) ? (
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-            <ProgresoEventoCard evento={proximoEvento} router={router} />
+            <View style={styles.dualCardRow}>
+              {proximoEvento ? (
+                <View style={styles.dualCardCol}>
+                  <Text style={styles.dualCardLabel}>Próximo evento</Text>
+                  <ProgresoEventoCard evento={proximoEvento} router={router} />
+                </View>
+              ) : (
+                <View style={styles.dualCardColEmpty} />
+              )}
+              {eventoEnProgreso ? (
+                <View style={styles.dualCardCol}>
+                  <Text style={styles.dualCardLabel}>Evento en progreso</Text>
+                  <ProgresoEventoCard evento={eventoEnProgreso} router={router} />
+                </View>
+              ) : (
+                <View style={styles.dualCardColEmpty} />
+              )}
+            </View>
           </View>
         ) : null}
 
@@ -1445,6 +1498,24 @@ const styles = StyleSheet.create({
     padding: 14, borderRadius: 12, backgroundColor: '#0088cc', marginBottom: 12,
   },
   telegramBlueBtnText: { fontSize: 15, fontWeight: '700', color: COLORS.white },
+
+  dualCardRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dualCardCol: {
+    flex: 1,
+  },
+  dualCardColEmpty: {
+    flex: 1,
+  },
+  dualCardLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
 
   loadingBox: { alignItems: 'center', paddingVertical: 60 },
   loadingText: { marginTop: 10, fontSize: 14, color: COLORS.textSecondary },
