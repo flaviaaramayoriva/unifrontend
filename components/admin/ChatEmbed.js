@@ -636,7 +636,7 @@ const VistaEvento = ({ evento, userId, userRole, userName, onVolver, onRoomChang
   );
 };
 
-const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, activeRoom = null }) => {
+const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, activeRoom = null, comandoAbrirPrivado = null, onComandoAplicado = null }) => {
   const [tabMain, setTabMain]           = useState('grupo'); // 'grupo' | 'personal'
   const [vista, setVista]               = useState('eventos'); // 'chat' (general) | 'eventos'
   const [eventos, setEventos]           = useState([]);
@@ -831,6 +831,20 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
     const roomId = roomPrivadaId(userId, contacto.idusuario);
     setChatPrivado({ ...contacto, roomId });
   };
+
+  useEffect(() => {
+    if (!comandoAbrirPrivado || !comandoAbrirPrivado.idusuario || !userId) return;
+    if (!chatPrivado || String(chatPrivado.idusuario) !== String(comandoAbrirPrivado.idusuario)) {
+      const roomId = roomPrivadaId(userId, comandoAbrirPrivado.idusuario);
+      setChatPrivado({
+        idusuario: String(comandoAbrirPrivado.idusuario),
+        nombre: comandoAbrirPrivado.nombre || `Usuario ${comandoAbrirPrivado.idusuario}`,
+        roomId,
+      });
+    }
+    if (onComandoAplicado) onComandoAplicado();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comandoAbrirPrivado, userId]);
 
   const qGrupo = busquedaGrupo.trim().toLowerCase();
   const eventosFiltrados = qGrupo

@@ -507,13 +507,24 @@ const HomeAcademicoScreen = () => {
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [salaActiva, setSalaActiva] = useState(null);
   const [chatUserId, setChatUserId] = useState(null);
+  const [chatAbrir, setChatAbrir] = useState(null);
   const [noLeidos, setNoLeidos] = useState({});
   const totalNoLeidos = Object.values(noLeidos).reduce((acc, n) => acc + (n || 0), 0);
+
+  const recargarNotificaciones = useCallback(async () => {
+    try {
+      const token = await getTokenAsync();
+      if (!token) return;
+      const res = await axios.get(`${API_BASE_URL}/notificaciones`, { headers: { Authorization: `Bearer ${token}` } });
+      if (Array.isArray(res.data)) setNotifications(res.data);
+    } catch (e) {}
+  }, []);
 
   const marcarnoLeido = (n) => {
     if (!n || !n.roomId) return;
     const k = String(n.roomId);
     setNoLeidos(prev => ({ ...prev, [k]: (prev[k] || 0) + 1 }));
+    if (String(n.type) === 'private') recargarNotificaciones();
   };
   const limpiarNoLeidos = (roomId) => {
     if (!roomId) return;
@@ -890,12 +901,20 @@ const adminActions = [
                     onPress={async () => {
                       if (!notif.read) await markAsRead(notif.id);
                       setShowNotifications(false);
+                      if (String(notif.tipo) === 'chat_privado' && notif.id_relacionado && chatUserId) {
+                        const nombre = String(notif.titulo || '').replace(/\s+te envió un mensaje$/i, '').trim() || `Usuario ${notif.id_relacionado}`;
+                        abrirChat();
+                        setChatAbrir({ idusuario: String(notif.id_relacionado), nombre });
+                      }
                     }}
                   >
                     <View style={[styles.notifDot, { backgroundColor: notif.read ? COLORS.border : COLORS.primary }]} />
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.notifMsg, { fontWeight: notif.read ? '400' : '600' }]}>{notif.mensaje}</Text>
-                      <Text style={styles.notifTime}>{new Date(notif.createdAt || Date.now()).toLocaleDateString()}</Text>
+                      <Text style={[styles.notifSender, { fontWeight: notif.read ? '400' : '600' }]} numberOfLines={1}>
+                        {notif.titulo || (String(notif.tipo) === 'chat_privado' ? 'Nuevo mensaje privado' : 'Notificación')}
+                      </Text>
+                      <Text style={[styles.notifMsg, { fontWeight: notif.read ? '400' : '600' }]} numberOfLines={2}>{notif.mensaje}</Text>
+                      <Text style={styles.notifTime}>{new Date(notif.created_at || notif.createdAt || Date.now()).toLocaleString()}</Text>
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -1053,6 +1072,8 @@ const adminActions = [
                 noLeidos={noLeidos}
                 activeRoom={isChatOpen && chatUserId ? salaActiva : null}
                 onRoomChange={(r) => { setSalaActiva(r); limpiarNoLeidos(r); }}
+                comandoAbrirPrivado={chatAbrir}
+                onComandoAplicado={() => setChatAbrir(null)}
               />
             </View>
           </View>
@@ -1345,6 +1366,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderColor: COLORS.border, gap: 12,
   },
   notifDot: { width: 10, height: 10, borderRadius: 5 },
+  notifSender: { fontSize: 13, color: COLORS.primary, marginBottom: 2 },
   notifMsg: { fontSize: 14, color: COLORS.textPrimary, marginBottom: 3 },
   notifTime: { fontSize: 12, color: COLORS.textTertiary },
 
