@@ -111,6 +111,24 @@ const parseEventDate = (dateStr) => {
     return eventDate < today;
   };
 
+  // Días transcurridos desde la fecha del evento (negativo si es futuro)
+  const getDaysSinceEvent = (event) => {
+    const eventDate = parseEventDate(getRawEventDate(event));
+    if (!eventDate) return null;
+    const today = new Date();
+    eventDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return Math.round((today - eventDate) / (1000 * 60 * 60 * 24));
+  };
+
+  // En ventana de informe: el evento terminó hace 1-3 días y aún no está cerrado
+  const isInReportWindow = (event) => {
+    const st = String(event.estado || '').toLowerCase();
+    if (['rechazado', 'cancelado', 'finalizado', 'completado'].includes(st)) return false;
+    const days = getDaysSinceEvent(event);
+    return days !== null && days >= 1 && days <= 3;
+  };
+
   const formatSubmittedDate = (date) => {
     if (!date) return 'N/A';
     const now = new Date();
@@ -197,11 +215,12 @@ const EventosCompletados = () => {
     });
   };
 
-  // Solo eventos Fase 3 completados (o finalizados/completados)
+  // Solo eventos Fase 3 completados (o finalizados/completados) + eventos recientes en ventana de informe
   const completedEvents = useMemo(() => {
     return events.filter(e =>
       ['finalizado', 'completado'].includes(String(e.estado || '').toLowerCase()) ||
-      ((e.idfase === 3 || String(e.idfase) === '3') && isEventPast(e))
+      ((e.idfase === 3 || String(e.idfase) === '3') && isEventPast(e)) ||
+      isInReportWindow(e)
     );
   }, [events]);
 
@@ -269,21 +288,30 @@ const EventosCompletados = () => {
         <View style={[styles.facultyBar, { backgroundColor: facultyColor }]} />
 
         <View style={styles.cardContent}>
-          <View style={styles.cardTopRow}>
-            <View style={styles.titleWrap}>
-              <Text style={styles.eventTitle} numberOfLines={2}>
-                {item.title || item.nombreevento || 'Sin título'}
-              </Text>
-              <Text style={styles.eventId}>#{eventId}</Text>
-            </View>
+<View style={styles.cardTopRow}>
+          <View style={styles.titleWrap}>
+            <Text style={styles.eventTitle} numberOfLines={2}>
+              {item.title || item.nombreevento || 'Sin título'}
+            </Text>
+            <Text style={styles.eventId}>#{eventId}</Text>
+          </View>
 
+          {['finalizado', 'completado'].includes(String(item.estado || '').toLowerCase()) ? (
             <View style={styles.statusPill}>
               <Ionicons name="checkmark-done-circle" size={12} color={COLORS.success} />
               <Text style={[styles.statusPillText, { color: COLORS.success }]}>
                 Completado
               </Text>
             </View>
-          </View>
+          ) : (
+            <View style={[styles.statusPill, { backgroundColor: COLORS.warning + '1A' }]}>
+              <Ionicons name="document-text-outline" size={12} color={COLORS.warning} />
+              <Text style={[styles.statusPillText, { color: COLORS.warning }]}>
+                Informe pendiente
+              </Text>
+            </View>
+          )}
+        </View>
 
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={14} color={COLORS.grayText} />
