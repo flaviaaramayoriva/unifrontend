@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import CustomAlert from '../../components/CustomAlert';
+import { resolveCurrentPhase as resolveCurrentPhaseTimeline } from '../../components/admin/EventProcessTimeline';
 
 //const API_BASE_URL = 'https://evento.cidtec-uc.com';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
@@ -186,7 +187,7 @@ const EventDetailScreenVencido = () => {
       2: { label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.secondary },
       3: { label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
       4: { label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.purple },
-      5: { label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.grayText },
+      5: { label: 'Cierre e informe', icon: 'checkmark-done-outline', color: COLORS.grayText },
     };
     const config = phaseConfig[faseToShow.nrofase] || { label: `Fase ${faseToShow.nrofase}`, icon: 'help-circle-outline', color: COLORS.grayText };
     return { number: faseToShow.nrofase, label: config.label, key: `phase${faseToShow.nrofase}`, color: config.color, icon: config.icon };
@@ -241,6 +242,8 @@ const EventDetailScreenVencido = () => {
         title: eventData.nombreevento || 'Sin título',
         date: formatDate(eventData.fechaevento),
         time: formatTime(eventData.horaevento),
+        fechaEventoRaw: eventData.fechaevento || null,
+        horaevento: eventData.horaevento || null,
         location: eventData.lugarevento || 'Ubicación no especificada',
         organizer: eventData.responsable_evento || 'Organizador no especificado',
         attendees: eventData.participantes_esperados || 'No especificado',
@@ -439,7 +442,7 @@ const EventDetailScreenVencido = () => {
     );
   }
 
-  const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
+  const phaseInfo = getCurrentPhaseFromFases([{ nrofase: resolveCurrentPhaseTimeline(event.status, event.idfase, event.fases, event.fechaEventoRaw, event.horaevento).phase }]);
 
   return (
     <View style={styles.screenContainer}>

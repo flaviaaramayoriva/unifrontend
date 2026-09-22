@@ -16,6 +16,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { resolveCurrentPhase as resolveCurrentPhaseTimeline } from '../../components/admin/EventProcessTimeline';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
@@ -114,9 +115,9 @@ const STATUS_CONFIG = {
 const PHASES = [
   { number: 1, label: 'Planeación', icon: 'document-text-outline', color: COLORS.info },
   { number: 2, label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.secondary },
-  { number: 3, label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
+  { number: 3, label: 'Programación', icon: 'calendar-outline', color: COLORS.success },
   { number: 4, label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.purple },
-  { number: 5, label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.grayText },
+  { number: 5, label: 'Cierre e informe', icon: 'checkmark-done-outline', color: COLORS.grayText },
 ];
 
 const StatusPill = ({ status }) => {
@@ -191,9 +192,9 @@ const EventDetailScreen = () => {
     const phaseConfig = {
       1: { label: 'Planeación', icon: 'document-text-outline', color: COLORS.info },
       2: { label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.secondary },
-      3: { label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
+      3: { label: 'Programación', icon: 'calendar-outline', color: COLORS.success },
       4: { label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.purple },
-      5: { label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.grayText },
+      5: { label: 'Cierre e informe', icon: 'checkmark-done-outline', color: COLORS.grayText },
     };
 
     const config = phaseConfig[faseToShow.nrofase] || {
@@ -684,7 +685,9 @@ const EventDetailScreen = () => {
     );
   }
 
-  const phaseInfo = getCurrentPhaseFromFases(event.fases);
+  const phaseInfo = getCurrentPhaseFromFases(event.fases && event.fases.length > 0
+    ? event.fases
+    : [{ nrofase: resolveCurrentPhaseTimeline(event.status, event.idfase, event.fases, event.fechaEventoRaw, event.horaevento).phase }]);
   const currentPhase = phaseInfo.number;
 
   const canPrint = event.status === 'aprobado';

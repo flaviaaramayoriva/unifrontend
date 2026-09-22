@@ -14,6 +14,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { resolveCurrentPhase as resolveCurrentPhaseTimeline } from '../../components/admin/EventProcessTimeline';
 
 let determinedApiBaseUrl;
 /*if (Platform.OS === 'android') {
@@ -136,7 +137,7 @@ const getCurrentPhaseFromFases = useCallback((fases) => {
     2: { label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.secondary },
     3: { label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
     4: { label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.purple },
-    5: { label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.grayText },
+    5: { label: 'Cierre e informe', icon: 'checkmark-done-outline', color: COLORS.grayText },
   };
 
   const config = phaseConfig[faseToShow.nrofase] || {
@@ -195,6 +196,8 @@ console.log('objetivos_pdi del backend:', eventData.objetivos_pdi);
   title: eventData.nombreevento || 'Sin título',
   date: formatDate(eventData.fechaevento),
   time: formatTime(eventData.horaevento),
+  fechaEventoRaw: eventData.fechaevento || null,
+  horaevento: eventData.horaevento || null,
   location: eventData.lugarevento || 'Ubicación no especificada',
   organizer: eventData.responsable_evento || 'Organizador no especificado',
   attendees: eventData.participantes_esperados || 'No especificado',
@@ -398,7 +401,7 @@ console.log('objetivos_pdi del backend:', eventData.objetivos_pdi);
           <Text style={styles.eventTitle}>{event.title}</Text>
           
         {event && (() => {
-        const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
+        const phaseInfo = getCurrentPhaseFromFases([{ nrofase: resolveCurrentPhaseTimeline(event.status, event.idfase, event.fases, event.fechaEventoRaw, event.horaevento).phase }]);
         return (
           <View style={[styles.phaseBadge, { backgroundColor: phaseInfo.color }]}>
             <Ionicons name={phaseInfo.icon} size={16} color={COLORS.white} />

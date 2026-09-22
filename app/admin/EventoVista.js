@@ -14,7 +14,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import EventProcessTimeline from '../../components/admin/EventProcessTimeline';
+import EventProcessTimeline, { resolveCurrentPhase as resolveCurrentPhaseTimeline } from '../../components/admin/EventProcessTimeline';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
@@ -115,7 +115,7 @@ const EventoVistaScreen = () => {
       2: { label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.secondary },
       3: { label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
       4: { label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.purple },
-      5: { label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.grayText },
+      5: { label: 'Cierre e informe', icon: 'checkmark-done-outline', color: COLORS.grayText },
     };
     const config = phaseConfig[faseToShow.nrofase] || { label: `Fase ${faseToShow.nrofase}`, icon: 'help-circle-outline', color: COLORS.grayText };
     return { number: faseToShow.nrofase, label: config.label, key: `phase${faseToShow.nrofase}`, color: config.color, icon: config.icon };
@@ -226,7 +226,7 @@ const EventoVistaScreen = () => {
         <View style={styles.card}>
           <Text style={styles.eventTitle}>{event.title}</Text>
           {(() => {
-            const phaseInfo = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
+            const phaseInfo = getCurrentPhaseFromFases([{ nrofase: resolveCurrentPhaseTimeline(event.status, event.idfase, event.fases, event.fechaEventoRaw || event.fechaevento, event.time || event.horaevento).phase }]);
             return (
               <View style={[styles.phaseBadge, { backgroundColor: phaseInfo.color }]}>
                 <Ionicons name={phaseInfo.icon} size={16} color={COLORS.white} />

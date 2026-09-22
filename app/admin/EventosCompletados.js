@@ -197,10 +197,11 @@ const EventosCompletados = () => {
     });
   };
 
-  // Solo eventos Fase 3 completados
+  // Solo eventos Fase 3 completados (o finalizados/completados)
   const completedEvents = useMemo(() => {
     return events.filter(e =>
-      (e.idfase === 3 || String(e.idfase) === '3') && isEventPast(e)
+      ['finalizado', 'completado'].includes(String(e.estado || '').toLowerCase()) ||
+      ((e.idfase === 3 || String(e.idfase) === '3') && isEventPast(e))
     );
   }, [events]);
 

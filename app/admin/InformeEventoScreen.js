@@ -19,6 +19,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { resolveCurrentPhase, PHASES as PHASES_TIMELINE } from '../../components/admin/EventProcessTimeline';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 const TOKEN_KEY = 'adminAuthToken';
@@ -60,6 +61,13 @@ const formatDate = (dateString) => {
 const formatTime = (timeString) => {
   if (!timeString) return 'No especificada';
   return timeString;
+};
+
+const getFaseResuelta = (event) => {
+  if (!event) return { number: 1, label: 'Planeación' };
+  const resolved = resolveCurrentPhase(event.status, event.idfase, null, event.fechaEventoRaw, event.horaevento);
+  const phase = PHASES_TIMELINE.find(p => p.number === resolved.phase) || PHASES_TIMELINE[0];
+  return { number: phase.number, label: phase.label };
 };
 
 const emptyEgresoRow = () => ({ descripcion: '', cantidad: '', precio_unitario: '', total: 0 });
@@ -119,6 +127,8 @@ const InformeEventoScreen = () => {
         title: eventData.nombreevento || 'Sin título',
         date: formatDate(eventData.fechaevento),
         time: formatTime(eventData.horaevento),
+        fechaEventoRaw: eventData.fechaevento || null,
+        horaevento: eventData.horaevento || null,
         location: eventData.lugarevento || 'Ubicación no especificada',
         status: (eventData.estado || 'pendiente').toLowerCase(),
         imageUrl: eventData.imagenUrl || null,
@@ -214,13 +224,13 @@ const InformeEventoScreen = () => {
 
     if (Platform.OS === 'web') {
       const confirmado = window.confirm(
-        '¿Estás seguro de finalizar este informe? El evento pasará a Fase 3 y no podrá ser modificado.'
+        '¿Estás seguro de finalizar este informe? El evento pasará a Fase 5 (Cierre e informe) y no podrá ser modificado.'
       );
       if (confirmado) confirmarYFinalizar();
     } else {
       Alert.alert(
         'Finalizar Informe',
-        '¿Estás seguro de finalizar este informe? El evento pasará a Fase 3 y no podrá ser modificado.',
+        '¿Estás seguro de finalizar este informe? El evento pasará a Fase 5 (Cierre e informe) y no podrá ser modificado.',
         [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Sí, finalizar', style: 'destructive', onPress: confirmarYFinalizar }
@@ -310,7 +320,7 @@ const InformeEventoScreen = () => {
              style: 'default',
              onPress: () => { 
                console.log('regresando');
-               router.replace('/admin/EventosCompletos');
+               router.replace('/admin/EventosCompletados');
              }
           }
         ],
@@ -651,10 +661,10 @@ const InformeEventoScreen = () => {
           <View style={styles.badgesRow}>
             <View style={[styles.phaseBadge, { backgroundColor: COLORS.info }]}>
               <Ionicons name="flag-outline" size={14} color={COLORS.white} />
-              <Text style={styles.phaseBadgeText}>Fase {event?.idfase || 1}</Text>
+              <Text style={styles.phaseBadgeText}>Fase {getFaseResuelta(event).number}: {getFaseResuelta(event).label}</Text>
             </View>
-            <View style={[styles.phaseBadge, { backgroundColor: event?.status === 'aprobado' ? COLORS.success : COLORS.warning }]}>
-              <Ionicons name={event?.status === 'aprobado' ? 'checkmark-circle' : 'time-outline'} size={14} color={COLORS.white} />
+            <View style={[styles.phaseBadge, { backgroundColor: ['aprobado', 'finalizado', 'completado'].includes(event?.status) ? COLORS.success : COLORS.warning }]}>
+              <Ionicons name={['aprobado', 'finalizado', 'completado'].includes(event?.status) ? 'checkmark-circle' : 'time-outline'} size={14} color={COLORS.white} />
               <Text style={styles.phaseBadgeText}>{event?.status}</Text>
             </View>
           </View>
@@ -1218,7 +1228,7 @@ const InformeEventoScreen = () => {
                   <View style={styles.badgesRow}>
                     <View style={[styles.phaseBadge, { backgroundColor: COLORS.info }]}>
                       <Ionicons name="flag-outline" size={14} color={COLORS.white} />
-                      <Text style={styles.phaseBadgeText}>Fase {event?.idfase || 1}</Text>
+                      <Text style={styles.phaseBadgeText}>Fase {getFaseResuelta(event).number}: {getFaseResuelta(event).label}</Text>
                     </View>
                     <View style={[styles.phaseBadge, { backgroundColor: event?.status === 'aprobado' ? COLORS.success : COLORS.warning }]}>
                       <Ionicons name={event?.status === 'aprobado' ? 'checkmark-circle' : 'time-outline'} size={14} color={COLORS.white} />

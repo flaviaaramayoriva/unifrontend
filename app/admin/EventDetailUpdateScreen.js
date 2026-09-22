@@ -18,7 +18,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import EventProcessTimeline from '../../components/admin/EventProcessTimeline';
+import EventProcessTimeline, { resolveCurrentPhase as resolveCurrentPhaseTimeline } from '../../components/admin/EventProcessTimeline';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://unibackend-production-a0f8.up.railway.app';
 
@@ -209,7 +209,7 @@ const EventDetailScreen = () => {
       2: { label: 'Revisión y aprobación', icon: 'clipboard-outline', color: COLORS.secondary },
       3: { label: 'Programación del evento', icon: 'calendar-outline', color: COLORS.success },
       4: { label: 'Ejecución', icon: 'play-circle-outline', color: COLORS.purple },
-      5: { label: 'Cierre y evaluación', icon: 'checkmark-done-outline', color: COLORS.grayText },
+      5: { label: 'Cierre e informe', icon: 'checkmark-done-outline', color: COLORS.grayText },
     };
     const config = phaseConfig[faseToShow.nrofase] || { label: `Fase ${faseToShow.nrofase}`, icon: 'help-circle-outline', color: COLORS.grayText };
     return { number: faseToShow.nrofase, label: config.label, key: `phase${faseToShow.nrofase}`, color: config.color, icon: config.icon };
@@ -350,7 +350,7 @@ const EventDetailScreen = () => {
   const handleFinalizarEvento = async () => {
     Alert.alert(
       'Finalizar Evento',
-      '¿Estás seguro de que deseas finalizar este evento? Pasará a la Fase 3 y su estado cambiará a "finalizado".',
+      '¿Estás seguro de que deseas finalizar este evento? Pasará a la Fase 5 (Cierre e informe) y su estado cambiará a "finalizado".',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -365,12 +365,12 @@ const EventDetailScreen = () => {
               }
 
               const response = await axios.put(
-                `${API_BASE_URL}/eventos/${event.id}/finalizar-informe`,
+                `${API_BASE_URL}/proyectos/${event.id}/finalizar-informe`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
               );
 
-              Alert.alert('✅ Éxito', response.data.message || 'El evento ha pasado a Fase 3 correctamente.');
+              Alert.alert('✅ Éxito', response.data.message || 'El evento ha pasado a Cierre e informe (Fase 5) correctamente.');
               
               // Actualizar el estado local para reflejar el cambio inmediatamente en la UI
               setEvent(prev => ({ ...prev, idfase: 3, status: 'finalizado' }));
@@ -431,7 +431,8 @@ const EventDetailScreen = () => {
   const canFinalize = isTodayOrPast && event.status === 'aprobado' && event.idfase === 2;
 
   const aprobado = event.status === 'aprobado';
-  const phaseNow = getCurrentPhaseFromFases([{ nrofase: event.idfase }]);
+  const phaseResuelta = resolveCurrentPhaseTimeline(event.status, event.idfase, event.fases, event.fechaEventoRaw || event.fechaevento, event.time || event.horaevento).phase;
+  const phaseNow = getCurrentPhaseFromFases([{ nrofase: phaseResuelta }]);
   const diasParaAprobar = daysRemaining === null ? '—' : daysRemaining <= 0 ? 'Hoy' : `${daysRemaining} día${daysRemaining === 1 ? '' : 's'}`;
 
   const pdiList = (event.objetivosPDI || []).map(pdi => typeof pdi === 'string' ? pdi : (pdi?.nombre || pdi?.nombreobjetivo || `Objetivo PDI`));
