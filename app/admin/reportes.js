@@ -11,9 +11,9 @@ import * as Sharing from 'expo-sharing';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { PieChart, BarChart } from 'react-native-chart-kit';
+import { PieChart } from 'react-native-chart-kit';
 import * as FileSystem from 'expo-file-system';
-import Svg, { Path, Line as SvgLine, Circle, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Line as SvgLine, Circle, Text as SvgText, Rect as SvgRect } from 'react-native-svg';
 import AdminHeader from '../../components/admin/AdminHeader';
 
 const COLORS = {
@@ -243,6 +243,81 @@ const TrendLine = ({ labels = [], months = [], values = [], valuesYoy = null, wi
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: padL, paddingRight: padR }}>
         {labels.slice(0, n).map((lb, i) => (
           <Text key={`x${i}`} numberOfLines={1} style={{ flex: 1, fontSize: 10, color: COLORS.textTertiary, textAlign: 'center' }}>
+            {lb}
+          </Text>
+        ))}
+      </View>
+    </>
+  );
+};
+
+// ── Gráfico de barras propio (evita el BarChart de chart-kit, que sale en
+//    fondo oscuro en web) ──────────────────────────────────────────────────
+const MiniBarChart = ({ labels = [], values = [], width, height = 220, color = COLORS.primary, onBar }) => {
+  const n = Math.min(labels.length, values.length);
+  if (!n) return null;
+
+  const num = (v) => {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : 0;
+  };
+
+  const padL = 36, padR = 10, padT = 12, padB = 4;
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+  const baseY = padT + innerH;
+
+  const dataVals = values.slice(0, n).map(num);
+  const maxV = Math.max(...dataVals, 1);
+
+  const slot = innerW / n;
+  const barW = Math.min(slot * 0.55, 34);
+
+  const ticks = 4;
+  const yTicks = Array.from({ length: ticks + 1 }, (_, t) => (maxV * t) / ticks);
+  const Y = (v) => padT + innerH - (num(v) / maxV) * innerH;
+
+  return (
+    <>
+      <Svg width={width} height={height}>
+        {yTicks.map((tick, t) => (
+          <SvgLine
+            key={`g${t}`}
+            x1={padL}
+            x2={width - padR}
+            y1={Y(tick)}
+            y2={Y(tick)}
+            stroke={COLORS.border}
+            strokeWidth={0.5}
+            strokeDasharray="4 4"
+          />
+        ))}
+        {yTicks.map((tick, t) => (
+          <SvgText key={`yl${t}`} x={padL - 6} y={Y(tick) + 3} fontSize={10} fill={COLORS.textTertiary} textAnchor="end">
+            {Math.round(tick * 10) / 10}
+          </SvgText>
+        ))}
+        {dataVals.map((v, i) => {
+          const x = padL + i * slot + (slot - barW) / 2;
+          const barH = Math.max(baseY - Y(v), 0);
+          return (
+            <SvgRect
+              key={`b${i}`}
+              x={x}
+              y={baseY - barH}
+              width={barW}
+              height={barH}
+              rx={4}
+              fill={color}
+              fillOpacity={0.92}
+              onPress={() => onBar && onBar(i)}
+            />
+          );
+        })}
+      </Svg>
+      <View style={{ flexDirection: 'row', paddingLeft: padL, paddingRight: padR }}>
+        {labels.slice(0, n).map((lb, i) => (
+          <Text key={`bxl${i}`} numberOfLines={1} style={{ flex: 1, fontSize: 10, color: COLORS.textTertiary, textAlign: 'center' }}>
             {lb}
           </Text>
         ))}
@@ -1689,27 +1764,16 @@ const ReportesAvanzadosScreen = () => {
               <SectionHeader icon="bar-chart-outline" title="Inscritos por mes" subtitle="Toca una barra para filtrar" />
               <View style={styles.card}>
                 {inscritosPorMes.labels.length ? (
-                  <BarChart
-                    data={{
-                      labels: inscritosPorMes.labels,
-                      datasets: [{ data: inscritosPorMes.values }],
-                    }}
-                    onDataPointClick={({ index }) => {
-                      const mesKey = inscritosPorMes.meses[index];
-                      if (mesKey) aplicarMes(mesKey);
-                    }}
+                  <MiniBarChart
+                    labels={inscritosPorMes.labels}
+                    values={inscritosPorMes.values}
                     width={chartWidth}
                     height={220}
-                    fromZero
-                    chartConfig={{
-                      backgroundGradientFrom: COLORS.surface,
-                      backgroundGradientTo: COLORS.surface,
-                      decimalPlaces: 0,
-                      color: (o = 1) => `rgba(46, 16, 101, ${o})`,
-                      labelColor: (o = 1) => `rgba(100, 116, 139, ${o})`,
-                      propsForBackgroundLines: { stroke: COLORS.border, strokeWidth: 0.5 },
+                    color={COLORS.primary}
+                    onBar={(i) => {
+                      const mesKey = inscritosPorMes.meses[i];
+                      if (mesKey) aplicarMes(mesKey);
                     }}
-                    style={{ borderRadius: 10 }}
                   />
                 ) : <Text style={styles.emptyNote}>Sin datos de inscripciones para este rango.</Text>}
               </View>
