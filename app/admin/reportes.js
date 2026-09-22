@@ -441,6 +441,7 @@ const ReportesAvanzadosScreen = () => {
   const [menuExportAbierto, setMenuExportAbierto] = useState(false);
   const [mesModalAbierto, setMesModalAbierto] = useState(false);
   const [eventoExpandido, setEventoExpandido] = useState(null);
+  const [introVisible, setIntroVisible] = useState(true);
 
   // Interactividad
   const [tendenciaMetrica, setTendenciaMetrica] = useState('eventos');
@@ -1500,6 +1501,76 @@ const ReportesAvanzadosScreen = () => {
           </View>
         ) : (
           <>
+            {/* Intro: qué contiene esta pantalla y cómo usarla */}
+            <View style={styles.introCard}>
+              <TouchableOpacity
+                style={styles.introHeader}
+                onPress={() => setIntroVisible(v => !v)}
+                accessibilityRole="button"
+                accessibilityLabel={introVisible ? 'Esconder ayuda' : 'Mostrar ayuda'}
+              >
+                <View style={styles.introHeaderLeft}>
+                  <View style={styles.introIconWrap}>
+                    <Ionicons name="help-circle-outline" size={18} color={COLORS.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.introTitle}>¿Para qué sirve esta pantalla?</Text>
+                    <Text style={styles.introSub}>Resumen de la actividad académica en el período seleccionado</Text>
+                  </View>
+                </View>
+                <Ionicons name={introVisible ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textTertiary} />
+              </TouchableOpacity>
+              {introVisible ? (
+                <View style={styles.introBody}>
+                  <View style={styles.introRow}>
+                    <Ionicons name="information-circle-outline" size={16} color={COLORS.info} style={styles.introRowIcon} />
+                    <Text style={styles.introRowText}>
+                      <Text style={styles.introRowTextStrong}>Qué verás aquí: </Text>
+                      cuántas solicitudes y eventos han existido, cuántos fueron aprobados, cuántas personas asistieron y cómo se usó el presupuesto.
+                    </Text>
+                  </View>
+                  <View style={styles.introRow}>
+                    <Ionicons name="albums-outline" size={16} color={COLORS.purple} style={styles.introRowIcon} />
+                    <Text style={styles.introRowText}>
+                      <Text style={styles.introRowTextStrong}>Tarjetas (KPIs): </Text>
+                      resumen rápido del período. Toca una tarjeta para filtrar la lista por ese estado (por ejemplo, «Aprobados»).
+                    </Text>
+                  </View>
+                  <View style={styles.introRow}>
+                    <Ionicons name="trending-up-outline" size={16} color={COLORS.cyan} style={styles.introRowIcon} />
+                    <Text style={styles.introRowText}>
+                      <Text style={styles.introRowTextStrong}>Gráficos: </Text>
+                      evolución mensual (toca un punto para ver ese mes), distribución por estado y rankings de recursos, facultades, tipos y solicitantes.
+                    </Text>
+                  </View>
+                  <View style={styles.introRow}>
+                    <Ionicons name="reader-outline" size={16} color={COLORS.primary} style={styles.introRowIcon} />
+                    <Text style={styles.introRowText}>
+                      <Text style={styles.introRowTextStrong}>Tabla y detalle por evento: </Text>
+                      cada evento con su estado; ábrelo para ver fichas con presupuesto, asistencia y balance.
+                    </Text>
+                  </View>
+                  <View style={styles.introRow}>
+                    <Ionicons name="calendar-outline" size={16} color={COLORS.warning} style={styles.introRowIcon} />
+                    <Text style={styles.introRowText}>
+                      <Text style={styles.introRowTextStrong}>Filtros: </Text>
+                      fija las fechas (Desde / Hasta) o usa los atajos «7 días», «Este mes», «3 meses», «Año» y «Todo» para acotar la información.
+                    </Text>
+                  </View>
+                  <View style={styles.introRow}>
+                    <Ionicons name="document-text-outline" size={16} color={COLORS.success} style={styles.introRowIcon} />
+                    <Text style={styles.introRowText}>
+                      <Text style={styles.introRowTextStrong}>Documentos: </Text>
+                      usa el icono de documento (esquina superior derecha) para generar el informe en PDF, Excel, CSV o imprimir el reporte.
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={styles.introBtn} onPress={() => setIntroVisible(false)} accessibilityRole="button" accessibilityLabel="Cerrar ayuda">
+                    <Text style={styles.introBtnText}>Entendido</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+
             {/* Tendencia mensual */}
             <View style={styles.section}>
               <SectionHeader
@@ -1959,6 +2030,34 @@ const styles = StyleSheet.create({
   retryBtn: { marginTop: 14, backgroundColor: COLORS.primary, paddingHorizontal: 22, paddingVertical: 10, borderRadius: 10 },
   retryBtnText: { color: COLORS.white, fontWeight: '700' },
   section: { marginBottom: 22 },
+  introCard: {
+    borderRadius: 14, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, marginBottom: 20, overflow: 'hidden',
+  },
+  introHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  introHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  introIconWrap: {
+    width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.primaryLight,
+  },
+  introTitle: { fontSize: 13, fontWeight: '800', color: COLORS.textPrimary },
+  introSub: { fontSize: 11.5, color: COLORS.textTertiary, marginTop: 1 },
+  introBody: {
+    borderTopWidth: 1, borderTopColor: COLORS.divider,
+    paddingHorizontal: 14, paddingVertical: 4,
+  },
+  introRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 7 },
+  introRowIcon: { marginTop: 2 },
+  introRowText: { flex: 1, fontSize: 12.5, color: COLORS.textSecondary, lineHeight: 18 },
+  introRowTextStrong: { fontWeight: '700', color: COLORS.textPrimary },
+  introBtn: {
+    alignSelf: 'flex-start', backgroundColor: COLORS.primary,
+    borderRadius: 9, paddingHorizontal: 18, paddingVertical: 8, marginTop: 8, marginBottom: 14,
+  },
+  introBtnText: { color: COLORS.white, fontSize: 12.5, fontWeight: '700' },
   sectionHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: 12, paddingHorizontal: 2,
