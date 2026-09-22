@@ -66,6 +66,9 @@ export default function ChatFlotante({ eventId, visible, onClose, userId, userNa
     setInput('');
     setLoading(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 40000);
+
 try {
       const effectiveEventId = (eventId && eventId !== 'null' && eventId !== 'undefined') ? eventId : null;
 
@@ -81,7 +84,10 @@ try {
             text: m.message
           })),
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -105,12 +111,15 @@ try {
         }, 900);
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('❌ Error en ChatFlotante:', error);
       setMessages(prev => [...prev, {
         id: `error_${Date.now()}`,
         userId: 0,
         userName: '  Error',
-        message: 'Error de conexión. Verifica tu internet e intenta de nuevo.',
+        message: error.name === 'AbortError'
+          ? '⏱️ La IA tardó demasiado en responder. Inténtalo de nuevo o escribe "Resumen del día".'
+          : 'Error de conexión. Verifica tu internet e intenta de nuevo.',
         esBot: true,
       }]);
     } finally {

@@ -1891,16 +1891,6 @@ const ReportesAvanzadosScreen = () => {
                               <Text style={styles.mobileEventFootLabel}>Recursos</Text>
                               <Text style={styles.mobileEventFootValue}>{fmtNum(r.recursos)}</Text>
                             </View>
-                            <View style={styles.mobileEventFootItem}>
-                              <Text style={styles.mobileEventFootLabel}>Asistencia</Text>
-                              <Text style={[styles.mobileEventFootValue, { color: r.tasaAsistencia === null ? COLORS.textTertiary : r.tasaAsistencia >= 70 ? COLORS.success : r.tasaAsistencia >= 40 ? COLORS.warning : COLORS.error }]}>
-                                {r.tasaAsistencia === null ? '–' : r.tasaAsistencia + '%'}
-                              </Text>
-                            </View>
-                            <View style={styles.mobileEventFootItem}>
-                              <Text style={styles.mobileEventFootLabel}>Presup.</Text>
-                              <Text style={styles.mobileEventFootValue}>{r.ejecucion === null ? '–' : r.ejecucion + '%'}</Text>
-                            </View>
                             <Ionicons name="open-outline" size={15} color={COLORS.primary} />
                           </View>
                         </TouchableOpacity>
@@ -1915,8 +1905,6 @@ const ReportesAvanzadosScreen = () => {
                           <Text style={[styles.tCell, styles.tHead, styles.tColSolicitante]}>Solicitante</Text>
                           <Text style={[styles.tCell, styles.tHead, styles.tColRecursos, { textAlign: 'right' }]}>Recursos</Text>
                           <Text style={[styles.tCell, styles.tHead, styles.tColEstado, { textAlign: 'center' }]}>Estado</Text>
-                          <Text style={[styles.tCell, styles.tHead, styles.tColAsistencia, { textAlign: 'center', color: COLORS.purple }]}>Asistencia</Text>
-                          <Text style={[styles.tCell, styles.tHead, styles.tColPresup]}>Presup. ejecutado</Text>
                           <Text style={[styles.tCell, styles.tHead, styles.tColVer, { textAlign: 'center' }]}>Ver</Text>
                         </View>
                         {tablaEventosFiltrados.slice(0, 25).map((r, i) => (
@@ -1926,21 +1914,6 @@ const ReportesAvanzadosScreen = () => {
                             <Text style={[styles.tCell, styles.tColSolicitante, { color: COLORS.textSecondary }]} numberOfLines={1}>{r.solicitante || '–'}</Text>
                             <Text style={[styles.tCell, styles.tColRecursos, { textAlign: 'right' }]} numberOfLines={1}>{fmtNum(r.recursos)}</Text>
                             <View style={[styles.tCell, styles.tColEstado, { alignItems: 'center' }]}><EstadoBadge estado={r.estado} /></View>
-                            <Text style={[styles.tCell, styles.tColAsistencia, { textAlign: 'center', fontWeight: '700', color: r.tasaAsistencia === null ? COLORS.textTertiary : r.tasaAsistencia >= 70 ? COLORS.success : r.tasaAsistencia >= 40 ? COLORS.warning : COLORS.error }]}>
-                              {r.tasaAsistencia === null ? '–' : r.tasaAsistencia + '%'}
-                            </Text>
-                            <View style={[styles.tCell, styles.tColPresup]}>
-                              {r.ejecucion === null ? (
-                                <Text style={{ fontSize: 12, color: COLORS.textTertiary }}>–</Text>
-                              ) : (
-                                <View style={styles.ejecBar}>
-                                  <View style={styles.ejecBarTrack}>
-                                    <View style={[styles.ejecBarFill, { width: `${Math.min(100, Math.max(3, r.ejecucion))}%`, backgroundColor: r.ejecucion > 100 ? COLORS.error : r.ejecucion >= 70 ? COLORS.success : r.ejecucion >= 40 ? COLORS.warning : COLORS.info }]} />
-                                  </View>
-                                  <Text style={styles.ejecPct}>{r.ejecucion}%</Text>
-                                </View>
-                              )}
-                            </View>
                             <View style={[styles.tCell, styles.tColVer, { alignItems: 'center' }]}>
                               <Ionicons name="open-outline" size={15} color={COLORS.primary} />
                             </View>
