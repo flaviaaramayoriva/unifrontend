@@ -11,8 +11,9 @@ import * as Sharing from 'expo-sharing';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { PieChart, LineChart, BarChart } from 'react-native-chart-kit';
+import { PieChart, BarChart } from 'react-native-chart-kit';
 import * as FileSystem from 'expo-file-system';
+import Svg, { Path, Line as SvgLine, Circle, Text as SvgText } from 'react-native-svg';
 import AdminHeader from '../../components/admin/AdminHeader';
 
 const COLORS = {
@@ -165,6 +166,88 @@ const EstadoBadge = ({ estado }) => {
       <Ionicons name={s.icon} size={12} color={s.text} />
       <Text style={[styles.badgeText, { color: s.text }]}>{capStr(estado)}</Text>
     </View>
+  );
+};
+
+// ── Gráfico de línea + área propio (evita el LineChart de chart-kit, que no
+//    dibuja la línea en web) ─────────────────────────────────────────────────
+const TrendLine = ({ labels = [], months = [], values = [], valuesYoy = null, width, height = 230, color = '#3B82F6', onPoint }) => {
+  const n = Math.min(labels.length, values.length);
+  if (!n) return null;
+
+  const num = (v) => {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : 0;
+  };
+
+  const padL = 36, padR = 10, padT = 12, padB = 30;
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+
+  const todas = [...values.slice(0, n), ...(valuesYoy ? valuesYoy.slice(0, n) : [])].map(num);
+  let maxV = 0;
+  let minV = 0;
+  todas.forEach(v => {
+    if (v > maxV) maxV = v;
+    if (v < minV) minV = v;
+  });
+  if (maxV === minV) maxV = minV + 1;
+
+  const X = (i) => padL + (n <= 1 ? innerW / 2 : (i * innerW) / (n - 1));
+  const Y = (v) => padT + innerH - ((num(v) - minV) / (maxV - minV)) * innerH;
+  const baseY = padT + innerH;
+
+  const ticks = 4;
+  const yTicks = Array.from({ length: ticks + 1 }, (_, t) => minV + ((maxV - minV) * t) / ticks);
+  const pts = (arr) => arr.slice(0, n).map((v, i) => `${X(i)},${Y(v)}`).join(' L');
+  const lineD = `M${pts(values)}`;
+  const areaD = `M${pts(values)} L${X(n - 1)},${baseY} L${X(0)},${baseY} Z`;
+  const yoyD = valuesYoy ? `M${pts(valuesYoy)}` : null;
+
+  return (
+    <>
+      <Svg width={width} height={height}>
+        {yTicks.map((tick, t) => (
+          <SvgLine
+            key={`g${t}`}
+            x1={padL}
+            x2={width - padR}
+            y1={Y(tick)}
+            y2={Y(tick)}
+            stroke={COLORS.border}
+            strokeWidth={0.5}
+            strokeDasharray="4 4"
+          />
+        ))}
+        {yTicks.map((tick, t) => (
+          <SvgText key={`yl${t}`} x={padL - 6} y={Y(tick) + 3} fontSize={10} fill={COLORS.textTertiary} textAnchor="end">
+            {Math.round(tick * 10) / 10}
+          </SvgText>
+        ))}
+        <Path d={areaD} fill={color + '1A'} strokeWidth={0} />
+        {yoyD ? <Path d={yoyD} fill="none" stroke="#94A3B8" strokeWidth={1.6} strokeDasharray="6 6" /> : null}
+        <Path d={lineD} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        {values.slice(0, n).map((v, i) => (
+          <Circle
+            key={`d${i}`}
+            cx={X(i)}
+            cy={Y(v)}
+            r={5}
+            fill={color}
+            stroke="#FFFFFF"
+            strokeWidth={1.6}
+            onPress={() => onPoint && onPoint(i)}
+          />
+        ))}
+      </Svg>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: padL, paddingRight: padR }}>
+        {labels.slice(0, n).map((lb, i) => (
+          <Text key={`x${i}`} numberOfLines={1} style={{ flex: 1, fontSize: 10, color: COLORS.textTertiary, textAlign: 'center' }}>
+            {lb}
+          </Text>
+        ))}
+      </View>
+    </>
   );
 };
 
@@ -719,10 +802,18 @@ const ReportesAvanzadosScreen = () => {
   }, [repOperacionales]);
 
   const trendData = useMemo(() => {
-    const mes = repMensual;
-    const meses = mes.map(m => m.mes);
+    const mes = Array.isArray(repMensual) ? repMensual : [];
     const seriePorMes = {};
-    mes.forEach(m => { seriePorMes[m.mes] = m; });
+    mes.forEach(m => { if (m && m.mes) seriePorMes[m.mes] = m; });
+    // Ordena de más antiguo a más reciente y normaliza los números
+    const meses = Object.keys(seriePorMes).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    const fila = (key) => {
+      const r = seriePorMes[key];
+      return {
+        total: Number(r?.totalEvents) || 0,
+        aprob: Number(r?.aprobado) || 0,
+      };
+    };
     // Capa comparativa YoY: para cada mes del rango actual, su equivalente de hace 12 meses
     let anioTot = null;
     let anioApr = null;
@@ -732,21 +823,21 @@ const ReportesAvanzadosScreen = () => {
         d.setFullYear(d.getFullYear() - 1);
         const pk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const row = seriePorMes[pk];
-        return row ? (row.totalEvents || 0) : 0;
+        return row ? (Number(row.totalEvents) || 0) : 0;
       });
       anioApr = meses.map(key => {
         const d = new Date(parseInt(key.slice(0, 4), 10), parseInt(key.slice(5, 7), 10) - 1, 1);
         d.setFullYear(d.getFullYear() - 1);
         const pk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const row = seriePorMes[pk];
-        return row ? (row.aprobado || 0) : 0;
+        return row ? (Number(row.aprobado) || 0) : 0;
       });
     }
     return {
-      labels: mes.map(m => monthLabel(m.mes)),
+      labels: meses.map(monthLabel),
       meses,
-      total: mes.map(m => m.totalEvents || 0),
-      aprob: mes.map(m => m.aprobado || 0),
+      total: meses.map(k => fila(k).total),
+      aprob: meses.map(k => fila(k).aprob),
       anioTot,
       anioApr,
     };
@@ -1590,41 +1681,18 @@ const ReportesAvanzadosScreen = () => {
               />
               <View style={styles.card}>
                 {trendData.labels.length ? (
-                  <LineChart
-                    data={{
-                      labels: trendData.labels,
-                      datasets: [
-                        {
-                          data: tendenciaMetrica === 'aprobados' ? trendData.aprob : trendData.total,
-                          color: (o = 1) => `rgba(${tendenciaMetrica === 'aprobados' ? '22, 163, 74' : '59, 130, 246'}, ${o})`,
-                          strokeWidth: 2.5,
-                        },
-                        ...(comparacionTipo === 'anio' && trendData.anioTot ? [{
-                          data: tendenciaMetrica === 'aprobados' ? trendData.anioApr : trendData.anioTot,
-                          color: (o = 1) => `rgba(148, 163, 184, ${o})`,
-                          strokeWidth: 1.6,
-                          strokeDashArray: [6, 6],
-                          withDots: false,
-                        }] : []),
-                      ],
-                    }}
-                    onDataPointClick={({ index }) => {
-                      const mesKey = trendData.meses[index];
+                  <TrendLine
+                    height={230}
+                    width={chartWidth}
+                    labels={trendData.labels}
+                    months={trendData.meses}
+                    values={tendenciaMetrica === 'aprobados' ? trendData.aprob : trendData.total}
+                    valuesYoy={comparacionTipo === 'anio' ? (tendenciaMetrica === 'aprobados' ? trendData.anioApr : trendData.anioTot) : null}
+                    color={tendenciaMetrica === 'aprobados' ? '#16A34A' : '#3B82F6'}
+                    onPoint={(i) => {
+                      const mesKey = trendData.meses[i];
                       if (mesKey) aplicarMes(mesKey);
                     }}
-                    width={chartWidth}
-                    height={230}
-                    fromZero
-                    chartConfig={{
-                      backgroundGradientFrom: COLORS.surface,
-                      backgroundGradientTo: COLORS.surface,
-                      decimalPlaces: 0,
-                      color: (o = 1) => `rgba(196, 75, 10, ${o})`,
-                      labelColor: (o = 1) => `rgba(100, 116, 139, ${o})`,
-                      propsForBackgroundLines: { stroke: COLORS.border, strokeWidth: 0.5 },
-                      propsForDots: { r: '5', strokeWidth: '1.5', stroke: '#ffffff' },
-                    }}
-                    bezier
                   />
                 ) : <Text style={styles.emptyNote}>Sin datos mensuales para este rango.</Text>}
                 <Text style={styles.chartHint}>
