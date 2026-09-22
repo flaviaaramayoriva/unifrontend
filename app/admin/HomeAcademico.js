@@ -506,7 +506,6 @@ const HomeAcademicoScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [proximoEvento, setProximoEvento] = useState(null);
-  const [eventoEnProgreso, setEventoEnProgreso] = useState(null);
   const [eventosPorEstado, setEventosPorEstado] = useState(null);
   const [tendenciaMensual, setTendenciaMensual] = useState(null);
   const [estadosBarra, setEstadosBarra] = useState(null);
@@ -623,79 +622,25 @@ const HomeAcademicoScreen = () => {
     const headers = { Authorization: `Bearer ${token}` };
 
     try {
-      const [prof, statsRes, histRes, comiteRes, notifRes, misEventosRes] = await Promise.allSettled([
+      const [prof, statsRes, histRes, comiteRes, notifRes] = await Promise.allSettled([
         axios.get(`${API_BASE_URL}/profile`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-stats`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-historical`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/dashboard/my-committee-events`, { headers, timeout: 8000 }),
         axios.get(`${API_BASE_URL}/notificaciones`, { headers, timeout: 8000 }),
-        axios.get(`${API_BASE_URL}/eventos/aprobados-por-facultad`, { headers, timeout: 8000 }),
       ]);
 
       const counts = { aprobado: 0, pendiente: 0, rechazado: 0, vencido: 0, cancelado: 0, completado: 0 };
       let events = [];
       let statsCards = [];
 
-      // Process profile first to get user ID
-      let myId = null;
       if (prof.status === 'fulfilled' && prof.value && prof.value.data) {
         const u = prof.value.data;
         setNombreUsuario(u.nombre || params.nombre || 'Académico');
         setTelegramUsername(u.telegram_username || '');
-        myId = u.id || u.idusuario || u.user_id || u.iduser || null;
-        setChatUserId(myId);
+        setChatUserId(u.id || u.idusuario || u.user_id || u.iduser || null);
         const chatId = u.telegram_chat_id;
         setIsTelegramLinked(chatId !== null && chatId !== undefined && chatId !== '' && chatId !== 'null' && chatId !== 'undefined');
-      }
-
-      // Process committee events first to get próximoEvento
-      let proximoEventoId = null;
-      if (comiteRes.status === 'fulfilled' && comiteRes.value && comiteRes.value.data) {
-        const d = comiteRes.value.data;
-        events = safeArray(Array.isArray(d) ? d : d.events);
-        const activos = events.filter(isEventActive).sort((a, b) => new Date(a.fechaevento || 0) - new Date(b.fechaevento || 0));
-        if (activos[0]) {
-          proximoEventoId = String(activos[0].idevento);
-          setProximoEvento(activos[0]);
-        }
-        events.forEach((ev) => {
-          const k = String(ev.estado || 'pendiente').toLowerCase();
-          if (counts[k] !== undefined) counts[k] += 1;
-        });
-      }
-
-      // Process my created events, excluding the one already shown as próximoEvento
-      if (myId && misEventosRes.status === 'fulfilled' && misEventosRes.value && misEventosRes.value.data) {
-        const misEventos = safeArray(misEventosRes.value.data);
-        const misEventosCreados = misEventos.filter(ev => String(ev.idacademico ?? ev.organizerId ?? '') === String(myId));
-        // Exclude the event already shown as próximoEvento
-        const filtrados = misEventosCreados.filter(ev => String(ev.idevento) !== String(proximoEventoId));
-        // Evento en progreso: hoy o en fase 2/3
-        const enProgreso = filtrados
-          .filter(ev => {
-            const dateStr = ev.fechaevento;
-            if (!dateStr) return false;
-            let eventDate;
-            if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) eventDate = dayjs(dateStr, 'YYYY-MM-DD');
-            else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) eventDate = dayjs(dateStr, 'DD/MM/YYYY');
-            else eventDate = dayjs(dateStr);
-            if (!eventDate.isValid()) return false;
-            const hoy = dayjs().startOf('day');
-            const esHoy = eventDate.isSame(hoy);
-            const esFaseAvanzada = (ev.idfase === 2 || ev.idfase === 3);
-            return esHoy || esFaseAvanzada;
-          })
-          .sort((a, b) => {
-            const da = dayjs(a.fechaevento).startOf('day');
-            const db = dayjs(b.fechaevento).startOf('day');
-            const hoy = dayjs().startOf('day');
-            const aHoy = da.isSame(hoy);
-            const bHoy = db.isSame(hoy);
-            if (aHoy && !bHoy) return -1;
-            if (!aHoy && bHoy) return 1;
-            return da.diff(db);
-          });
-        setEventoEnProgreso(enProgreso[0] || null);
       }
 
       if (statsRes.status === 'fulfilled' && statsRes.value && statsRes.value.data) {
@@ -852,26 +797,9 @@ const adminActions = [
           <ProyectarEventoCTA onPress={() => handleActionPress('/admin/ProyectoEvento')} />
         </View>
 
-        {(proximoEvento || eventoEnProgreso) ? (
+        {proximoEvento ? (
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-            <View style={styles.dualCardRow}>
-              {proximoEvento ? (
-                <View style={styles.dualCardCol}>
-                  <Text style={styles.dualCardLabel}>Próximo evento</Text>
-                  <ProgresoEventoCard evento={proximoEvento} router={router} />
-                </View>
-              ) : (
-                <View style={styles.dualCardColEmpty} />
-              )}
-              {eventoEnProgreso ? (
-                <View style={styles.dualCardCol}>
-                  <Text style={styles.dualCardLabel}>Evento en progreso</Text>
-                  <ProgresoEventoCard evento={eventoEnProgreso} router={router} />
-                </View>
-              ) : (
-                <View style={styles.dualCardColEmpty} />
-              )}
-            </View>
+            <ProgresoEventoCard evento={proximoEvento} router={router} />
           </View>
         ) : null}
 
