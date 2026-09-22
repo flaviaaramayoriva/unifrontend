@@ -523,7 +523,6 @@ const ReportesAvanzadosScreen = () => {
   const [anioModalAbierto, setAnioModalAbierto] = useState(false);
   const [menuExportAbierto, setMenuExportAbierto] = useState(false);
   const [mesModalAbierto, setMesModalAbierto] = useState(false);
-  const [eventoExpandido, setEventoExpandido] = useState(null);
   const [introVisible, setIntroVisible] = useState(true);
 
   // Interactividad
@@ -898,46 +897,6 @@ const ReportesAvanzadosScreen = () => {
     });
   }, [repRecursos, repEconomicos, repGestion]);
 
-  // ── Detalle evento por evento ──────────────────────────
-  const detalleEventos = useMemo(() => {
-    const recientes = repRecursos?.eventoRecientes || [];
-    const econMap = {};
-    (repEconomicos?.porEvento || []).forEach(ev => { econMap[String(ev.idevento)] = ev; });
-    const inscMap = {};
-    (repInscripciones?.topEventos || []).forEach(ev => { inscMap[String(ev.idevento)] = ev; });
-    const asisMap = {};
-    (repGestion?.asistenciaPorEvento || []).forEach(ev => { asisMap[String(ev.idevento)] = ev; });
-    const ejeMap = {};
-    (repGestion?.ejecucionPorEvento || []).forEach(ev => { ejeMap[String(ev.idevento)] = ev; });
-    return recientes.map(ev => {
-      const econ = econMap[String(ev.id)] || null;
-      const insc = inscMap[String(ev.id)] || null;
-      const asis = asisMap[String(ev.id)] || null;
-      const eje = ejeMap[String(ev.id)] || null;
-      return {
-        id: ev.id,
-        nombre: ev.nombreEvento || ev.nombre || 'Sin nombre',
-        fecha: ev.fecha || ev.fechaevento || null,
-        lugar: ev.lugar || null,
-        solicitante: ev.solicitante || null,
-        recursos: ev.totalRecursos || 0,
-        estado: ev.estado,
-        economia: econ ? {
-          pres_ingresos: econ.pres_ingresos,
-          pres_egresos: econ.pres_egresos,
-          real_ingresos: econ.real_ingresos,
-          real_egresos: econ.real_egresos,
-          balance_real: econ.balance_real,
-        } : null,
-        inscritos: insc ? insc.inscritos : null,
-        facultad: insc ? insc.facultad : null,
-        asistentes: asis ? asis.asistentes : null,
-        tasaAsistencia: asis ? asis.tasa : null,
-        ejecucion: eje ? eje.porcentaje : null,
-      };
-    });
-  }, [repRecursos, repEconomicos, repInscripciones, repGestion]);
-
   // ── Exportación CSV ─────────────────────────────────────
   const exportarCSV = async () => {
     try {
@@ -1177,10 +1136,6 @@ const ReportesAvanzadosScreen = () => {
     tablaEventos.filter(r => coincideEstado(r.estado) && coincideBusqueda(r.nombre, r.solicitante)),
   [tablaEventos, estadoFiltro, busqueda]);
 
-  const detalleEventosFiltrados = useMemo(() =>
-    detalleEventos.filter(r => coincideEstado(r.estado) && coincideBusqueda(r.nombre, r.solicitante)),
-  [detalleEventos, estadoFiltro, busqueda]);
-
   const ESTADOS_FILTRO = [
     { id: null, label: 'Todos' },
     { id: 'aprobado', label: 'Aprobado' },
@@ -1192,7 +1147,7 @@ const ReportesAvanzadosScreen = () => {
 
   const irDetalleEvento = (id) => {
     if (!id && id !== 0) return;
-    router.push({ pathname: '/admin/EventDetailScreen', params: { eventId: String(id) } });
+    router.push({ pathname: '/admin/EventDetailUpdateScreen', params: { eventId: String(id) } });
   };
 
   const fechaTxt = (v) => {
@@ -1939,93 +1894,6 @@ const ReportesAvanzadosScreen = () => {
               </View>
             </View>
 
-            {/* Detalle evento por evento */}
-            <View style={styles.section}>
-              <SectionHeader
-                icon="reader-outline"
-                title="Detalle por evento"
-                subtitle="Toca una tarjeta para expandir"
-                action={
-                  <TouchableOpacity
-                    style={[styles.exportBtn, eventoExpandido !== null && { backgroundColor: COLORS.primary }]}
-                    onPress={() => setEventoExpandido(eventoExpandido !== null ? null : detalleEventosFiltrados[0]?.id ?? null)}
-                    accessibilityRole="button"
-                    accessibilityLabel={eventoExpandido !== null ? 'Contraer todos' : 'Expandir primero'}
-                  >
-                    <Text style={[styles.exportBtnText, eventoExpandido !== null && { color: COLORS.white }]}>
-                      {eventoExpandido !== null ? 'Contraer' : 'Expandir'}
-                    </Text>
-                  </TouchableOpacity>
-                }
-              />
-              {detalleEventosFiltrados.length ? (
-                detalleEventosFiltrados.map(ev => {
-                  const abierto = eventoExpandido === ev.id;
-                  const bal = ev.economia ? Number(ev.economia.balance_real) : null;
-                  return (
-                    <View key={`det-${ev.id}`} style={[styles.detCard, abierto && styles.detCardAbierto]}>
-                      <TouchableOpacity
-                        style={styles.detHeader}
-                        onPress={() => setEventoExpandido(abierto ? null : ev.id)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Detalle de ${ev.nombre}`}
-                      >
-                        <View style={styles.detHeaderLeft}>
-                          <View style={styles.detNumero}><Text style={styles.detNumeroText}>{detalleEventosFiltrados.indexOf(ev) + 1}</Text></View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.detNombre} numberOfLines={2}>{ev.nombre}</Text>
-                            <Text style={styles.detMeta}>
-                              {fechaTxt(ev.fecha)}{ev.lugar ? ` · ${ev.lugar}` : ''}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={styles.detHeaderRight}>
-                          <EstadoBadge estado={ev.estado} />
-                          <Ionicons name={abierto ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textTertiary} />
-                        </View>
-                      </TouchableOpacity>
-                      {abierto ? (
-                        <View style={styles.detBody}>
-                          <View style={styles.detFila}><Text style={styles.detLabel}>Solicitante</Text><Text style={styles.detValor}>{ev.solicitante || '–'}</Text></View>
-                          <View style={styles.detFila}><Text style={styles.detLabel}>Recursos solicitados</Text><Text style={styles.detValor}>{fmtNum(ev.recursos)}</Text></View>
-                          {ev.facultad ? <View style={styles.detFila}><Text style={styles.detLabel}>Facultad</Text><Text style={styles.detValor}>{ev.facultad}</Text></View> : null}
-                          <View style={styles.detFila}><Text style={styles.detLabel}>Inscritos</Text><Text style={styles.detValor}>{ev.inscritos === null || ev.inscritos === undefined ? '–' : fmtNum(ev.inscritos)}</Text></View>
-                          <View style={styles.detFila}><Text style={styles.detLabel}>Asistencia real</Text><Text style={[styles.detValor, { color: ev.tasaAsistencia === null ? COLORS.textTertiary : ev.tasaAsistencia >= 70 ? COLORS.success : COLORS.warning }]}>
-                            {ev.tasaAsistencia === null ? '–' : `${ev.tasaAsistencia}%${ev.asistentes ? ` (${fmtNum(ev.asistentes)} asistentes)` : ''}`}
-                          </Text></View>
-                          <View style={styles.detFila}><Text style={styles.detLabel}>Presupuesto ejecutado</Text><Text style={[styles.detValor, { color: ev.ejecucion === null ? COLORS.textTertiary : ev.ejecucion > 100 ? COLORS.error : ev.ejecucion >= 70 ? COLORS.success : COLORS.warning }]}>
-                            {ev.ejecucion === null ? '–' : ev.ejecucion + '%'}
-                          </Text></View>
-                          <View style={styles.detEco}>
-                            <View style={styles.detEcoCol}>
-                              <Text style={styles.detEcoTitulo}>Presupuesto</Text>
-                              <Text style={[styles.detEcoValor, { color: COLORS.info }]}>Ing: {ev.economia ? fmtBs(ev.economia.pres_ingresos) : '–'}</Text>
-                              <Text style={[styles.detEcoValor, { color: COLORS.error }]}>Egr: {ev.economia ? fmtBs(ev.economia.pres_egresos) : '–'}</Text>
-                            </View>
-                            <View style={styles.detEcoCol}>
-                              <Text style={styles.detEcoTitulo}>Ejecutado</Text>
-                              <Text style={[styles.detEcoValor, { color: COLORS.info }]}>Ing: {ev.economia ? fmtBs(ev.economia.real_ingresos) : '–'}</Text>
-                              <Text style={[styles.detEcoValor, { color: COLORS.error }]}>Egr: {ev.economia ? fmtBs(ev.economia.real_egresos) : '–'}</Text>
-                            </View>
-                            <View style={styles.detEcoCol}>
-                              <Text style={styles.detEcoTitulo}>Balance</Text>
-                              <Text style={[styles.detEcoValor, { color: bal === null ? COLORS.textTertiary : bal >= 0 ? COLORS.success : COLORS.error }]}>
-                                {bal === null ? '–' : fmtBs(bal)}
-                              </Text>
-                            </View>
-                          </View>
-                          <TouchableOpacity style={styles.detVerBtn} onPress={() => irDetalleEvento(ev.id)} accessibilityRole="button" accessibilityLabel={`Ver detalle completo de ${ev.nombre}`}>
-                            <Ionicons name="open-outline" size={15} color={COLORS.white} />
-                            <Text style={styles.detVerBtnText}>Ver ficha completa del evento</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : null}
-                    </View>
-                  );
-                })
-              ) : <Text style={styles.emptyNote}>Sin eventos para mostrar.</Text>}
-            </View>
-
             {/* KPIs */}
             <View style={styles.section}>
               <SectionHeader
@@ -2244,32 +2112,6 @@ const styles = StyleSheet.create({
   mesChipActual: { backgroundColor: COLORS.primaryLight, borderColor: COLORS.primary },
   mesChipText: { fontSize: 13, fontWeight: '800', color: COLORS.textPrimary },
   mesChipTextActual: { color: COLORS.primary },
-  detCard: {
-    backgroundColor: COLORS.surface, borderRadius: 13, padding: 12,
-    borderWidth: 1, borderColor: COLORS.border, marginBottom: 10,
-  },
-  detCardAbierto: { borderColor: COLORS.primary, borderWidth: 1.5 },
-  detHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  detHeaderLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  detNumero: {
-    width: 28, height: 28, borderRadius: 9, backgroundColor: COLORS.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  detNumeroText: { fontSize: 13, fontWeight: '800', color: COLORS.primary },
-  detNombre: { fontSize: 13.5, fontWeight: '700', color: COLORS.textPrimary },
-  detMeta: { fontSize: 11.5, color: COLORS.textSecondary, marginTop: 2 },
-  detHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  detBody: { marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.divider, paddingTop: 10 },
-  detFila: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
-  detLabel: { fontSize: 12.5, color: COLORS.textSecondary },
-  detValor: { fontSize: 13.5, fontWeight: '700', color: COLORS.textPrimary },
-  detEco: {
-    flexDirection: 'row', gap: 10, marginTop: 10,
-    backgroundColor: '#F6F7F9', borderRadius: 10, padding: 10,
-  },
-  detEcoCol: { flex: 1 },
-  detEcoTitulo: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4, color: COLORS.textTertiary, marginBottom: 3 },
-  detEcoValor: { fontSize: 12, fontWeight: '700', marginBottom: 2 },
   kpiDelta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 6 },
   kpiDeltaText: { fontSize: 12.5, fontWeight: '800' },
   kpiDeltaSub: { fontSize: 10, color: COLORS.textTertiary, marginLeft: 2 },
@@ -2349,11 +2191,6 @@ const styles = StyleSheet.create({
   estadoChipActivo: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   estadoChipText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
   estadoChipTextActivo: { color: COLORS.white },
-  detVerBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: COLORS.primary, borderRadius: 9, paddingVertical: 10, marginTop: 12,
-  },
-  detVerBtnText: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
 });
 
 export default ReportesAvanzadosScreen;
