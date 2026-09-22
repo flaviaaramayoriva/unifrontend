@@ -793,10 +793,6 @@ const adminActions = [
           isTelegramLinked={isTelegramLinked}
         />
 
-        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-          <ProyectarEventoCTA onPress={() => handleActionPress('/admin/ProyectoEvento')} />
-        </View>
-
         {proximoEvento ? (
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
             <ProgresoEventoCard evento={proximoEvento} router={router} />
@@ -1434,24 +1430,6 @@ const styles = StyleSheet.create({
     padding: 14, borderRadius: 12, backgroundColor: '#0088cc', marginBottom: 12,
   },
   telegramBlueBtnText: { fontSize: 15, fontWeight: '700', color: COLORS.white },
-
-  dualCardRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  dualCardCol: {
-    flex: 1,
-  },
-  dualCardColEmpty: {
-    flex: 1,
-  },
-  dualCardLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
 
   loadingBox: { alignItems: 'center', paddingVertical: 60 },
   loadingText: { marginTop: 10, fontSize: 14, color: COLORS.textSecondary },
