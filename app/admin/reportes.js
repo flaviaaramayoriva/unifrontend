@@ -497,7 +497,7 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;background:#D1D5DB;color:#1f2937;font-size:12px;line-height:1.5}
     .wrap{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)}
-    .cover{background:linear-gradient(135deg,#123314 0%,#2d5016 55%,#C44200 100%);color:#fff;padding:40px 38px;position:relative}
+    .cover{background:linear-gradient(135deg,#B54708 0%,#E95A0C 55%,#F2701C 100%);color:#fff;padding:40px 38px;position:relative}
     .uft-logo{display:flex;align-items:center;gap:14px;margin-bottom:20px}
     .uft-monogram{width:54px;height:54px;border-radius:12px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800}
     .uft-name{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
@@ -514,13 +514,13 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     .stat-value{font-size:20px;font-weight:800;color:#111827}
     .section-h{font-size:14px;font-weight:800;margin:22px 0 10px;color:#111827;text-transform:uppercase;border-left:4px solid #C44200;padding-left:10px;letter-spacing:.5px}
     .main-table{width:100%;border-collapse:collapse;margin-top:8px}
-    .main-table th{background:#2d5016;color:#fff;padding:8px 10px;border:1px solid #2d5016;text-align:left;font-weight:700;font-size:11px}
+    .main-table th{background:#E95A0C;color:#fff;padding:8px 10px;border:1px solid #E95A0C;text-align:left;font-weight:700;font-size:11px}
     .main-table td{padding:7px 9px;border:1px solid #E6E9EF;vertical-align:top;font-size:11.5px}
     .main-table tr:nth-child(even){background:#f8faf8}
     .page-break{page-break-before:always}
     .footer{margin-top:28px;text-align:center;font-size:10.5px;color:#94A3B8;padding:14px 0 4px;border-top:1px solid #E6E9EF}
     .footer strong{color:#64748B}
-    @media print{.cover{background:#2d5016}.wrap{box-shadow:none}body{background:#fff}}
+    @media print{.cover{background:#E95A0C}.wrap{box-shadow:none}body{background:#fff}}
   </style></head><body><div class="wrap">
   <div class="cover">
     <div class="uft-logo">
