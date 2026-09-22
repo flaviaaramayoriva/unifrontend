@@ -16,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import dayjs from 'dayjs';
 import CustomAlert from '../../components/CustomAlert';
 import { resolveCurrentPhase as resolveCurrentPhaseTimeline } from '../../components/admin/EventProcessTimeline';
 
@@ -444,6 +445,25 @@ const EventDetailScreenVencido = () => {
 
   const phaseInfo = getCurrentPhaseFromFases([{ nrofase: resolveCurrentPhaseTimeline(event.status, event.idfase, event.fases, event.fechaEventoRaw, event.horaevento).phase }]);
 
+  // Ventana de informe: el evento terminó hoy o hace hasta 3 días y no está cerrado.
+  const puedeHacerInforme = (() => {
+    const fechaeventoRaw = event.fechaEventoRaw ?? event.date ?? null;
+    if (!fechaeventoRaw) return false;
+    let fechaEv;
+    if (/^\d{4}-\d{2}-\d{2}/.test(String(fechaeventoRaw))) fechaEv = dayjs(String(fechaeventoRaw).slice(0, 10), 'YYYY-MM-DD');
+    else fechaEv = dayjs(fechaeventoRaw);
+    if (!fechaEv.isValid()) return false;
+    const diff = dayjs().startOf('day').diff(fechaEv.startOf('day'), 'day');
+    const est = String(event.status || '').toLowerCase();
+    const terminal = ['finalizado', 'completado', 'rechazado', 'cancelado'];
+    return diff >= 0 && diff <= 3 && !terminal.includes(est);
+  })();
+
+  const abrirInforme = () => {
+    if (!event.id) return;
+    router.push(`/admin/InformeEventoScreen?eventId=${event.id}`);
+  };
+
   return (
     <View style={styles.screenContainer}>
       <View style={styles.header}>
@@ -708,7 +728,29 @@ const EventDetailScreenVencido = () => {
         )}
       </ScrollView>
 
-      {event.status?.toLowerCase() !== 'aprobado' && (
+      {puedeHacerInforme && (
+        <View style={styles.actionBar}>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: COLORS.success }]}
+              onPress={abrirInforme}
+            >
+              <Ionicons name="document-text-outline" size={20} color={COLORS.white} />
+              <Text style={styles.actionButtonText}>Elaborar informe</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: COLORS.primary }]}
+              onPress={() => setShowEditModal(true)}
+            >
+              <Ionicons name="calendar-outline" size={20} color={COLORS.white} />
+              <Text style={styles.actionButtonText}>Reprogramar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {!puedeHacerInforme && event.status?.toLowerCase() !== 'aprobado' && (
         <View style={styles.actionBar}>
           <View style={styles.actionRow}>
             <TouchableOpacity

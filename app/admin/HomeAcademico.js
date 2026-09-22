@@ -87,6 +87,23 @@ const isEventActive = (ev) => {
   return eventDate.isSame(dayjs().startOf('day')) || eventDate.isAfter(dayjs().startOf('day'));
 };
 
+// Ventana de informe: evento terminó hace menos de un día (hoy/mismo día)
+// o hace hasta 3 días, y todavía no está cerrado/completado/rechazado.
+const isInReportWindow = (ev) => {
+  if (isEventActive(ev)) return false;
+  const st = String(ev.estado || 'pendiente').toLowerCase();
+  if (['finalizado', 'completado', 'rechazado', 'cancelado'].includes(st)) return false;
+  const dateStr = ev.fechaevento ?? ev.date ?? ev.fecha ?? ev.fechaInicio ?? null;
+  if (!dateStr) return false;
+  let eventDate;
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) eventDate = dayjs(dateStr, 'YYYY-MM-DD');
+  else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) eventDate = dayjs(dateStr, 'DD/MM/YYYY');
+  else eventDate = dayjs(dateStr);
+  if (!eventDate.isValid()) return false;
+  const diff = dayjs().startOf('day').diff(eventDate.startOf('day'), 'day');
+  return diff >= 1 && diff <= 3;
+};
+
 const formatDate = (dateStr) => {
   if (!dateStr) return '–';
   const date = dayjs(dateStr);
@@ -682,7 +699,10 @@ const HomeAcademicoScreen = () => {
         const d = comiteRes.value.data;
         events = safeArray(Array.isArray(d) ? d : d.events);
         const activos = events.filter(isEventActive).sort((a, b) => new Date(a.fechaevento || 0) - new Date(b.fechaevento || 0));
-        setProximoEvento(activos[0] || null);
+        const pendientesInforme = events
+          .filter(isInReportWindow)
+          .sort((a, b) => new Date(a.fechaevento || 0) - new Date(b.fechaevento || 0));
+        setProximoEvento(activos[0] || pendientesInforme[0] || null);
         events.forEach((ev) => {
           const k = String(ev.estado || 'pendiente').toLowerCase();
           if (counts[k] !== undefined) counts[k] += 1;
