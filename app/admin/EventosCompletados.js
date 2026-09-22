@@ -33,6 +33,7 @@ const COLORS = {
   success: '#047857',
   successLight: '#E8F5E9',
   warning: '#F59E0B',
+  danger: '#DC2626',
   info: '#3B82F6',
   infoLight: '#EFF6FF',
   white: '#FFFFFF',
@@ -230,7 +231,10 @@ const EventosCompletados = () => {
 
   const stats = useMemo(() => {
     const total = completedEvents.length;
-    return { total, faculties: faculties.length };
+    const pendientes = completedEvents.filter(e =>
+      !['finalizado', 'completado'].includes(String(e.estado || '').toLowerCase())
+    ).length;
+    return { total, pendientes, faculties: faculties.length };
   }, [completedEvents, faculties]);
 
   const filteredEvents = useMemo(() => {
@@ -301,6 +305,13 @@ const EventosCompletados = () => {
               <Ionicons name="checkmark-done-circle" size={12} color={COLORS.success} />
               <Text style={[styles.statusPillText, { color: COLORS.success }]}>
                 Completado
+              </Text>
+            </View>
+          ) : String(item.estado || '').toLowerCase() === 'vencido' ? (
+            <View style={[styles.statusPill, { backgroundColor: COLORS.danger + '1A' }]}>
+              <Ionicons name="alert-circle" size={12} color={COLORS.danger} />
+              <Text style={[styles.statusPillText, { color: COLORS.danger }]}>
+                Vencido · informe pendiente
               </Text>
             </View>
           ) : (
@@ -445,6 +456,11 @@ const EventosCompletados = () => {
 
         <Text style={styles.resultsText}>
           {filteredEvents.length} {filteredEvents.length === 1 ? 'evento completado' : 'eventos completados'}
+          {stats.pendientes > 0 && (
+            <Text style={styles.headerCountPending}>
+              {'  ·  '}{stats.pendientes} {stats.pendientes === 1 ? 'pendiente' : 'pendientes'} de informe
+            </Text>
+          )}
           {searchTerm || facultadFiltro !== 'todas' ? ' encontrados' : ''}
         </Text>
       </View>
@@ -501,7 +517,7 @@ const EventosCompletados = () => {
             <Text style={styles.emptyTitle}>{completedEvents.length === 0 ? 'No hay eventos completados' : 'Sin resultados'}</Text>
             <Text style={styles.emptyText}>
               {completedEvents.length === 0
-                ? 'No se encontraron eventos de Fase 3 completados organizados por facultad.'
+                ? 'No se encontraron eventos completados o pendientes de informe por facultad.'
                 : 'No hay eventos que coincidan con los filtros aplicados. Intenta ajustar la búsqueda.'}
             </Text>
             {(completedEvents.length > 0 && (searchTerm || facultadFiltro !== 'todas')) && (
@@ -635,6 +651,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     paddingHorizontal: 16,
     paddingTop: 12,
+  },
+
+  headerCountPending: {
+    color: COLORS.danger,
+    fontWeight: '600',
   },
 
   sectionHeader: {
