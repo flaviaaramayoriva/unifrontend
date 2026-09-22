@@ -793,6 +793,10 @@ const adminActions = [
           isTelegramLinked={isTelegramLinked}
         />
 
+        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+          <ProyectarEventoCTA onPress={() => handleActionPress('/admin/ProyectoEvento')} />
+        </View>
+
         {proximoEvento ? (
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
             <ProgresoEventoCard evento={proximoEvento} router={router} />
