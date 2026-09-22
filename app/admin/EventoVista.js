@@ -246,7 +246,7 @@ const EventoVistaScreen = () => {
         {/* Proceso del evento */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Proceso del Evento</Text>
-          <EventProcessTimeline estado={event.status} idfase={event.idfase} fases={event.fases} />
+          <EventProcessTimeline estado={event.status} idfase={event.idfase} fases={event.fases} fechaevento={event.fechaEventoRaw || event.date} horaevento={event.time} />
         </View>
 
         {/* Datos Generales */}

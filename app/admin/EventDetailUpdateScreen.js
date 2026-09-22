@@ -524,7 +524,7 @@ const EventDetailScreen = () => {
 
         {/* Proceso del evento */}
         <View style={styles.sectionCard}>
-          <EventProcessTimeline estado={event.status} idfase={event.idfase} fases={event.fases} />
+          <EventProcessTimeline estado={event.status} idfase={event.idfase} fases={event.fases} fechaevento={event.fechaEventoRaw || event.date} horaevento={event.time} />
         </View>
 
         {/* Grilla de resumen */}

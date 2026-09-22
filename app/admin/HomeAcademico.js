@@ -203,13 +203,26 @@ const ProgresoEventoCard = ({ evento, router }) => {
   const breathe = useRef(new Animated.Value(0)).current;
 
   const estRaw = String((evento && evento.estado) || 'pendiente').toLowerCase();
+
+  let finFecha = dayjs(evento.fechaevento);
+  if (finFecha.isValid() && evento.horaevento) {
+    const hm = String(evento.horaevento).match(/(\d{1,2}):(\d{1,2})/);
+    if (hm) finFecha = finFecha.hour(Number(hm[1])).minute(Number(hm[2]));
+  }
+  const eventoTerminado = finFecha.isValid() && finFecha.isBefore(dayjs());
+
   const dias = diasAntesEvento(evento && evento.fechaevento);
-  const esHoy = dias === 0;
+  const esHoy = dias === 0 && !eventoTerminado;
   const fechaPasada = dias !== null && dias < 0;
-  const estKey = estRaw === 'vencido' && !fechaPasada ? 'pendiente' : estRaw;
-  const resuelto = evento ? resolveCurrentPhase(estKey, evento.idfase, evento.fases) : null;
-  const faseActual = resuelto ? resuelto.phase : 1;
-  const terminal = resuelto ? resuelto.terminal || null : null;
+  const estKey = estRaw === 'vencido' && !eventoTerminado ? 'pendiente' : estRaw;
+  const resuelto = resolveCurrentPhase(estKey, evento?.idfase, evento?.fases, evento?.fechaevento, evento?.horaevento);
+  let faseActual = resuelto ? resuelto.phase : 1;
+  let terminal = resuelto ? resuelto.terminal || null : null;
+
+  if (eventoTerminado && estKey !== 'pendiente' && estKey !== 'proyectado' && terminal !== 'rechazado' && terminal !== 'cancelado') {
+    faseActual = PROCESO_FASES.length;
+    terminal = null;
+  }
 
   useEffect(() => {
     if (!evento || terminal || faseActual >= PROCESO_FASES.length) return;
@@ -229,8 +242,8 @@ const ProgresoEventoCard = ({ evento, router }) => {
   const escala = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });
   const pct = Math.min(100, Math.max(0, Math.round((faseActual / PROCESO_FASES.length) * 100)));
 
-  const chipWarn = dias !== null && dias <= 7;
-  const chipText = dias === null ? '–' : dias > 0 ? `${dias} día${dias === 1 ? '' : 's'}` : dias === 0 ? 'Hoy' : 'Finalizado';
+  const chipWarn = !eventoTerminado && dias !== null && dias <= 7;
+  const chipText = eventoTerminado ? 'Finalizado' : (dias === null ? '–' : dias > 0 ? `${dias} día${dias === 1 ? '' : 's'}` : dias === 0 ? 'Hoy' : 'Finalizado');
   const chipIcon = esHoy ? 'play' : 'time-outline';
 
   const irA = (ruta) => router.push(ruta);
@@ -240,13 +253,6 @@ const ProgresoEventoCard = ({ evento, router }) => {
   let ctaIcon = 'eye-outline';
   let ctaSub = 'Consulta la información completa del evento.';
   let ctaOnPress = () => irA(`/admin/EventDetailScreen?eventId=${evento.idevento}`);
-
-  let finFecha = dayjs(evento.fechaevento);
-  if (finFecha.isValid() && evento.horaevento) {
-    const hm = String(evento.horaevento).match(/(\d{1,2}):(\d{1,2})/);
-    if (hm) finFecha = finFecha.hour(Number(hm[1])).minute(Number(hm[2]));
-  }
-  const eventoTerminado = finFecha.isValid() && finFecha.isBefore(dayjs());
 
   if (estKey === 'completado' || estKey === 'finalizado') {
     ctaLabel = 'Ver informe del evento';

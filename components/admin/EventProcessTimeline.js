@@ -36,11 +36,18 @@ const TERMINAL_CONFIG = {
 };
 
 // Mapea estado + fase del backend a un número de fase visible (1..5)
-export const resolveCurrentPhase = (estado, idfase, fases) => {
+export const resolveCurrentPhase = (estado, idfase, fases, fechaevento, horaevento) => {
   const st = String(estado || 'pendiente').toLowerCase();
   const hasFases = Array.isArray(fases) && fases.length > 0;
   const nroFases = hasFases ? Number(fases[0]?.nrofase) : Number(idfase);
   const fallback = nroFases && !isNaN(nroFases) ? Math.min(Math.max(nroFases, 1), 5) : 1;
+
+  // Si el evento ya terminó (fecha y hora pasadas) y no fue rechazado/cancelado/sin aprobar,
+  // el proceso pasa a la fase de Cierre e informe.
+  const eventoTerminado = getEventoTerminado(fechaevento, horaevento);
+  if (eventoTerminado && st !== 'pendiente' && st !== 'proyectado' && st !== 'rechazado' && st !== 'cancelado') {
+    return { phase: 5 };
+  }
 
   const TERMINAL_PHASE = {
     rechazado: 'rechazado',
@@ -59,9 +66,21 @@ export const resolveCurrentPhase = (estado, idfase, fases) => {
   return { phase: fallback };
 };
 
+const getEventoTerminado = (fechaevento, horaevento) => {
+  if (!fechaevento) return false;
+  const s = String(fechaevento).slice(0, 10);
+  const d = new Date(`${s}T00:00:00`);
+  if (isNaN(d.getTime())) return false;
+  if (horaevento) {
+    const hm = String(horaevento).match(/(\d{1,2}):(\d{1,2})/);
+    if (hm) d.setHours(Number(hm[1]), Number(hm[2]), 0, 0);
+  }
+  return d.getTime() < Date.now();
+};
+
 // Propuesta: `estado`, `idfase`, `fases`, `compact` (versión compacta para tarjetas)
-const EventProcessTimeline = ({ estado, idfase, fases, compact = false, showLabel = true }) => {
-  const resolved = useMemo(() => resolveCurrentPhase(estado, idfase, fases), [estado, idfase, fases]);
+const EventProcessTimeline = ({ estado, idfase, fases, compact = false, showLabel = true, fechaevento, horaevento }) => {
+  const resolved = useMemo(() => resolveCurrentPhase(estado, idfase, fases, fechaevento, horaevento), [estado, idfase, fases, fechaevento, horaevento]);
   const { phase: currentPhase, terminal } = resolved;
   const terminalCfg = terminal ? TERMINAL_CONFIG[terminal] : null;
 

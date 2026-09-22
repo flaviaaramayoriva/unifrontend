@@ -307,7 +307,7 @@ const EventosCompletados = () => {
             </Text>
           </View>
 
-          <EventProcessTimeline compact estado={item.estado || 'completado'} idfase={item.idfase} fases={item.fases} />
+          <EventProcessTimeline compact estado={item.estado || 'completado'} idfase={item.idfase} fases={item.fases} fechaevento={getRawEventDate(item)} horaevento={item.time || item.horaevento} />
 
           <View style={styles.cardFooter}>
             <View style={styles.facultyChip}>

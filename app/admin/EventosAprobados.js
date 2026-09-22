@@ -369,7 +369,7 @@ const EventosAprobadosPorFacultad = () => {
             </Text>
           </View>
 
-          <EventProcessTimeline compact estado={item.estado || 'aprobado'} idfase={item.idfase} fases={item.fases} />
+          <EventProcessTimeline compact estado={item.estado || 'aprobado'} idfase={item.idfase} fases={item.fases} fechaevento={item.fechaevento || item.date} horaevento={item.horaevento || item.time} />
 
           <View style={styles.cardFooter}>
             <View style={styles.facultyChip}>

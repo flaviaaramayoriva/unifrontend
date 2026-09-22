@@ -122,7 +122,7 @@ const RejectedEventCard = ({ event }) => {
         </Text>
       )}
 
-      <EventProcessTimeline compact estado={event.estado || 'rechazado'} idfase={event.idfase} fases={event.fases} />
+      <EventProcessTimeline compact estado={event.estado || 'rechazado'} idfase={event.idfase} fases={event.fases} fechaevento={event.fechaevento || event.date} horaevento={event.horaevento || event.time} />
 
       <View style={styles.eventMeta}>
         <View style={styles.metaItem}>

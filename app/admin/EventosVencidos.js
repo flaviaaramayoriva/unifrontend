@@ -129,7 +129,7 @@ const ExpiredEventCard = ({ event, onPress }) => {
       <Text style={styles.eventTitle} numberOfLines={2}>{event.nombreevento || 'Sin título'}</Text>
       {hasDescription && <Text style={styles.eventDescription} numberOfLines={2}>{event.descripcion}</Text>}
 
-      <EventProcessTimeline compact estado={event.estado || 'vencido'} idfase={event.idfase} fases={event.fases} />
+      <EventProcessTimeline compact estado={event.estado || 'vencido'} idfase={event.idfase} fases={event.fases} fechaevento={event.fechaevento || event.date || event.fecha} horaevento={event.horaevento || event.time} />
 
       <View style={styles.metaRow}>
         <View style={styles.metaItem}>

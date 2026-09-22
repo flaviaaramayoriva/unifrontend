@@ -192,7 +192,7 @@ const PendingEventCard = ({ event,userRole, onView, onApprove, onReject, onMarkE
         </Text>
       )}
 
-      <EventProcessTimeline compact estado={event.estado || 'pendiente'} idfase={event.idfase} fases={event.fases} />
+      <EventProcessTimeline compact estado={event.estado || 'pendiente'} idfase={event.idfase} fases={event.fases} fechaevento={event.fechaevento || event.date} horaevento={event.horaevento || event.time} />
 
       <View style={styles.infoGrid}>
         <View style={styles.infoRow}>
