@@ -672,6 +672,17 @@ const HomeAcademicoScreen = () => {
         }
       }
 
+      if (comiteRes.status === 'fulfilled' && comiteRes.value && comiteRes.value.data) {
+        const d = comiteRes.value.data;
+        events = safeArray(Array.isArray(d) ? d : d.events);
+        const activos = events.filter(isEventActive).sort((a, b) => new Date(a.fechaevento || 0) - new Date(b.fechaevento || 0));
+        setProximoEvento(activos[0] || null);
+        events.forEach((ev) => {
+          const k = String(ev.estado || 'pendiente').toLowerCase();
+          if (counts[k] !== undefined) counts[k] += 1;
+        });
+      }
+
       if (notifRes.status === 'fulfilled' && notifRes.value && Array.isArray(notifRes.value.data)) {
         setNotifications(notifRes.value.data);
       }
