@@ -350,11 +350,11 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     const eje = ejeMap[String(ev.id)] || null;
     const asisTxt = asis && asis.tasa !== null && asis.tasa !== undefined ? `${asis.tasa}%` : '–';
     const ejeTxt = eje && eje.porcentaje !== null && eje.porcentaje !== undefined ? `${eje.porcentaje}%` : '–';
-    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(ev.nombre)}</td>` +
+    return `<tr><td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;font-weight:600;">${h(ev.nombreEvento || ev.nombre)}</td>` +
       `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${ev.fecha ? String(ev.fecha).slice(0, 10) : '–'}</td>` +
-      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.lugar)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.lugarevento || ev.lugar)}</td>` +
       `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;">${h(ev.solicitante)}</td>` +
-      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(ev.recursos)}</td>` +
+      `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${fmtNum(ev.totalRecursos !== undefined ? ev.totalRecursos : ev.recursos)}</td>` +
       `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${asisTxt}</td>` +
       `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;">${ejeTxt}</td>` +
       `<td style="padding:8px;border:1px solid #E6E9EF;font-size:12px;text-align:center;"><span style="background:${col.bg};color:${col.text};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">${capStr(ev.estado)}</span></td></tr>`;
@@ -480,10 +480,10 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;">
         <div style="flex:1;min-width:150px;background:#fff;border:1px solid #E6E9EF;border-radius:10px;padding:14px;text-align:center;border-top:4px solid #3B82F6;">
           <div class="stat-label">Ingresos registrados</div>
-          <div style="font-size:17px;font-weight:800;color:#1d4ed8;">${fmtBs(eco.ingreso_total)}</div></div>
+          <div style="font-size:17px;font-weight:800;color:#1d4ed8;">${fmtBs(eco.real_ingresos)}</div></div>
         <div style="flex:1;min-width:150px;background:#fff;border:1px solid #E6E9EF;border-radius:10px;padding:14px;text-align:center;border-top:4px solid #ef4444;">
           <div class="stat-label">Egresos registrados</div>
-          <div style="font-size:17px;font-weight:800;color:#dc2626;">${fmtBs(eco.egreso_total)}</div></div>
+          <div style="font-size:17px;font-weight:800;color:#dc2626;">${fmtBs(eco.real_egresos)}</div></div>
         <div style="flex:1;min-width:150px;background:#fff;border:1px solid #E6E9EF;border-radius:10px;padding:14px;text-align:center;border-top:4px solid ${bal >= 0 ? '#047857' : '#dc2626'};">
           <div class="stat-label">Balance real</div>
           <div style="font-size:17px;font-weight:800;color:${bal >= 0 ? '#047857' : '#dc2626'};">${fmtBs(bal)}</div></div>
