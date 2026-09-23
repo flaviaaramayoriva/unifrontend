@@ -39,6 +39,18 @@ const getTokenAsync = async () => {
   try { return await SecureStore.getItemAsync('adminAuthToken'); } catch (e) { return null; }
 };
 
+// Resuelve la URL de imagen de un layout. El backend a veces devuelve
+// `imagenUrl` (URL absoluta lista para usar) y otras veces solo
+// `url_imagen` (nombre de archivo relativo), según cómo se haya creado
+// el layout. Sin este fallback, los layouts que solo traen `url_imagen`
+// se ven como placeholder vacío aunque sí tengan imagen generada.
+const getLayoutImageUrl = (layout) => {
+  if (!layout) return null;
+  if (layout.imagenUrl) return layout.imagenUrl;
+  if (layout.url_imagen) return `${API_BASE_URL}/uploads/${layout.url_imagen}`;
+  return null;
+};
+
 const SUGERENCIAS_IA = [
   { label: 'Aula', sub: 'filas de pupitres', prompt: 'distribución de aula para 50 personas en un salón de conferencias' },
   { label: 'Patio', sub: 'bancas alrededor', prompt: 'layout de patio exterior para 50 personas, evento al aire libre' },
@@ -124,7 +136,12 @@ const eliminarLayout = async (layout) => {
     cargarLayouts();
   } catch (error) {
     console.error('Error al eliminar layout:', error);
-    const msg = Platform.OS === 'web' ? window.alert('No se pudo eliminar el layout.') : Alert.alert('Error', 'No se pudo eliminar el layout.');
+    const mensaje = error.response?.data?.message || error.response?.data?.error || 'No se pudo eliminar el layout.';
+    if (Platform.OS === 'web') {
+      window.alert(mensaje);
+    } else {
+      Alert.alert('Error', mensaje);
+    }
   }
   };
 const subirLayout = async () => {
@@ -172,7 +189,8 @@ const subirLayout = async () => {
 
     } catch (error) {
       console.error('Error al subir layout:', error);
-      Alert.alert('Error', 'No se pudo subir el layout. Verifica que el servidor esté activo.');
+      const mensaje = error.response?.data?.message || error.response?.data?.error || 'No se pudo subir el layout. Verifica que el servidor esté activo.';
+      Alert.alert('Error', mensaje);
     } finally {
       setLoading(false);
     }
@@ -197,12 +215,13 @@ const subirLayout = async () => {
 
       Alert.alert('Éxito', 'Layout generado con IA. Ahora puedes usarlo directamente.');
       setPromptIA('');
-      setGenerandoIA(false);
+      setRecursosSeleccionados([]);
       cargarLayouts();
 
     } catch (error) {
       console.error('Error al generar layout con IA:', error);
-      Alert.alert('Error', 'No se pudo generar el layout con IA.');
+      const mensaje = error.response?.data?.message || error.response?.data?.error || 'No se pudo generar el layout con IA.';
+      Alert.alert('Error', mensaje);
     } finally {
       setGenerandoIA(false);
     }
@@ -478,23 +497,26 @@ const subirLayout = async () => {
           </View>
         ) : (
           <View style={st.galleryGrid}>
-            {layouts.map((layout) => (
-              <TouchableOpacity
-                key={layout.idlayout}
-                style={st.galleryCard}
-                onPress={() => setLayoutSeleccionado(layout)}
-                activeOpacity={0.85}
-              >
-                {layout.imagenUrl ? (
-                  <Image source={{ uri: layout.imagenUrl }} style={st.galleryImage} resizeMode="cover" />
-                ) : (
-                  <View style={[st.galleryImage, st.galleryImageEmpty]}>
-                    <Ionicons name="image-outline" size={24} color={C.t3} />
-                  </View>
-                )}
-                <Text style={st.galleryName} numberOfLines={1}>{layout.nombre}</Text>
-              </TouchableOpacity>
-            ))}
+            {layouts.map((layout) => {
+              const imgUrl = getLayoutImageUrl(layout);
+              return (
+                <TouchableOpacity
+                  key={layout.idlayout}
+                  style={st.galleryCard}
+                  onPress={() => setLayoutSeleccionado(layout)}
+                  activeOpacity={0.85}
+                >
+                  {imgUrl ? (
+                    <Image source={{ uri: imgUrl }} style={st.galleryImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[st.galleryImage, st.galleryImageEmpty]}>
+                      <Ionicons name="image-outline" size={24} color={C.t3} />
+                    </View>
+                  )}
+                  <Text style={st.galleryName} numberOfLines={1}>{layout.nombre}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -521,9 +543,9 @@ const subirLayout = async () => {
 
             {layoutSeleccionado && (
               <>
-                {layoutSeleccionado.imagenUrl ? (
+                {getLayoutImageUrl(layoutSeleccionado) ? (
                   <Image
-                    source={{ uri: layoutSeleccionado.imagenUrl }}
+                    source={{ uri: getLayoutImageUrl(layoutSeleccionado) }}
                     style={st.modalImage}
                     resizeMode="contain"
                   />
