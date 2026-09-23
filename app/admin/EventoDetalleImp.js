@@ -879,9 +879,11 @@ const EventDetailScreen = () => {
         {event.idfase >= 2 && event.layout && (
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Layout del Evento</Text>
-            {event.layout.url_imagen ? (
+            {event.layout && event.layout.url_imagen ? (
               <Image
-                source={{ uri: `https://unibackend-production-a0f8.up.railway.app/uploads/${event.layout.url_imagen}` }}
+                source={{
+                  uri: `https://unibackend-production-a0f8.up.railway.app/uploads/${event.layout.url_imagen}`
+                }}
                 style={styles.layoutImage}
                 resizeMode="contain"
               />
@@ -889,7 +891,7 @@ const EventDetailScreen = () => {
               <View style={styles.layoutPlaceholder}>
                 <Ionicons name="image-outline" size={50} color={COLORS.grayText} />
                 <Text style={styles.layoutPlaceholderText}>
-                  {event.layout.nombre || `Layout ID: ${event.layout.idlayout}`}
+                  {event.layout.nombre || `Layout ID: ${event.layout.idlayout || ''}`}
                 </Text>
               </View>
             )}

@@ -20,10 +20,8 @@ const SUGERENCIAS_IA = [
   { label: 'Patio', sub: 'bancas alrededor', prompt: 'layout de patio exterior para 50 personas, evento al aire libre' },
   { label: 'Circular', sub: 'banquete', prompt: 'mesas circulares para 50 personas en una cena de gala' },
   { label: 'Auditorio', sub: 'escenario al frente', prompt: 'layout de auditorio con escenario al frente y filas de asientos para 50 personas' },
-  { label: 'Cóctel', sub: 'mesas altas', prompt: 'layout de cóctel con mesas altas y espacio libre para 50 personas' },
   { label: 'Feria', sub: 'stands de exposición', prompt: 'layout de feria con stands de exposición distribuidos para 50 personas' },
   { label: 'Comedor', sub: 'mesas rectangulares', prompt: 'layout de comedor con mesas rectangulares para 50 personas tipo banquete' },
-  { label: 'Taller', sub: 'mesas en U', prompt: 'layout de taller con mesas en forma de U para 50 personas' },
 ];
 
 const parseDateLocal = (dateInput) => {
