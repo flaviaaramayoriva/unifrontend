@@ -650,8 +650,10 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
   const [busquedaPersonal, setBusquedaPersonal] = useState('');
   const avisoTimer = useRef(null);
   const activeRoomRef = useRef(activeRoom);
+  const contactosRef = useRef(contactos);
 
   useEffect(() => { activeRoomRef.current = activeRoom; }, [activeRoom]);
+  useEffect(() => { contactosRef.current = contactos; }, [contactos]);
 
   useEffect(() => {
     if (!userId) return;
@@ -675,6 +677,20 @@ const ChatEmbed = ({ userId, userRole, userName, onRoomChange, noLeidos = {}, ac
           const cur = activeRoomRef.current;
           if (cur && String(n.roomId) === String(cur)) return;
           if (String(n.userId) === String(userId)) return;
+
+          if (String(n.type) === 'private') {
+            const c = contactosRef.current.find(x => String(x.idusuario) === String(n.userId));
+            if (c && c.idevento) {
+              setEventos(prev => {
+                const idx = prev.findIndex(e => String(e.idevento) === String(c.idevento));
+                if (idx <= 0) return prev;
+                const copia = [...prev];
+                const [ev] = copia.splice(idx, 1);
+                return [ev, ...copia];
+              });
+            }
+          }
+
           setAviso({ ...n, userId: n.userId, userName: n.userName, roomId: n.roomId, roomName: n.roomName, type: n.type, message: n.message });
           clearTimeout(avisoTimer.current);
           avisoTimer.current = setTimeout(() => setAviso(null), 4000);
