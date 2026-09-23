@@ -508,242 +508,242 @@ const HomeEstudianteScreen = () => {
   const nombreUsuario = `${userData?.nombre || 'Estudiante'} ${userData?.apellidopat || ''}`.trim();
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-      <Stack.Screen options={{ headerShown: false }} />
+  <View style={styles.container}>
+    <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+    <Stack.Screen options={{ headerShown: false }} />
 
-      <FlatList
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        data={events}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <View style={{ marginHorizontal: 20 }}>
-            <EventCard
-              event={item}
-              onPress={() => router.push(`/estudiante/eventos/${item.id}`)}
-              onInscribir={handleInscribir}
-              yaInscrito={inscritos.has(item.id)}
-              inscribiendo={inscribiendoId === item.id}
-            />
-          </View>
-        )}
-        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
-        windowSize={5}
-        removeClippedSubviews={Platform.OS === 'android'}
-        ListHeaderComponent={
-          <>
-            {/* ✅ HEADER MEJORADO Y ROBUSTO */}
-            <View style={styles.header}>
-              <View style={styles.headerTopRow}>
-                <View style={styles.headerTextContainer}>
-                  <Text style={styles.headerGreeting}>{greeting},</Text>
-                  <Text style={styles.headerName} numberOfLines={1} ellipsizeMode="tail">
-                    {nombreUsuario || 'Estudiante'}
-                  </Text>
-                  
-                  {(userData?.facultad_nombre || userData?.facultad?.nombre) && (
-                    <View style={styles.facultadBadge}>
-                      <Ionicons name="school-outline" size={12} color={COLORS.white} />
-                      <Text style={styles.facultadBadgeText} numberOfLines={1}>
-                        {userData?.facultad_nombre || userData?.facultad?.nombre}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+    <FlatList
+      style={styles.scroll}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 100 }}
+      data={events}
+      keyExtractor={(item) => String(item.id)}
+      renderItem={({ item }) => (
+        <View style={{ marginHorizontal: 20 }}>
+          <EventCard
+            event={item}
+            onPress={() => router.push(`/estudiante/eventos/${item.id}`)}
+            onInscribir={handleInscribir}
+            yaInscrito={inscritos.has(item.id)}
+            inscribiendo={inscribiendoId === item.id}
+          />
+        </View>
+      )}
+      ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      windowSize={5}
+      removeClippedSubviews={Platform.OS === 'android'}
+      ListHeaderComponent={
+        <>
+          {/* ✅ HEADER MEJORADO Y ROBUSTO */}
+          <View style={styles.header}>
+            <View style={styles.headerTopRow}>
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.headerGreeting}>{greeting},</Text>
+                <Text style={styles.headerName} numberOfLines={1} ellipsizeMode="tail">
+                  {nombreUsuario || 'Estudiante'}
+                </Text>
                 
-                <View style={styles.headerActions}>
-                  <TouchableOpacity style={styles.telegramBell} onPress={() => setShowTelegramModal(true)}>
-                    <Ionicons name="send" size={22} color={isTelegramLinked ? '#0088cc' : 'rgba(255,255,255,0.8)'} />
-                    {isTelegramLinked && <View style={styles.telegramLinkedDot} />}
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity style={styles.headerIconBtn} onPress={() => fetchEvents(userData)}>
-                    <Ionicons name="refresh-outline" size={22} color={COLORS.white} />
-                  </TouchableOpacity>
-                </View>
+                {(userData?.facultad_nombre || userData?.facultad?.nombre) && (
+                  <View style={styles.facultadBadge}>
+                    <Ionicons name="school-outline" size={12} color={COLORS.white} />
+                    <Text style={styles.facultadBadgeText} numberOfLines={1}>
+                      {userData?.facultad_nombre || userData?.facultad?.nombre}
+                    </Text>
+                  </View>
+                )}
               </View>
               
-              <Text style={styles.headerSubtitle}>Portal del Estudiante</Text>
-
-              <View style={styles.statsRow}>
-                {[
-                  { icon: 'calendar-outline', value: stats.total, label: 'Eventos' },
-                  { icon: 'time-outline', value: stats.proximos, label: 'Próximos' },
-                  { icon: 'checkmark-circle-outline', value: stats.completados, label: 'Completados' },
-                ].map((s, i) => (
-                  <View key={i} style={styles.statItem}>
-                    <View style={styles.statIconWrap}>
-                      <Ionicons name={s.icon} size={20} color={COLORS.white} />
-                    </View>
-                    <Text style={styles.statValue}>{s.value}</Text>
-                    <Text style={styles.statLabel}>{s.label}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <View style={styles.sectionHead}>
-                <Text style={styles.sectionTitle}>Eventos de tu Facultad</Text>
-                <TouchableOpacity onPress={() => router.push('/estudiante/eventos')} style={{ paddingVertical: 15, paddingHorizontal: 10 }}>
-                  <Text style={styles.seeAll}>Ver todos</Text>
+              <View style={styles.headerActions}>
+                <TouchableOpacity style={styles.telegramBell} onPress={() => setShowTelegramModal(true)}>
+                  <Ionicons name="send" size={22} color={isTelegramLinked ? '#0088cc' : 'rgba(255,255,255,0.8)'} />
+                  {isTelegramLinked && <View style={styles.telegramLinkedDot} />}
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.headerIconBtn} onPress={() => fetchEvents(userData)}>
+                  <Ionicons name="refresh-outline" size={22} color={COLORS.white} />
                 </TouchableOpacity>
               </View>
-
-              {error && !loading && (
-                <View style={styles.errorCard}>
-                  <Ionicons name="alert-circle-outline" size={36} color={COLORS.accent} />
-                  <Text style={styles.errorText}>{error}</Text>
-                  <TouchableOpacity style={styles.retryBtn} onPress={() => fetchEvents(userData)}>
-                    <Text style={styles.retryBtnText}>Reintentar</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {loading && (
-                <View style={styles.loadingCard}>
-                  <ActivityIndicator size="large" color={COLORS.primary} />
-                  <Text style={styles.loadingText}>Cargando eventos…</Text>
-                </View>
-              )}
-
-              {!error && !loading && events.length === 0 && (
-                <View style={styles.emptyCard}>
-                  <Ionicons name="calendar-clear-outline" size={44} color={COLORS.textTertiary} />
-                  <Text style={styles.emptyTitle}>No hay eventos disponibles</Text>
-                  <Text style={styles.emptySubtitle}>No se encontraron eventos para tu facultad en este momento</Text>
-                </View>
-              )}
             </View>
-          </>
-        }
-        ListFooterComponent={
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-            <View style={{ gap: 10, marginTop: 10 }}>
-              <ActionCard title="Mis Inscripciones" description="Ver eventos inscritos" icon="add-circle-outline" color={COLORS.success} onPress={() => router.push('/estudiante/inscripcion')} />
-              <ActionCard title="Mi Perfil" description="Ver y editar perfil" icon="person-outline" color={COLORS.info} onPress={() => router.push('/estudiante/perfil')} />
+            
+            <Text style={styles.headerSubtitle}>Portal del Estudiante</Text>
+
+            <View style={styles.statsRow}>
+              {[
+                { icon: 'calendar-outline', value: stats.total, label: 'Eventos' },
+                { icon: 'time-outline', value: stats.proximos, label: 'Próximos' },
+                { icon: 'checkmark-circle-outline', value: stats.completados, label: 'Completados' },
+              ].map((s, i) => (
+                <View key={i} style={styles.statItem}>
+                  <View style={styles.statIconWrap}>
+                    <Ionicons name={s.icon} size={20} color={COLORS.white} />
+                  </View>
+                  <Text style={styles.statValue}>{s.value}</Text>
+                  <Text style={styles.statLabel}>{s.label}</Text>
+                </View>
+              ))}
             </View>
           </View>
-        }
-      />
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color={COLORS.white} />
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Modal de Inscripción */}
-      <Modal visible={showInscripcionModal} animationType="slide" transparent onRequestClose={() => setShowInscripcionModal(false)} accessibilityViewIsModal={true}>
-        <View style={modalStyles.overlay}>
-          <View style={modalStyles.card}>
-            <Text style={modalStyles.title}>Completá tus datos</Text>
-            <Text style={modalStyles.subtitle}>Solo te lo pedimos una vez, para tus próximas inscripciones no volverá a aparecer</Text>
-
-            <Text style={modalStyles.label}>Código de estudiante</Text>
-            <TextInput style={modalStyles.input} value={formInscripcion.codigo_estudiante} onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, codigo_estudiante: v }))} placeholder="Ej: 2023-1234" accessibilityLabel="Código de estudiante" />
-
-            <Text style={modalStyles.label}>Semestre</Text>
-            <TextInput style={modalStyles.input} value={formInscripcion.semestre} onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, semestre: v }))} placeholder="Ej: 5to semestre" accessibilityLabel="Semestre" />
-
-            <Text style={modalStyles.label}>Teléfono</Text>
-            <TextInput style={modalStyles.input} value={formInscripcion.telefono} onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, telefono: v }))} placeholder="Ej: 71234567" keyboardType="phone-pad" accessibilityLabel="Teléfono" />
-
-            <View style={modalStyles.buttonRow}>
-              <TouchableOpacity style={modalStyles.cancelBtn} onPress={() => setShowInscripcionModal(false)} disabled={savingInscripcion}>
-                <Text style={modalStyles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={modalStyles.confirmBtn} onPress={confirmarInscripcion} disabled={savingInscripcion}>
-                {savingInscripcion ? <ActivityIndicator color={COLORS.white} /> : <Text style={modalStyles.confirmBtnText}>Confirmar Inscripción</Text>}
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle}>Eventos de tu Facultad</Text>
+              <TouchableOpacity onPress={() => router.push('/estudiante/eventos')} style={{ paddingVertical: 15, paddingHorizontal: 10 }}>
+                <Text style={styles.seeAll}>Ver todos</Text>
               </TouchableOpacity>
             </View>
+
+            {error && !loading && (
+              <View style={styles.errorCard}>
+                <Ionicons name="alert-circle-outline" size={36} color={COLORS.accent} />
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.retryBtn} onPress={() => fetchEvents(userData)}>
+                  <Text style={styles.retryBtnText}>Reintentar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {loading && (
+              <View style={styles.loadingCard}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>Cargando eventos…</Text>
+              </View>
+            )}
+
+            {!error && !loading && events.length === 0 && (
+              <View style={styles.emptyCard}>
+                <Ionicons name="calendar-clear-outline" size={44} color={COLORS.textTertiary} />
+                <Text style={styles.emptyTitle}>No hay eventos disponibles</Text>
+                <Text style={styles.emptySubtitle}>No se encontraron eventos para tu facultad en este momento</Text>
+              </View>
+            )}
+          </View>
+        </>
+      }
+      ListFooterComponent={
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+          <View style={{ gap: 10, marginTop: 10 }}>
+            <ActionCard title="Mis Inscripciones" description="Ver eventos inscritos" icon="add-circle-outline" color={COLORS.success} onPress={() => router.push('/estudiante/inscripcion')} />
+            <ActionCard title="Mi Perfil" description="Ver y editar perfil" icon="person-outline" color={COLORS.info} onPress={() => router.push('/estudiante/perfil')} />
+          </View>
+        </View>
+      }
+    />
+
+    <View style={styles.footer}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={20} color={COLORS.white} />
+        <Text style={styles.logoutText}>Cerrar Sesión</Text>
+      </TouchableOpacity>
+    </View>
+
+    {/* Modal de Inscripción */}
+    <Modal visible={showInscripcionModal} animationType="slide" transparent onRequestClose={() => setShowInscripcionModal(false)} accessibilityViewIsModal={true}>
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.card}>
+          <Text style={modalStyles.title}>Completá tus datos</Text>
+          <Text style={modalStyles.subtitle}>Solo te lo pedimos una vez, para tus próximas inscripciones no volverá a aparecer</Text>
+
+          <Text style={modalStyles.label}>Código de estudiante</Text>
+          <TextInput style={modalStyles.input} value={formInscripcion.codigo_estudiante} onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, codigo_estudiante: v }))} placeholder="Ej: 2023-1234" accessibilityLabel="Código de estudiante" />
+
+          <Text style={modalStyles.label}>Semestre</Text>
+          <TextInput style={modalStyles.input} value={formInscripcion.semestre} onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, semestre: v }))} placeholder="Ej: 5to semestre" accessibilityLabel="Semestre" />
+
+          <Text style={modalStyles.label}>Teléfono</Text>
+          <TextInput style={modalStyles.input} value={formInscripcion.telefono} onChangeText={(v) => setFormInscripcion(prev => ({ ...prev, telefono: v }))} placeholder="Ej: 71234567" keyboardType="phone-pad" accessibilityLabel="Teléfono" />
+
+          <View style={modalStyles.buttonRow}>
+            <TouchableOpacity style={modalStyles.cancelBtn} onPress={() => setShowInscripcionModal(false)} disabled={savingInscripcion}>
+              <Text style={modalStyles.cancelBtnText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={modalStyles.confirmBtn} onPress={confirmarInscripcion} disabled={savingInscripcion}>
+              {savingInscripcion ? <ActivityIndicator color={COLORS.white} /> : <Text style={modalStyles.confirmBtnText}>Confirmar Inscripción</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Modal de Telegram */}
+    {showTelegramModal && (
+      <Modal visible={showTelegramModal} transparent={true} animationType="slide" onRequestClose={() => setShowTelegramModal(false)} accessibilityViewIsModal={true}>
+        <View style={telegramStyles.modalOverlay}>
+          <View style={telegramStyles.modalContent}>
+            <View style={telegramStyles.modalHeader}>
+              <View style={telegramStyles.telegramIconContainer}>
+                <Ionicons name="send" size={48} color="#0088cc" />
+              </View>
+              <Text style={telegramStyles.modalTitle}>{isTelegramLinked ? 'Telegram Vinculado ✓' : 'Vincular Telegram'}</Text>
+              <TouchableOpacity onPress={() => setShowTelegramModal(false)} style={telegramStyles.closeButton}>
+                <Ionicons name="close-circle" size={28} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={telegramStyles.modalScrollView} showsVerticalScrollIndicator={true} contentContainerStyle={telegramStyles.modalScrollContent}>
+              {isTelegramLinked ? (
+                <>
+                  <View style={telegramStyles.linkedInfo}>
+                    <Ionicons name="checkmark-circle" size={60} color={COLORS.success} />
+                    <Text style={telegramStyles.linkedText}>Tu cuenta está vinculada con Telegram</Text>
+                    {telegramUsername && <Text style={telegramStyles.username}>@{telegramUsername}</Text>}
+                  </View>
+                  <View style={telegramStyles.benefits}>
+                    <Text style={telegramStyles.benefitsTitle}>Recibirás notificaciones de:</Text>
+                    <View style={telegramStyles.benefitItem}>
+                      <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                      <Text style={telegramStyles.benefitText}>Confirmación de inscripciones a eventos</Text>
+                    </View>
+                    <View style={telegramStyles.benefitItem}>
+                      <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                      <Text style={telegramStyles.benefitText}>Recordatorios de eventos próximos</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={telegramStyles.unlinkButton} onPress={unlinkTelegram}>
+                    <Ionicons name="link-outline" size={20} color={COLORS.accent} />
+                    <Text style={telegramStyles.unlinkText}>Desvincular Telegram</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <View style={telegramStyles.qrContainer}>
+                    <Text style={telegramStyles.qrTitle}>Escanea para vincular</Text>
+                    <View style={telegramStyles.qrCode}>
+                      <Image
+                        source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=320x320&qzone=2&data=${encodeURIComponent(`https://t.me/${BOT_USERNAME}`)}` }}
+                        style={{ width: 160, height: 160 }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text style={telegramStyles.qrSubtitle}>O toca el botón para abrir</Text>
+                  </View>
+                  <TouchableOpacity style={telegramStyles.openButton} onPress={() => {
+                    const url = `https://t.me/${BOT_USERNAME}`;
+                    if (Platform.OS === 'web') window.open(url, '_blank');
+                    else {
+                      import('expo-linking').then(({ default: Linking }) => {
+                        Linking.openURL(url).catch(() => Alert.alert('Telegram no instalado', 'Instala Telegram para continuar'));
+                      });
+                    }
+                  }}>
+                    <Ionicons name="send" size={20} color={COLORS.white} />
+                    <Text style={telegramStyles.openButtonText}>Abrir Bot en Telegram</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={telegramStyles.refreshButton} onPress={() => { checkTelegramStatus(); Alert.alert('Verificando...', 'Si ya vinculaste en Telegram, presiona nuevamente para actualizar'); }}>
+                    <Ionicons name="refresh-outline" size={20} color={COLORS.white} />
+                    <Text style={telegramStyles.refreshText}>Ya vinculé mi cuenta</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
-
-      {/* Modal de Telegram */}
-      {showTelegramModal && (
-        <Modal visible={showTelegramModal} transparent={true} animationType="slide" onRequestClose={() => setShowTelegramModal(false)} accessibilityViewIsModal={true}>
-          <View style={telegramStyles.modalOverlay}>
-            <View style={telegramStyles.modalContent}>
-              <View style={telegramStyles.modalHeader}>
-                <View style={telegramStyles.telegramIconContainer}>
-                  <Ionicons name="send" size={48} color="#0088cc" />
-                </View>
-                <Text style={telegramStyles.modalTitle}>{isTelegramLinked ? 'Telegram Vinculado ✓' : 'Vincular Telegram'}</Text>
-                <TouchableOpacity onPress={() => setShowTelegramModal(false)} style={telegramStyles.closeButton}>
-                  <Ionicons name="close-circle" size={28} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView style={telegramStyles.modalScrollView} showsVerticalScrollIndicator={true} contentContainerStyle={telegramStyles.modalScrollContent}>
-                {isTelegramLinked ? (
-                  <>
-                    <View style={telegramStyles.linkedInfo}>
-                      <Ionicons name="checkmark-circle" size={60} color={COLORS.success} />
-                      <Text style={telegramStyles.linkedText}>Tu cuenta está vinculada con Telegram</Text>
-                      {telegramUsername && <Text style={telegramStyles.username}>@{telegramUsername}</Text>}
-                    </View>
-                    <View style={telegramStyles.benefits}>
-                      <Text style={telegramStyles.benefitsTitle}>Recibirás notificaciones de:</Text>
-                      <View style={telegramStyles.benefitItem}>
-                        <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                        <Text style={telegramStyles.benefitText}>Confirmación de inscripciones a eventos</Text>
-                      </View>
-                      <View style={telegramStyles.benefitItem}>
-                        <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                        <Text style={telegramStyles.benefitText}>Recordatorios de eventos próximos</Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity style={telegramStyles.unlinkButton} onPress={unlinkTelegram}>
-                      <Ionicons name="link-outline" size={20} color={COLORS.accent} />
-                      <Text style={telegramStyles.unlinkText}>Desvincular Telegram</Text>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <View style={telegramStyles.qrContainer}>
-                      <Text style={telegramStyles.qrTitle}>Escanea para vincular</Text>
-                      <View style={telegramStyles.qrCode}>
-                        <Image
-                          source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=320x320&qzone=2&data=${encodeURIComponent(`https://t.me/${BOT_USERNAME}`)}` }}
-                          style={{ width: 160, height: 160 }}
-                          resizeMode="contain"
-                        />
-                      </View>
-                      <Text style={telegramStyles.qrSubtitle}>O toca el botón para abrir</Text>
-                    </View>
-                    <TouchableOpacity style={telegramStyles.openButton} onPress={() => {
-                      const url = `https://t.me/${BOT_USERNAME}`;
-                      if (Platform.OS === 'web') window.open(url, '_blank');
-                      else {
-                        import('expo-linking').then(({ default: Linking }) => {
-                          Linking.openURL(url).catch(() => Alert.alert('Telegram no instalado', 'Instala Telegram para continuar'));
-                        });
-                      }
-                    }}>
-                      <Ionicons name="send" size={20} color={COLORS.white} />
-                      <Text style={telegramStyles.openButtonText}>Abrir Bot en Telegram</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={telegramStyles.refreshButton} onPress={() => { checkTelegramStatus(); Alert.alert('Verificando...', 'Si ya vinculaste en Telegram, presiona nuevamente para actualizar'); }}>
-                      <Ionicons name="refresh-outline" size={20} color={COLORS.white} />
-                      <Text style={telegramStyles.refreshText}>Ya vinculé mi cuenta</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      )}
-    </View>
-  );
+    )}
+  </View>
+);
 };
 
 const styles = StyleSheet.create({
