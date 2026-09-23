@@ -452,6 +452,7 @@ try {
                           <Ionicons name="time-outline" size={11} color={COLORS.textTertiary} />
                           <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>
                             {item.fechaevento ? item.fechaevento.split('T')[0] : 'Sin fecha'}
+                            {item.horaevento ? `  ·  ${String(item.horaevento).substring(0, 5)} h` : ''}
                           </Text>
                           <View style={{
                             paddingHorizontal: 6, paddingVertical: 1,
