@@ -269,7 +269,7 @@ const ProgresoEventoCard = ({ evento, router }) => {
   let ctaLabel = 'Ver detalles';
   let ctaIcon = 'eye-outline';
   let ctaSub = 'Consulta la información completa del evento.';
-  let ctaOnPress = () => irA(`/admin/EventDetailScreen?eventId=${evento.idevento}`);
+  let ctaOnPress = () => irA(`/admin/EventoDetalleImp?eventId=${evento.idevento}`);
 
   if (estKey === 'completado' || estKey === 'finalizado') {
     ctaLabel = 'Ver informe del evento';
@@ -288,7 +288,10 @@ const ProgresoEventoCard = ({ evento, router }) => {
     ctaSub = 'El comité aprobó tu evento. Elige fecha y recursos disponibles.';
     ctaOnPress = () => irA('/admin/SeleccionarProgramacionEvento');
   } else if (estKey === 'aprobado') {
+    ctaLabel = 'Ver resumen del evento';
+    ctaIcon = 'eye-outline';
     ctaSub = 'Fecha y recursos asignados. El informe se habilitará cuando termine el evento.';
+    ctaOnPress = () => irA(`/admin/EventoDetalleImp?eventId=${evento.idevento}`);
   } else if (estKey === 'pendiente' || estKey === 'proyectado') {
     ctaTipo = 'deshabilitado';
     ctaLabel = 'Enviado a revisión';

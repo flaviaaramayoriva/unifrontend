@@ -714,6 +714,10 @@ const programacionEvento = () => {
         idlayout: layoutSeleccionado ? layoutSeleccionado.idlayout : null,
         comite: comiteSeleccionado,
         nuevaFase: fasePayload,
+        recursos_ia: recursosSeleccionados.map(r => ({
+          idrecurso: r.idrecurso,
+          cantidad: r.cantidadIA || 1,
+        })),
       };
 
       console.log('📦 Payload:', JSON.stringify(payload, null, 2));
@@ -1148,7 +1152,7 @@ const programacionEvento = () => {
                         <Text style={[styles.recursoChipLabel, seleccionado && styles.recursoChipLabelSel]} numberOfLines={1}>
                           {recurso.nombre_recurso}
                         </Text>
-                        <Text style={styles.recursoChipSub}>disp. {recurso.cantidad}</Text>
+                        <Text style={styles.recursoChipSub}>disp. {Math.max(0, (parseInt(recurso.cantidad) || 0) - (seleccionado ? (seleccionado.cantidadIA || 0) : 0))}</Text>
                       </TouchableOpacity>
                       {seleccionado && (
                         <View style={styles.recursoQtyRow}>
