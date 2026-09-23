@@ -520,8 +520,19 @@ const buildReporteHtml = ({ recursos, inscripciones, operacionales, economicos, 
     .page-break{page-break-before:always}
     .footer{margin-top:28px;text-align:center;font-size:10.5px;color:#94A3B8;padding:14px 0 4px;border-top:1px solid #E6E9EF}
     .footer strong{color:#64748B}
-    @media print{.cover{background:#E95A0C}.wrap{box-shadow:none}body{background:#fff}}
-  </style></head><body><div class="wrap">
+    .print-fab{
+      position:fixed;top:16px;right:16px;z-index:9999;
+      background:#C44200;color:#fff;border:none;border-radius:50px;
+      padding:12px 22px;font-size:14px;font-weight:800;
+      box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer;
+      display:flex;align-items:center;gap:8px;
+      font-family:'Segoe UI',Arial,Helvetica,sans-serif;
+    }
+    .print-fab:hover{background:#a83700}
+    @media print{.cover{background:#E95A0C}.wrap{box-shadow:none}body{background:#fff}.print-fab{display:none !important}}
+  </style></head><body>
+  <button class="print-fab" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  <div class="wrap">
   <div class="cover">
     <div class="uft-logo">
       <div class="uft-monogram">UFT</div>
