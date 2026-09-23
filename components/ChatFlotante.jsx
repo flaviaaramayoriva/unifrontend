@@ -157,6 +157,7 @@ try {
 
   const renderMessage = ({ item }) => {
     const isBot = item.esBot || item.userId === 0;
+    const esUltimoBot = isBot && [...messages].filter(m => m.esBot || m.userId === 0).pop()?.id === item.id;
 
     return (
       <View style={{
@@ -196,19 +197,37 @@ try {
               {item.message}
             </Text>
           </View>
-          {isBot && item.categoria && (
-            <TouchableOpacity
-              onPress={() => handleSend('Enviar por Telegram')}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                marginTop: 4, marginLeft: 2,
-              }}
-            >
-              <Ionicons name="send-outline" size={12} color="#9B59B6" />
-              <Text style={{ fontSize: 10, color: '#9B59B6', fontWeight: '600' }}>
-                Enviar por Telegram
-              </Text>
-            </TouchableOpacity>
+          {esUltimoBot && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, marginLeft: 2 }}>
+              <TouchableOpacity
+                onPress={() => handleSend('Enviar por Telegram')}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  backgroundColor: '#E8F5E9', borderRadius: 14,
+                  paddingHorizontal: 10, paddingVertical: 5,
+                  borderWidth: 1, borderColor: '#2E7D3244',
+                }}
+              >
+                <Ionicons name="send-outline" size={12} color="#2E7D32" />
+                <Text style={{ fontSize: 10, color: '#2E7D32', fontWeight: '700' }}>
+                  Enviar por Telegram
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleSend('Enviar ficha por Telegram')}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  backgroundColor: '#E3F2FD', borderRadius: 14,
+                  paddingHorizontal: 10, paddingVertical: 5,
+                  borderWidth: 1, borderColor: '#1565C044',
+                }}
+              >
+                <Ionicons name="document-text-outline" size={12} color="#1565C0" />
+                <Text style={{ fontSize: 10, color: '#1565C0', fontWeight: '700' }}>
+                  Enviar ficha por Telegram
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </View>
