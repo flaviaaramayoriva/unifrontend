@@ -944,8 +944,8 @@ const ProyectoEvento = () => {
   const objetivosSectionRef = useRef(null);
   const [objetivosSectionY, setObjetivosSectionY] = useState(0);
   const [isScrollingToObjetivos, setIsScrollingToObjetivos] = useState(false);
-  const [nombreevento, setNombreevento] = useState('');
-  const [lugarevento, setLugarevento] = useState('');
+  const [nombreevento, setNombreevento] = useState(params.nombreevento || '');
+  const [lugarevento, setLugarevento] = useState(params.lugarevento || '');
   const [nombreResponsable, setNombreResponsable] = useState('');
   const [tiposSeleccionados, setTiposSeleccionados] = useState({});
   const [textoOtroTipo, setTextoOtroTipo] = useState('');
