@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Platform, ActivityIndicator, Alert, KeyboardAvoidingView, Image
+  Platform, ActivityIndicator, Alert, KeyboardAvoidingView, Image, Modal
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
@@ -352,6 +352,8 @@ const programacionEvento = () => {
   const [layoutsDisponibles, setLayoutsDisponibles] = useState([]);
   const [layoutSeleccionado, setLayoutSeleccionado] = useState(null);
   const [cargandoLayouts, setCargandoLayouts] = useState(false);
+  const [previewLayout, setPreviewLayout] = useState(null);
+  const [previewRecurso, setPreviewRecurso] = useState(null);
   const [recursosDisponibles, setRecursosDisponibles] = useState([]);
   const [recursosSeleccionados, setRecursosSeleccionados] = useState([]);
   const [cargandoRecursos, setCargandoRecursos] = useState(false);
@@ -1070,6 +1072,14 @@ const programacionEvento = () => {
                         style={styles.layoutImage}
                         resizeMode="cover"
                       />
+                      <TouchableOpacity
+                        style={styles.previewBtn}
+                        onPress={() => setPreviewLayout(layout)}
+                        activeOpacity={0.8}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <Ionicons name="expand-outline" size={18} color="#fff" />
+                      </TouchableOpacity>
                       <Text style={styles.layoutName} numberOfLines={2}>
                         {layout.nombre}
                       </Text>
@@ -1148,7 +1158,21 @@ const programacionEvento = () => {
                         onPress={() => toggleRecursoSeleccionado(recurso)}
                         activeOpacity={0.7}
                       >
-                        <Ionicons name={icRecurso} size={14} color={seleccionado ? '#C44200' : '#94A3B8'} />
+                        <View style={styles.recursoImgWrap}>
+                          <Image
+                            source={{ uri: `${API_BASE_URL}${recurso.imagenUrl}` }}
+                            style={styles.recursoImg}
+                            resizeMode="cover"
+                          />
+                          <TouchableOpacity
+                            style={styles.recursoPreviewBtn}
+                            onPress={() => setPreviewRecurso(recurso)}
+                            activeOpacity={0.8}
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          >
+                            <Ionicons name="expand-outline" size={13} color="#fff" />
+                          </TouchableOpacity>
+                        </View>
                         <Text style={[styles.recursoChipLabel, seleccionado && styles.recursoChipLabelSel]} numberOfLines={1}>
                           {recurso.nombre_recurso}
                         </Text>
@@ -1211,6 +1235,56 @@ const programacionEvento = () => {
         <View style={{ height: 30 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={!!previewLayout}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewLayout(null)}
+      >
+        <View style={styles.previewOverlay}>
+          <View style={styles.previewCard}>
+            <View style={styles.previewHeader}>
+              <Text style={styles.previewTitle} numberOfLines={1}>{previewLayout?.nombre || 'Layout'}</Text>
+              <TouchableOpacity onPress={() => setPreviewLayout(null)} style={styles.previewClose}>
+                <Ionicons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            {previewLayout && (
+              <Image
+                source={{ uri: previewLayout.imagenUrl || `https://unibackend-production-a0f8.up.railway.app/uploads/${previewLayout.url_imagen}` }}
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={!!previewRecurso}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewRecurso(null)}
+      >
+        <View style={styles.previewOverlay}>
+          <View style={styles.previewCard}>
+            <View style={styles.previewHeader}>
+              <Text style={styles.previewTitle} numberOfLines={1}>{previewRecurso?.nombre_recurso || 'Recurso'}</Text>
+              <TouchableOpacity onPress={() => setPreviewRecurso(null)} style={styles.previewClose}>
+                <Ionicons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            {previewRecurso && (
+              <Image
+                source={{ uri: `${API_BASE_URL}${previewRecurso.imagenUrl}` }}
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1328,6 +1402,79 @@ const styles = StyleSheet.create({
     height: 130,
     borderRadius: 10,
     backgroundColor: '#f0f0f0',
+  },
+  previewBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recursoImgWrap: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  recursoImg: {
+    width: 54,
+    height: 38,
+    borderRadius: 6,
+    backgroundColor: '#eef2f7',
+  },
+  recursoPreviewBtn: {
+    position: 'absolute',
+    top: 0,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  previewCard: {
+    width: '95%',
+    maxWidth: 900,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#C44200',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  previewTitle: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  previewClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: 420,
+    backgroundColor: '#f8fafc',
   },
   layoutName: {
     marginTop: 8,
