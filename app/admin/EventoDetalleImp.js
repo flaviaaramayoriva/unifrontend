@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import {React, useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -52,6 +52,34 @@ const deleteTokenAsync = async () => {
     } catch (e) {
       console.error("Error al eliminar token de SecureStore en nativo:", e);
     }
+  }
+};
+
+// Resuelve la URL de imagen de un layout. El endpoint GET /layouts ya
+// devuelve `imagenUrl` completa (armada por el backend); si solo tenemos
+// `url_imagen` (nombre relativo del archivo), la armamos con API_BASE_URL
+// en vez de un dominio fijo hardcodeado.
+const getLayoutImageUri = (layout) => {
+  if (!layout) return null;
+  if (layout.imagenUrl) return layout.imagenUrl;
+  if (layout.url_imagen) return `${API_BASE_URL}/uploads/${layout.url_imagen}`;
+  return null;
+};
+
+// GET /eventos/:id a veces solo trae `idlayout` (sin el objeto Layout
+// completo con su imagen). Cuando pasa eso, buscamos el layout completo
+// en GET /layouts -que sí incluye imagenUrl- para poder mostrarlo.
+const fetchLayoutById = async (token, idlayout) => {
+  if (!idlayout) return null;
+  try {
+    const response = await axios.get(`${API_BASE_URL}/layouts`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const layouts = Array.isArray(response.data) ? response.data : [];
+    return layouts.find(l => l.idlayout === idlayout) || null;
+  } catch (err) {
+    console.error('Error al cargar datos del layout:', err);
+    return null;
   }
 };
 
@@ -247,6 +275,20 @@ const EventDetailScreen = () => {
         throw new Error('Datos de evento vacíos o inválidos del servidor.');
       }
 
+      // El layout puede venir incompleto (solo `idlayout`, sin `url_imagen`
+      // ni `imagenUrl`) si el endpoint /eventos/:id no incluye la relación
+      // completa. En ese caso, lo buscamos en GET /layouts, que siempre
+      // trae los datos completos de imagen.
+      let layoutInfo = eventData.layout || null;
+      const idlayoutDelEvento = eventData.idlayout || layoutInfo?.idlayout || null;
+
+      if ((!layoutInfo || !getLayoutImageUri(layoutInfo)) && idlayoutDelEvento) {
+        const layoutCompleto = await fetchLayoutById(token, idlayoutDelEvento);
+        if (layoutCompleto) {
+          layoutInfo = { ...layoutInfo, ...layoutCompleto };
+        }
+      }
+
       const transformedEvent = {
         id: eventData.idevento || null,
         title: eventData.nombreevento || 'Sin título',
@@ -263,7 +305,7 @@ const EventDetailScreen = () => {
         actividadesPost: eventData.actividadesPost || [],
         serviciosContratados: eventData.serviciosContratados || [],
         ambientes: eventData.ambientes || [],
-        layout: eventData.layout || (eventData.idlayout ? { idlayout: eventData.idlayout } : null),
+        layout: layoutInfo || (idlayoutDelEvento ? { idlayout: idlayoutDelEvento } : null),
 
         Clasificacion: eventData.Clasificacion || null,
         subcategoria: eventData.subcategoria || null,
@@ -430,11 +472,12 @@ const EventDetailScreen = () => {
         </ul>
       </div>` : '';
 
+    const layoutImgUri = getLayoutImageUri(event.layout);
     const layoutHtml = event.layout ? `
       <div class="section">
         <div class="section-title">Layout del Evento</div>
-        ${event.layout.url_imagen ? `
-          <img src="https://unibackend-production-a0f8.up.railway.app/uploads/${event.layout.url_imagen}" style="width:100%; max-width:500px; border-radius:8px; margin-bottom:0.3cm;" />
+        ${layoutImgUri ? `
+          <img src="${layoutImgUri}" style="width:100%; max-width:500px; border-radius:8px; margin-bottom:0.3cm;" />
         ` : ''}
         <div>${event.layout.nombre || `Layout ID: ${event.layout.idlayout}`}</div>
       </div>` : '';
@@ -879,11 +922,9 @@ const EventDetailScreen = () => {
         {event.idfase >= 2 && event.layout && (
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Layout del Evento</Text>
-            {event.layout && event.layout.url_imagen ? (
+            {getLayoutImageUri(event.layout) ? (
               <Image
-                source={{
-                  uri: `https://unibackend-production-a0f8.up.railway.app/uploads/${event.layout.url_imagen}`
-                }}
+                source={{ uri: getLayoutImageUri(event.layout) }}
                 style={styles.layoutImage}
                 resizeMode="contain"
               />
